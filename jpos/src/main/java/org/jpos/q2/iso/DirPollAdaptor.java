@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,10 +31,8 @@ import org.jpos.util.ThreadPool;
  *
  * @author Alejandro Revilla
  * @version $Revision$ $Date$
- * @jmx:mbean description="DirPoll adaptor QBean"
- *                  extends="org.jpos.q2.QBeanSupportMBean"
  */
-public class DirPollAdaptor 
+public class DirPollAdaptor
     extends QBeanSupport
     implements DirPollAdaptorMBean
 {
@@ -42,6 +40,8 @@ public class DirPollAdaptor
     int poolSize;
     long pollInterval;
     protected DirPoll dirPoll;
+    protected Thread dirPollThread = null;
+
     public DirPollAdaptor () {
         super ();
         poolSize = 1;
@@ -50,11 +50,11 @@ public class DirPollAdaptor
 
     protected void initService () throws Exception {
         QFactory factory = getServer().getFactory();
-        dirPoll  = new DirPoll ();
+        dirPoll  = createDirPoll();
         dirPoll.setPath (getPath ());
         dirPoll.setThreadPool (new ThreadPool (1, poolSize));
         dirPoll.setPollInterval (pollInterval);
-        if (priorities != null) 
+        if (priorities != null)
             dirPoll.setPriorities (priorities);
         dirPoll.setLogger (getLog().getLogger(), getLog().getRealm ());
         Configuration cfg = factory.getConfiguration (getPersist());
@@ -71,84 +71,83 @@ public class DirPollAdaptor
         }
         dirPoll.setProcessor (dpp);
     }
+
+    protected DirPoll createDirPoll() {
+        return new DirPoll();
+    }
+
     protected void startService () throws Exception {
-        new Thread (dirPoll).start ();
+        if (dirPoll == null) {
+            throw new IllegalStateException("Not initialized!");
+        }
+        synchronized (dirPoll) {
+            dirPollThread = new Thread(dirPoll);
+            dirPollThread.start();
+        }
     }
 
     protected void stopService () throws Exception {
         dirPoll.destroy ();
+        synchronized (dirPoll) {
+            if (dirPollThread != null) {
+                long shutdownTimeout = cfg.getLong("shutdown-timeout", 60000);
+                try {
+                    dirPollThread.join(shutdownTimeout);
+                } catch (InterruptedException e) {
+
+                }
+                if (dirPollThread.isAlive()) {
+                    getLog().warn(getName() + " - dirPoll thread did not finish in " + shutdownTimeout + " milliseconds. Interrupting thread now.");
+                    dirPollThread.interrupt();
+                }
+                dirPollThread = null;
+            }
+        }
     }
 
 
-    /**
-     * @jmx:managed-attribute description="Base path"
-     */
     public synchronized void setPath (String path) {
         this.path = path;
         setModified (true);
     }
 
-    /**
-     * @jmx:managed-attribute description="thread pool size"
-     */
     public synchronized void setPoolSize (int size) {
         this.poolSize = size;
         setModified (true);
     }
-    /**
-     * @jmx:managed-attribute description="thread pool size"
-     */
+
     public int getPoolSize () {
         return poolSize;
     }
 
-    /**
-     * @jmx:managed-attribute description="Base path"
-     */
     public String getPath () {
         return path == null ? "." : path;
     }
 
-    /**
-     * @jmx:managed-attribute description="poll time in millis"
-     */
     public synchronized void setPollInterval (long pollInterval) {
         this.pollInterval = pollInterval;
         setModified (true);
     }
-    /**
-     * @jmx:managed-attribute description="poll time in millis"
-     */
+
     public long getPollInterval () {
         return pollInterval;
     }
-    /**
-     * @jmx:managed-attribute description="priorities"
-     */
+
     public synchronized void setPriorities (String priorities) {
         this.priorities = priorities;
         setModified (true);
     }
-    /**
-     * @jmx:managed-attribute description="priorities"
-     */
+
     public String getPriorities () {
         return priorities;
     }
 
-    /**
-     * @jmx:managed-attribute description="processor class"
-     */
     public synchronized void setProcessor (String processor) {
         this.processorClass = processor;
         setModified (true);
     }
-    /**
-     * @jmx:managed-attribute description="processor class"
-     */
+
     public String getProcessor() {
         return processorClass;
     }
 }
-
-   

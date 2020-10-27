@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.q2.security;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.q2.QBeanSupport;
 import org.jpos.q2.QFactory;
 import org.jpos.security.SMAdapter;
@@ -40,15 +40,15 @@ import org.jpos.util.NameRegistrar;
  * @author Hani Kirollos
  * @author Alejandro Revilla
  * @version $Revision$ $Date$
- * @jmx:mbean description="SMAdaptor QBean"
- *                extends="org.jpos.q2.QBeanSupportMBean"
  */
 public class SMAdaptor extends QBeanSupport implements SMAdaptorMBean
 {
+    private static final String DEFAULT_IMPL = "org.jpos.security.jceadapter.JCESecurityModule";
     String clazz;
     SMAdapter sm;
     public SMAdaptor () {
         super ();
+        clazz = DEFAULT_IMPL;
     }
     protected void initService () throws Exception {
         Element e = getPersist ();
@@ -58,18 +58,14 @@ public class SMAdaptor extends QBeanSupport implements SMAdaptorMBean
         factory.setConfiguration (sm, e);
     }
 
-    /**
-     * @jmx:managed-attribute description="Implementation class name"
-     */
     public void setImpl (String clazz) {
         this.clazz = clazz;
     }
-    /**
-     * @jmx:managed-attribute description="Implementation class name"
-     */
+
     public String getImpl() {
         return clazz;
     }
+
     protected void startService () throws Exception {
         NameRegistrar.register (getName (), sm);
     }
@@ -77,4 +73,3 @@ public class SMAdaptor extends QBeanSupport implements SMAdaptorMBean
         NameRegistrar.unregister (getName ());
     }
 }
-

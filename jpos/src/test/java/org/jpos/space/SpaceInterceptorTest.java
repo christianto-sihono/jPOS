@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,25 +18,26 @@
 
 package org.jpos.space;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("unchecked")
+@ExtendWith(MockitoExtension.class)
 public class SpaceInterceptorTest {
 
     @Test
     public void testConstructor() throws Throwable {
         Space sp = mock(Space.class);
         SpaceInterceptor spaceInterceptor = new SpaceInterceptor(sp);
-        assertSame("spaceInterceptor.sp", sp, spaceInterceptor.sp);
+        assertSame(sp, spaceInterceptor.sp, "spaceInterceptor.sp");
     }
 
     @Test
@@ -46,8 +47,12 @@ public class SpaceInterceptorTest {
             spaceInterceptor.in("");
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("spaceInterceptor.sp", spaceInterceptor.sp);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.space.Space.in(Object)\" because \"this.sp\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(spaceInterceptor.sp, "spaceInterceptor.sp");
         }
     }
 
@@ -57,7 +62,7 @@ public class SpaceInterceptorTest {
         SpaceInterceptor spaceInterceptor = new SpaceInterceptor(sp);
         sp.out("testString", "1", 0L);
         spaceInterceptor.out("testString", "1", 0L);
-        assertSame("spaceInterceptor.sp", sp, spaceInterceptor.sp);
+        assertSame(sp, spaceInterceptor.sp, "spaceInterceptor.sp");
         verify(sp, times(2)).out("testString", "1", 0L);
     }
 
@@ -68,8 +73,12 @@ public class SpaceInterceptorTest {
             spaceInterceptor.out(Integer.valueOf(-1), "1", 100L);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("spaceInterceptor.sp", spaceInterceptor.sp);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.space.Space.out(Object, Object, long)\" because \"this.sp\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(spaceInterceptor.sp, "spaceInterceptor.sp");
         }
     }
 
@@ -78,8 +87,8 @@ public class SpaceInterceptorTest {
         Space sp = SpaceFactory.getSpace();
         SpaceInterceptor spaceInterceptor = new SpaceInterceptor(sp);
         Object result = spaceInterceptor.rdp(sp);
-        assertNull("result", result);
-        assertSame("spaceInterceptor.sp", sp, spaceInterceptor.sp);
+        assertNull(result, "result");
+        assertSame(sp, spaceInterceptor.sp, "spaceInterceptor.sp");
     }
 
     @Test
@@ -89,8 +98,12 @@ public class SpaceInterceptorTest {
             spaceInterceptor.rdp("testString");
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("spaceInterceptor.sp", spaceInterceptor.sp);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.space.Space.rdp(Object)\" because \"this.sp\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(spaceInterceptor.sp, "spaceInterceptor.sp");
         }
     }
 
@@ -101,8 +114,12 @@ public class SpaceInterceptorTest {
             spaceInterceptor.rd("", -1L);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("spaceInterceptor.sp", spaceInterceptor.sp);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.space.Space.rd(Object, long)\" because \"this.sp\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(spaceInterceptor.sp, "spaceInterceptor.sp");
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -58,6 +58,7 @@ import java.util.TreeMap;
  * @author Jose Eduardo Leon
  * @version 1.0
  */
+@SuppressWarnings("unchecked")
 public class GenericValidatingPackager extends GenericPackager implements ISOValidator {
 
     public GenericValidatingPackager(  ) throws ISOException{
@@ -185,6 +186,7 @@ These can be changes using attributes on the isopackager node */
     static final int inc = 500;
 
 
+    @SuppressWarnings("unchecked")
     public class GenericValidatorContentHandler extends DefaultHandler {
         @Override
         public void startDocument(){

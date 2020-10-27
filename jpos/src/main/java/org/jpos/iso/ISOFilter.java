@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -28,7 +28,7 @@ import org.jpos.util.LogEvent;
  * @version $Revision$ $Date$
  */
 public interface ISOFilter {
-    public class VetoException extends ISOException {
+    class VetoException extends ISOException {
 
         private static final long serialVersionUID = -4640160572663583113L;
         public VetoException () {
@@ -51,6 +51,6 @@ public interface ISOFilter {
      * @return an ISOMsg (possibly parameter m)
      * @throws VetoException
      */
-    public ISOMsg filter (ISOChannel channel, ISOMsg m, LogEvent evt) 
+    ISOMsg filter(ISOChannel channel, ISOMsg m, LogEvent evt)
         throws VetoException;
 }

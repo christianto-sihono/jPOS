@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ package org.jpos.iso;
  * @see ISOFieldPackager
  */
 public class IFE_AMOUNT extends ISOAmountFieldPackager {
+    @SuppressWarnings("unused")
     public IFE_AMOUNT() {
         super(0, null, LeftPadder.ZERO_PADDER, EbcdicInterpreter.INSTANCE, NullPrefixer.INSTANCE);
     }
@@ -37,7 +38,7 @@ public class IFE_AMOUNT extends ISOAmountFieldPackager {
      * @param description symbolic descrption
      */
     public IFE_AMOUNT(int len, String description) {
-        super(len, description, LeftPadder.ZERO_PADDER, EbcdicInterpreter.INSTANCE.INSTANCE, NullPrefixer.INSTANCE);
+        super(len, description, LeftPadder.ZERO_PADDER, EbcdicInterpreter.INSTANCE, NullPrefixer.INSTANCE);
     }
 }
 

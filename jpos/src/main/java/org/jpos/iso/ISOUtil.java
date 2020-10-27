@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,15 +18,19 @@
 
 package org.jpos.iso;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.security.SecureRandom;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
- * varios functions needed to pack/unpack ISO-8583 fields
+ * various functions needed to pack/unpack ISO-8583 fields
  *
- * @author apr@cs.com.uy
+ * @author apr@jpos.org
  * @author Hani S. Kirollos
  * @author Alwyn Schoeman
  * @version $Id$
@@ -34,8 +38,13 @@ import java.util.*;
  */
 @SuppressWarnings("unused")
 public class ISOUtil {
-    private ISOUtil() {
-        throw new AssertionError();
+    /**
+     * All methods in this class are static, so there's usually no need to instantiate it
+     * We provide this public constructor in order to deal with some legacy script integration
+     * that needs an instance of this class in a rendering context.
+     */
+    public ISOUtil() {
+        super();
     }
     public static final String[] hexStrings;
 
@@ -43,7 +52,7 @@ public class ISOUtil {
         hexStrings = new String[256];
         for (int i = 0; i < 256; i++ ) {
             StringBuilder d = new StringBuilder(2);
-            char ch = Character.forDigit(((byte)i >> 4) & 0x0F, 16);
+            char ch = Character.forDigit((byte)i >> 4 & 0x0F, 16);
             d.append(Character.toUpperCase(ch));
             ch = Character.forDigit((byte)i & 0x0F, 16);
             d.append(Character.toUpperCase(ch));
@@ -52,139 +61,19 @@ public class ISOUtil {
 
     }
 
+    /**
+     * Default encoding (charset) for bytes transmissions over network
+     * @deprecated use {@link #CHARSET} instead
+     */
     public static final String ENCODING  = "ISO8859_1";
-    public static final byte[] EBCDIC2ASCII = new byte[] {
-        (byte)0x0,  (byte)0x1,  (byte)0x2,  (byte)0x3, 
-        (byte)0x9C, (byte)0x9,  (byte)0x86, (byte)0x7F, 
-        (byte)0x97, (byte)0x8D, (byte)0x8E, (byte)0xB, 
-        (byte)0xC,  (byte)0xD,  (byte)0xE,  (byte)0xF, 
-        (byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13, 
-        (byte)0x9D, (byte)0xA,  (byte)0x8,  (byte)0x87, 
-        (byte)0x18, (byte)0x19, (byte)0x92, (byte)0x8F, 
-        (byte)0x1C, (byte)0x1D, (byte)0x1E, (byte)0x1F, 
-        (byte)0x80, (byte)0x81, (byte)0x82, (byte)0x83, 
-        (byte)0x84, (byte)0x85, (byte)0x17, (byte)0x1B, 
-        (byte)0x88, (byte)0x89, (byte)0x8A, (byte)0x8B, 
-        (byte)0x8C, (byte)0x5,  (byte)0x6,  (byte)0x7, 
-        (byte)0x90, (byte)0x91, (byte)0x16, (byte)0x93, 
-        (byte)0x94, (byte)0x95, (byte)0x96, (byte)0x4, 
-        (byte)0x98, (byte)0x99, (byte)0x9A, (byte)0x9B, 
-        (byte)0x14, (byte)0x15, (byte)0x9E, (byte)0x1A, 
-        (byte)0x20, (byte)0xA0, (byte)0xE2, (byte)0xE4, 
-        (byte)0xE0, (byte)0xE1, (byte)0xE3, (byte)0xE5, 
-        (byte)0xE7, (byte)0xF1, (byte)0xA2, (byte)0x2E, 
-        (byte)0x3C, (byte)0x28, (byte)0x2B, (byte)0x7C, 
-        (byte)0x26, (byte)0xE9, (byte)0xEA, (byte)0xEB, 
-        (byte)0xE8, (byte)0xED, (byte)0xEE, (byte)0xEF, 
-        (byte)0xEC, (byte)0xDF, (byte)0x21, (byte)0x24, 
-        (byte)0x2A, (byte)0x29, (byte)0x3B, (byte)0x5E, 
-        (byte)0x2D, (byte)0x2F, (byte)0xC2, (byte)0xC4, 
-        (byte)0xC0, (byte)0xC1, (byte)0xC3, (byte)0xC5, 
-        (byte)0xC7, (byte)0xD1, (byte)0xA6, (byte)0x2C, 
-        (byte)0x25, (byte)0x5F, (byte)0x3E, (byte)0x3F, 
-        (byte)0xF8, (byte)0xC9, (byte)0xCA, (byte)0xCB, 
-        (byte)0xC8, (byte)0xCD, (byte)0xCE, (byte)0xCF, 
-        (byte)0xCC, (byte)0x60, (byte)0x3A, (byte)0x23, 
-        (byte)0x40, (byte)0x27, (byte)0x3D, (byte)0x22, 
-        (byte)0xD8, (byte)0x61, (byte)0x62, (byte)0x63, 
-        (byte)0x64, (byte)0x65, (byte)0x66, (byte)0x67, 
-        (byte)0x68, (byte)0x69, (byte)0xAB, (byte)0xBB, 
-        (byte)0xF0, (byte)0xFD, (byte)0xFE, (byte)0xB1, 
-        (byte)0xB0, (byte)0x6A, (byte)0x6B, (byte)0x6C, 
-        (byte)0x6D, (byte)0x6E, (byte)0x6F, (byte)0x70, 
-        (byte)0x71, (byte)0x72, (byte)0xAA, (byte)0xBA, 
-        (byte)0xE6, (byte)0xB8, (byte)0xC6, (byte)0xA4, 
-        (byte)0xB5, (byte)0x7E, (byte)0x73, (byte)0x74, 
-        (byte)0x75, (byte)0x76, (byte)0x77, (byte)0x78, 
-        (byte)0x79, (byte)0x7A, (byte)0xA1, (byte)0xBF, 
-        (byte)0xD0, (byte)0x5B, (byte)0xDE, (byte)0xAE, 
-        (byte)0xAC, (byte)0xA3, (byte)0xA5, (byte)0xB7, 
-        (byte)0xA9, (byte)0xA7, (byte)0xB6, (byte)0xBC, 
-        (byte)0xBD, (byte)0xBE, (byte)0xDD, (byte)0xA8, 
-        (byte)0xAF, (byte)0x5D, (byte)0xB4, (byte)0xD7, 
-        (byte)0x7B, (byte)0x41, (byte)0x42, (byte)0x43, 
-        (byte)0x44, (byte)0x45, (byte)0x46, (byte)0x47, 
-        (byte)0x48, (byte)0x49, (byte)0xAD, (byte)0xF4, 
-        (byte)0xF6, (byte)0xF2, (byte)0xF3, (byte)0xF5, 
-        (byte)0x7D, (byte)0x4A, (byte)0x4B, (byte)0x4C, 
-        (byte)0x4D, (byte)0x4E, (byte)0x4F, (byte)0x50, 
-        (byte)0x51, (byte)0x52, (byte)0xB9, (byte)0xFB, 
-        (byte)0xFC, (byte)0xF9, (byte)0xFA, (byte)0xFF, 
-        (byte)0x5C, (byte)0xF7, (byte)0x53, (byte)0x54, 
-        (byte)0x55, (byte)0x56, (byte)0x57, (byte)0x58, 
-        (byte)0x59, (byte)0x5A, (byte)0xB2, (byte)0xD4, 
-        (byte)0xD6, (byte)0xD2, (byte)0xD3, (byte)0xD5, 
-        (byte)0x30, (byte)0x31, (byte)0x32, (byte)0x33, 
-        (byte)0x34, (byte)0x35, (byte)0x36, (byte)0x37, 
-        (byte)0x38, (byte)0x39, (byte)0xB3, (byte)0xDB, 
-        (byte)0xDC, (byte)0xD9, (byte)0xDA, (byte)0x9F
-    };
-    public static final byte[] ASCII2EBCDIC = new byte[] {
-        (byte)0x0,  (byte)0x1,  (byte)0x2,  (byte)0x3, 
-        (byte)0x37, (byte)0x2D, (byte)0x2E, (byte)0x2F, 
-        (byte)0x16, (byte)0x5,  (byte)0x15, (byte)0xB, 
-        (byte)0xC,  (byte)0xD,  (byte)0xE,  (byte)0xF, 
-        (byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13, 
-        (byte)0x3C, (byte)0x3D, (byte)0x32, (byte)0x26, 
-        (byte)0x18, (byte)0x19, (byte)0x3F, (byte)0x27, 
-        (byte)0x1C, (byte)0x1D, (byte)0x1E, (byte)0x1F, 
-        (byte)0x40, (byte)0x5A, (byte)0x7F, (byte)0x7B, 
-        (byte)0x5B, (byte)0x6C, (byte)0x50, (byte)0x7D, 
-        (byte)0x4D, (byte)0x5D, (byte)0x5C, (byte)0x4E, 
-        (byte)0x6B, (byte)0x60, (byte)0x4B, (byte)0x61, 
-        (byte)0xF0, (byte)0xF1, (byte)0xF2, (byte)0xF3, 
-        (byte)0xF4, (byte)0xF5, (byte)0xF6, (byte)0xF7, 
-        (byte)0xF8, (byte)0xF9, (byte)0x7A, (byte)0x5E, 
-        (byte)0x4C, (byte)0x7E, (byte)0x6E, (byte)0x6F, 
-        (byte)0x7C, (byte)0xC1, (byte)0xC2, (byte)0xC3, 
-        (byte)0xC4, (byte)0xC5, (byte)0xC6, (byte)0xC7, 
-        (byte)0xC8, (byte)0xC9, (byte)0xD1, (byte)0xD2, 
-        (byte)0xD3, (byte)0xD4, (byte)0xD5, (byte)0xD6, 
-        (byte)0xD7, (byte)0xD8, (byte)0xD9, (byte)0xE2, 
-        (byte)0xE3, (byte)0xE4, (byte)0xE5, (byte)0xE6, 
-        (byte)0xE7, (byte)0xE8, (byte)0xE9, (byte)0xAD, 
-        (byte)0xE0, (byte)0xBD, (byte)0x5F, (byte)0x6D, 
-        (byte)0x79, (byte)0x81, (byte)0x82, (byte)0x83, 
-        (byte)0x84, (byte)0x85, (byte)0x86, (byte)0x87, 
-        (byte)0x88, (byte)0x89, (byte)0x91, (byte)0x92, 
-        (byte)0x93, (byte)0x94, (byte)0x95, (byte)0x96, 
-        (byte)0x97, (byte)0x98, (byte)0x99, (byte)0xA2, 
-        (byte)0xA3, (byte)0xA4, (byte)0xA5, (byte)0xA6, 
-        (byte)0xA7, (byte)0xA8, (byte)0xA9, (byte)0xC0, 
-        (byte)0x4F, (byte)0xD0, (byte)0xA1, (byte)0x7, 
-        (byte)0x20, (byte)0x21, (byte)0x22, (byte)0x23, 
-        (byte)0x24, (byte)0x25, (byte)0x6,  (byte)0x17, 
-        (byte)0x28, (byte)0x29, (byte)0x2A, (byte)0x2B, 
-        (byte)0x2C, (byte)0x9,  (byte)0xA,  (byte)0x1B, 
-        (byte)0x30, (byte)0x31, (byte)0x1A, (byte)0x33, 
-        (byte)0x34, (byte)0x35, (byte)0x36, (byte)0x8, 
-        (byte)0x38, (byte)0x39, (byte)0x3A, (byte)0x3B, 
-        (byte)0x4,  (byte)0x14, (byte)0x3E, (byte)0xFF, 
-        (byte)0x41, (byte)0xAA, (byte)0x4A, (byte)0xB1, 
-        (byte)0x9F, (byte)0xB2, (byte)0x6A, (byte)0xB5, 
-        (byte)0xBB, (byte)0xB4, (byte)0x9A, (byte)0x8A, 
-        (byte)0xB0, (byte)0xCA, (byte)0xAF, (byte)0xBC, 
-        (byte)0x90, (byte)0x8F, (byte)0xEA, (byte)0xFA, 
-        (byte)0xBE, (byte)0xA0, (byte)0xB6, (byte)0xB3, 
-        (byte)0x9D, (byte)0xDA, (byte)0x9B, (byte)0x8B, 
-        (byte)0xB7, (byte)0xB8, (byte)0xB9, (byte)0xAB, 
-        (byte)0x64, (byte)0x65, (byte)0x62, (byte)0x66, 
-        (byte)0x63, (byte)0x67, (byte)0x9E, (byte)0x68, 
-        (byte)0x74, (byte)0x71, (byte)0x72, (byte)0x73, 
-        (byte)0x78, (byte)0x75, (byte)0x76, (byte)0x77, 
-        (byte)0xAC, (byte)0x69, (byte)0xED, (byte)0xEE, 
-        (byte)0xEB, (byte)0xEF, (byte)0xEC, (byte)0xBF, 
-        (byte)0x80, (byte)0xFD, (byte)0xFE, (byte)0xFB, 
-        (byte)0xFC, (byte)0xBA, (byte)0xAE, (byte)0x59, 
-        (byte)0x44, (byte)0x45, (byte)0x42, (byte)0x46, 
-        (byte)0x43, (byte)0x47, (byte)0x9C, (byte)0x48, 
-        (byte)0x54, (byte)0x51, (byte)0x52, (byte)0x53, 
-        (byte)0x58, (byte)0x55, (byte)0x56, (byte)0x57, 
-        (byte)0x8C, (byte)0x49, (byte)0xCD, (byte)0xCE, 
-        (byte)0xCB, (byte)0xCF, (byte)0xCC, (byte)0xE1, 
-        (byte)0x70, (byte)0xDD, (byte)0xDE, (byte)0xDB, 
-        (byte)0xDC, (byte)0x8D, (byte)0x8E, (byte)0xDF
-    };
+    public static final Pattern unicodePattern = Pattern.compile("u00([0-9a-fA-F]{2})+");
+
+    /**
+     * Default charset for bytes transmissions over network
+     */
+    public static final Charset CHARSET  = StandardCharsets.ISO_8859_1;
+    public static final Charset EBCDIC   = Charset.forName("IBM1047");
+
     public static final byte STX = 0x02;
     public static final byte FS  = 0x1C;
     public static final byte US  = 0x1F;
@@ -193,50 +82,28 @@ public class ISOUtil {
     public static final byte ETX = 0x03;
 
     public static String ebcdicToAscii(byte[] e) {
-        try {
-            return new String (
-                ebcdicToAsciiBytes (e, 0, e.length), ENCODING
-            );
-        } catch (UnsupportedEncodingException ex) {
-            return ex.toString(); // should never happen
-        }
+        return EBCDIC.decode(ByteBuffer.wrap(e)).toString();
     }
     public static String ebcdicToAscii(byte[] e, int offset, int len) {
-        try {
-            return new String (
-                ebcdicToAsciiBytes (e, offset, len), ENCODING
-            );
-        } catch (UnsupportedEncodingException ex) {
-            return ex.toString(); // should never happen
-        }
+        return EBCDIC.decode(ByteBuffer.wrap(e, offset, len)).toString();
     }
     public static byte[] ebcdicToAsciiBytes (byte[] e) {
         return ebcdicToAsciiBytes (e, 0, e.length);
     }
-    public static byte[] ebcdicToAsciiBytes(byte[] e, int offset, int len) {
-        byte[] a = new byte[len];
-        for (int i=0; i<len; i++)
-            a[i] = EBCDIC2ASCII[e[offset+i]&0xFF];
-        return a;
+    public static byte[] ebcdicToAsciiBytes (byte[] e, int offset, int len) {
+        return ebcdicToAscii(e, offset, len).getBytes(CHARSET);
     }
     public static byte[] asciiToEbcdic(String s) {
-        return asciiToEbcdic (s.getBytes());
+        return EBCDIC.encode(s).array();
     }
     public static byte[] asciiToEbcdic(byte[] a) {
-        byte[] e = new byte[a.length];
-        for (int i=0; i<a.length; i++) 
-            e[i] = ASCII2EBCDIC[a[i]&0xFF];
-        return e;
+        return EBCDIC.encode(new String(a, CHARSET)).array();
     }
     public static void asciiToEbcdic(String s, byte[] e, int offset) {
-        int len = s.length();
-        for (int i=0; i<len; i++)
-            e[offset + i] = ASCII2EBCDIC[s.charAt(i)&0xFF];
+        System.arraycopy (asciiToEbcdic(s), 0, e, offset, s.length());
     }
     public static void asciiToEbcdic(byte[] s, byte[] e, int offset) {
-        int len = s.length;
-        for (int i=0; i<len; i++)
-            e[offset + i] = ASCII2EBCDIC[s[i]];
+        asciiToEbcdic(new String(s, CHARSET), e, offset);
     }
 
     /**
@@ -347,11 +214,28 @@ public class ISOUtil {
      */
     public static byte[] str2bcd(String s, boolean padLeft, byte[] d, int offset) {
         int len = s.length();
-        int start = (((len & 1) == 1) && padLeft) ? 1 : 0;
+        int start = (len & 1) == 1 && padLeft ? 1 : 0;
         for (int i=start; i < len+start; i++) 
-            d [offset + (i >> 1)] |= (s.charAt(i-start)-'0') << ((i & 1) == 1 ? 0 : 4);
+            d [offset + (i >> 1)] |= s.charAt(i-start)-'0' << ((i & 1) == 1 ? 0 : 4);
         return d;
     }
+
+    /**
+     * converts to BCD
+     * @param s - the number
+     * @param padLeft - flag indicating left/right padding
+     * @param d The byte array to copy into.
+     * @param offset Where to start copying into.
+     * @return BCD representation of the number
+     */
+    public static byte[] str2hex(String s, boolean padLeft, byte[] d, int offset) {
+        int len = s.length();
+        int start = (len & 1) == 1 && padLeft ? 1 : 0;
+        for (int i=start; i < len+start; i++)
+            d [offset + (i >> 1)] |= Character.digit(s.charAt(i-start),16) << ((i & 1) == 1 ? 0 : 4);
+        return d;
+    }
+
     /**
      * converts to BCD
      * @param s - the number
@@ -360,7 +244,7 @@ public class ISOUtil {
      */
     public static byte[] str2bcd(String s, boolean padLeft) {
         int len = s.length();
-        byte[] d = new byte[ (len+1) >> 1 ];
+        byte[] d = new byte[ len+1 >> 1 ];
         return str2bcd(s, padLeft, d, 0);
     }
     /**
@@ -372,11 +256,17 @@ public class ISOUtil {
      */
     public static byte[] str2bcd(String s, boolean padLeft, byte fill) {
         int len = s.length();
-        byte[] d = new byte[ (len+1) >> 1 ];
-        Arrays.fill (d, fill);
-        int start = (((len & 1) == 1) && padLeft) ? 1 : 0;
-        for (int i=start; i < len+start; i++) 
-            d [i >> 1] |= (s.charAt(i-start)-'0') << ((i & 1) == 1 ? 0 : 4);
+        byte[] d = new byte[ len+1 >> 1 ];
+        if (d.length > 0) {
+            if (padLeft)
+                d[0] = (byte) ((fill & 0xF) << 4);
+            int start = (len & 1) == 1 && padLeft ? 1 : 0;
+            int i;
+            for (i=start; i < len+start; i++)
+                d [i >> 1] |= s.charAt(i-start)-'0' << ((i & 1) == 1 ? 0 : 4);
+            if ((i & 1) == 1)
+                d [i >> 1] |= fill & 0xF;
+        }
         return d;
     }
     /**
@@ -391,17 +281,40 @@ public class ISOUtil {
                         int len, boolean padLeft)
     {
         StringBuilder d = new StringBuilder(len);
-        int start = (((len & 1) == 1) && padLeft) ? 1 : 0;
+        int start = (len & 1) == 1 && padLeft ? 1 : 0;
         for (int i=start; i < len+start; i++) {
-            int shift = ((i & 1) == 1 ? 0 : 4);
+            int shift = (i & 1) == 1 ? 0 : 4;
             char c = Character.forDigit (
-                ((b[offset+(i>>1)] >> shift) & 0x0F), 16);
+                    b[offset+ (i>>1)] >> shift & 0x0F, 16);
             if (c == 'd')
                 c = '=';
             d.append (Character.toUpperCase (c));
         }
         return d.toString();
     }
+    /**
+     * converts a a byte array to a String with padding support
+     * @param b - HEX representation
+     * @param offset - starting offset
+     * @param len - BCD field len
+     * @param padLeft - was padLeft packed?
+     * @return the String representation of the number
+     */
+    public static String hex2str(byte[] b, int offset,
+                                 int len, boolean padLeft)
+    {
+        StringBuilder d = new StringBuilder(len);
+        int start = (len & 1) == 1 && padLeft ? 1 : 0;
+
+        for (int i=start; i < len+start; i++) {
+            int shift = (i & 1) == 1 ? 0 : 4;
+            char c = Character.forDigit (
+                    b[offset+ (i>>1)] >> shift & 0x0F, 16);
+            d.append (Character.toUpperCase (c));
+        }
+        return d.toString();
+    }
+
     /**
      * converts a byte array to hex string 
      * (suitable for dumps and ASCII packaging of Binary fields
@@ -509,8 +422,8 @@ public class ISOUtil {
      * @return string representing the bits (i.e. 011010010...)
      */
     public static String bitSet2String (BitSet b) {
-        int len = b.size();
-        len = (len > 128) ? 128: len;
+        int len = b.size();                             // BBB Should be length()?
+        len = len > 128 ? 128: len;                     // BBB existence of 3rd bitmap not considered here
         StringBuilder d = new StringBuilder(len);
         for (int i=0; i<len; i++)
             d.append (b.get(i) ? '1' : '0');
@@ -519,16 +432,20 @@ public class ISOUtil {
     /**
      * converts a BitSet into a binary field
      * used in pack routines
+     *
+     * This method will set bits 0 (and 65) if there's a secondary (and tertiary) bitmap
+     * (i.e., if the bitmap length is > 64 (and > 128))
+     *
      * @param b - the BitSet
      * @return binary representation
      */
     public static byte[] bitSet2byte (BitSet b)
     {
-        int len = (((b.length()+62)>>6)<<6);
+        int len = b.length()+62 >>6 <<6;        // +62 because we don't use bit 0 in the BitSet
         byte[] d = new byte[len >> 3];
         for (int i=0; i<len; i++) 
-            if (b.get(i+1)) 
-                d[i >> 3] |= (0x80 >> (i % 8));
+            if (b.get(i+1))                     // +1 because we don't use bit 0 of the BitSet
+                d[i >> 3] |= 0x80 >> i % 8;
         if (len>64)
             d[0] |= 0x80;
         if (len>128)
@@ -539,6 +456,10 @@ public class ISOUtil {
     /**
      * converts a BitSet into a binary field
      * used in pack routines
+     *
+     * This method will set bits 0 (and 65) if there's a secondary (and tertiary) bitmap
+     * (i.e., if the bitmap length is > 64 (and > 128))
+     *
      * @param b - the BitSet
      * @param bytes - number of bytes to return
      * @return binary representation
@@ -549,8 +470,8 @@ public class ISOUtil {
         
         byte[] d = new byte[bytes];
         for (int i=0; i<len; i++) 
-            if (b.get(i+1)) 
-                d[i >> 3] |= (0x80 >> (i % 8));
+            if (b.get(i+1))                     // +1 because we don't use bit 0 of the BitSet
+                d[i >> 3] |= 0x80 >> i % 8;
         //TODO: review why 2nd & 3rd bit map flags are set here??? 
         if (len>64)
             d[0] |= 0x80;
@@ -569,9 +490,10 @@ public class ISOUtil {
             int value = (int) Math.pow(2,b);
             for (int i = 0; i <= b; i++) {
                 if (bs.get(i))
-                total += value;
-            value = value >> 1;
-        }
+                    total += value;
+
+                value = value >> 1;
+            }
         }
         
         return total;
@@ -610,10 +532,10 @@ public class ISOUtil {
         (byte[] b, int offset, boolean bitZeroMeansExtended)
     {
         int len = bitZeroMeansExtended ?
-            ((b[offset] & 0x80) == 0x80 ? 128 : 64) : 64;
+                (b[offset] & 0x80) == 0x80 ? 128 : 64 : 64;
         BitSet bmap = new BitSet (len);
         for (int i=0; i<len; i++) 
-            if (((b[offset + (i >> 3)]) & (0x80 >> (i % 8))) > 0)
+            if ((b[offset + (i >> 3)] & 0x80 >> i % 8) > 0)
                 bmap.set(i+1);
         return bmap;
     }
@@ -626,35 +548,36 @@ public class ISOUtil {
      * @return java BitSet object
      */
     public static BitSet byte2BitSet (byte[] b, int offset, int maxBits) {
-        int len = maxBits > 64 ?
-            ((b[offset] & 0x80) == 0x80 ? 128 : 64) : maxBits;
+        boolean  b1= (b[offset] & 0x80) == 0x80;
+        boolean b65= (b.length > offset+8) && ((b[offset+8] & 0x80) == 0x80);
 
-        if (maxBits > 128 && 
-            b.length > offset+8 && 
-            (b[offset+8] & 0x80) == 0x80)
-        {
-            len = 192;
-        } 
+        int len=  (maxBits > 128 && b1 && b65) ?     192 :
+                  (maxBits >  64 && b1)        ?     128 :
+                  (maxBits <  64)              ? maxBits : 64;
+
         BitSet bmap = new BitSet (len);
-        for (int i=0; i<len; i++) 
-            if (((b[offset + (i >> 3)]) & (0x80 >> (i % 8))) > 0)
+        for (int i=0; i<len; i++)
+            if ((b[offset + (i >> 3)] & 0x80 >> i % 8) > 0)
                 bmap.set(i+1);
         return bmap;
     }
 
     /**
      * Converts a binary representation of a Bitmap field
-     * into a Java BitSet
+     * into a Java BitSet.
+     *
+     * The byte[] will be fully consumed, and fed into the given BitSet starting at bitOffset+1
+     *
      * @param bmap - BitSet
      * @param b - hex representation
      * @param bitOffset - (i.e. 0 for primary bitmap, 64 for secondary)
-     * @return java BitSet object
+     * @return the same java BitSet object given as first argument
      */
     public static BitSet byte2BitSet (BitSet bmap, byte[] b, int bitOffset)
     {
         int len = b.length << 3;
         for (int i=0; i<len; i++) 
-            if (((b[i >> 3]) & (0x80 >> (i % 8))) > 0)
+            if ((b[i >> 3] & 0x80 >> i % 8) > 0)
                 bmap.set(bitOffset + i + 1);
         return bmap;
     }
@@ -671,12 +594,12 @@ public class ISOUtil {
         (byte[] b, int offset, boolean bitZeroMeansExtended)
     {
         int len = bitZeroMeansExtended ?
-          ((Character.digit((char)b[offset],16) & 0x08) == 8 ? 128 : 64) :
-          64;
+                    (Character.digit((char)b[offset],16) & 0x08) == 8 ? 128 : 64 :
+                  64;
         BitSet bmap = new BitSet (len);
         for (int i=0; i<len; i++) {
             int digit = Character.digit((char)b[offset + (i >> 2)], 16);
-            if ((digit & (0x08 >> (i%4))) > 0)
+            if ((digit & 0x08 >> i%4) > 0)
                 bmap.set(i+1);
         }
         return bmap;
@@ -691,16 +614,22 @@ public class ISOUtil {
      * @return java BitSet object
      */
     public static BitSet hex2BitSet (byte[] b, int offset, int maxBits) {
-        int len = maxBits > 64?
-          ((Character.digit((char)b[offset],16) & 0x08) == 8 ? 128 : 64) :
-          maxBits;
+        int len = maxBits > 64 ?
+                    (Character.digit((char)b[offset],16) & 0x08) == 8 ? 128 : 64 :
+                  maxBits;
+        if (len > 64 && maxBits > 128 &&
+            b.length > offset+16 &&
+            (Character.digit((char)b[offset+16],16) & 0x08) == 8)
+        {
+            len = 192;
+        }
         BitSet bmap = new BitSet (len);
         for (int i=0; i<len; i++) {
             int digit = Character.digit((char)b[offset + (i >> 2)], 16);
-            if ((digit & (0x08 >> (i%4))) > 0) {
+            if ((digit & 0x08 >> i%4) > 0) {
                 bmap.set(i+1);
-                if (i==65 && maxBits > 128)
-                    len = 192;
+                if (i==65 && maxBits > 128)     // BBB this is redundant (check already done outside
+                    len = 192;                  // BBB of the loop), but I'll leave it for now..
             }
         }
         return bmap;
@@ -719,7 +648,7 @@ public class ISOUtil {
         int len = b.length << 2;
         for (int i=0; i<len; i++) {
             int digit = Character.digit((char)b[i >> 2], 16);
-            if ((digit & (0x08 >> (i%4))) > 0)
+            if ((digit & 0x08 >> i%4) > 0)
                 bmap.set (bitOffset + i + 1);
         }
         return bmap;
@@ -740,6 +669,7 @@ public class ISOUtil {
         return d;
     }
     /**
+     * Converts a hex string into a byte array
      * @param s source string (with Hex representation)
      * @return byte array
      */
@@ -753,6 +683,85 @@ public class ISOUtil {
     }
 
     /**
+     * Converts a byte array into a hex string
+     * @param bs source byte array
+     * @return hexadecimal representation of bytes
+     */
+    public static String byte2hex(byte[] bs) {
+        return byte2hex(bs, 0, bs.length);
+    }
+
+    /**
+     * Converts an integer into a byte array of hex
+     *
+     * @param value
+     * @return bytes representation of integer
+     */
+    public static byte[] int2byte(int value) {
+        if (value < 0) {
+            return new byte[]{(byte) (value >>> 24 & 0xFF), (byte) (value >>> 16 & 0xFF),
+                    (byte) (value >>> 8 & 0xFF), (byte) (value & 0xFF)};
+        } else if (value <= 0xFF) {
+            return new byte[]{(byte) (value & 0xFF)};
+        } else if (value <= 0xFFFF) {
+            return new byte[]{(byte) (value >>> 8 & 0xFF), (byte) (value & 0xFF)};
+        } else if (value <= 0xFFFFFF) {
+            return new byte[]{(byte) (value >>> 16 & 0xFF), (byte) (value >>> 8 & 0xFF),
+                    (byte) (value & 0xFF)};
+        } else {
+            return new byte[]{(byte) (value >>> 24 & 0xFF), (byte) (value >>> 16 & 0xFF),
+                    (byte) (value >>> 8 & 0xFF), (byte) (value & 0xFF)};
+        }
+    }
+
+    /**
+     * Converts a byte array of hex into an integer
+     *
+     * @param bytes
+     * @return integer representation of bytes
+     */
+    public static int byte2int(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return 0;
+        }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+        for (int i = 0; i < 4 - bytes.length; i++) {
+            byteBuffer.put((byte) 0);
+        }
+        for (int i = 0; i < bytes.length; i++) {
+            byteBuffer.put(bytes[i]);
+        }
+        byteBuffer.position(0);
+        return byteBuffer.getInt();
+    }
+
+    /**
+     * Converts a byte array into a string of lower case hex chars.
+     *
+     * @param bs     A byte array
+     * @param off    The index of the first byte to read
+     * @param length The number of bytes to read.
+     * @return the string of hex chars.
+     */
+    public static String byte2hex(byte[] bs, int off, int length) {
+        if (bs.length <= off || bs.length < off + length)
+            throw new IllegalArgumentException();
+        StringBuilder sb = new StringBuilder(length * 2);
+        byte2hexAppend(bs, off, length, sb);
+        return sb.toString();
+    }
+
+    private static void byte2hexAppend(byte[] bs, int off, int length, StringBuilder sb) {
+        if (bs.length <= off || bs.length < off + length)
+            throw new IllegalArgumentException();
+        sb.ensureCapacity(sb.length() + length * 2);
+        for (int i = off; i < off + length; i++) {
+            sb.append(Character.forDigit(bs[i] >>> 4 & 0xf, 16));
+            sb.append(Character.forDigit(bs[i] & 0xf, 16));
+        }
+    }
+
+    /**
      * format double value
      * @param d    the amount
      * @param len  the field len
@@ -761,7 +770,7 @@ public class ISOUtil {
     public static String formatDouble(double d, int len) {
         String prefix = Long.toString((long) d);
         String suffix = Integer.toString (
-            (int) ((Math.round(d * 100f)) % 100) );
+            (int) (Math.round(d * 100f) % 100) );
         try {
             if (len > 3)
                 prefix = ISOUtil.padleft(prefix,len-3,' ');
@@ -797,7 +806,7 @@ public class ISOUtil {
     public static String normalize (String s, boolean canonical) {
         StringBuilder str = new StringBuilder();
 
-        int len = (s != null) ? s.length() : 0;
+        int len = s != null ? s.length() : 0;
         for (int i = 0; i < len; i++) {
             char ch = s.charAt(i);
             switch (ch) {
@@ -813,9 +822,12 @@ public class ISOUtil {
                 case '"': 
                     str.append("&quot;");
                     break;
+                case '\'':
+                    str.append("&apos;");
+                    break;
                 case '\r':
-                case '\n': 
-                    if (canonical) {
+                case '\n':
+                    if (!canonical) {
                         str.append("&#");
                         str.append(Integer.toString(ch & 0xFF));
                         str.append(';');
@@ -824,17 +836,32 @@ public class ISOUtil {
                     // else, default append char
                 default: 
                     if (ch < 0x20) {
-                        str.append("&#");
-                        str.append(Integer.toString(ch & 0xFF));
-                        str.append(';');
-                    }
-                    else if (ch > 0xff00) {
-                        str.append((char) (ch & 0xFF));
-                    } else
+                        str.append(String.format("\\u%04x", (int) (ch & 0xFF)));
+                    } else {
                         str.append(ch);
+                    }
             }
         }
-        return (str.toString());
+        return str.toString();
+    }
+
+    public static String stripUnicode (String s) {
+        StringBuilder sb = new StringBuilder();
+        int len = s != null ? s.length() : 0;
+        boolean escape = false;
+        for (int i = 0; i < len; i++) {
+            char ch = s.charAt(i);
+            if (ch == '\\' && i < len-5 && isInternalUnicodeSequence(s.substring(i+1, i+6))) {
+                sb.append((char) (Character.digit(s.charAt(i + 4), 16) << 4 | (Character.digit(s.charAt(i + 5), 16))));
+                i += 5;
+            } else
+                sb.append(ch);
+        }
+        return sb.toString();
+    }
+
+    private static boolean isInternalUnicodeSequence(String s) {
+        return unicodePattern.matcher(s).matches();
     }
     /**
      * XML normalizer (default canonical)
@@ -842,7 +869,7 @@ public class ISOUtil {
      * @return normalized string suitable for XML Output
      */
     public static String normalize (String s) {
-        return normalize (s, true);
+        return normalize(s, true);
     }
     /**
      * Protects PAN, Track2, CVC (suitable for logs).
@@ -853,10 +880,11 @@ public class ISOUtil {
      * "40000101010001D020128375" is converted to "400001____0001D0201_____"
      * "123" is converted to "___"
      * </pre>
-     * @param s string to be protected 
+     * @param s string to be protected
+     * @param mask char used to protect the string
      * @return 'protected' String
      */
-    public static String protect (String s) {
+    public static String protect (String s, char mask) {
         StringBuilder sb = new StringBuilder();
         int len   = s.length();
         int clear = len > 6 ? 6 : 0;
@@ -871,7 +899,7 @@ public class ISOUtil {
                 lastFourIndex = len - 4;
         }
         for (int i=0; i<len; i++) {
-            if (s.charAt(i) == '=' || (s.charAt(i) == 'D' && s.indexOf('^')<0) )
+            if (s.charAt(i) == '=' || s.charAt(i) == 'D' && s.indexOf('^')<0)
                 clear = 1;  // use clear=5 to keep the expiration date
             else if (s.charAt(i) == '^') {
                 lastFourIndex = 0;
@@ -879,7 +907,7 @@ public class ISOUtil {
             }
             else if (i == lastFourIndex)
                 clear = 4;
-            sb.append (clear-- > 0 ? s.charAt(i) : '_');
+            sb.append (clear-- > 0 ? s.charAt(i) : mask);
         }
         s = sb.toString();
         try {
@@ -887,12 +915,15 @@ public class ISOUtil {
             int charCount = s.replaceAll("[^\\^]", "").length();
             if (charCount == 2 ) {
                 s = s.substring(0, s.lastIndexOf("^")+1);
-                s = ISOUtil.padright(s, len, '_');
+                s = ISOUtil.padright(s, len, mask);
             }
         } catch (ISOException e){
             //cannot PAD - should never get here
         }
         return s;
+    }
+    public static String protect(String s) {
+        return protect(s, '_');
     }
     public static int[] toIntArray(String s) {
         StringTokenizer st = new StringTokenizer (s);
@@ -915,7 +946,7 @@ public class ISOUtil {
      * @return an array of length = the smallest between op1 and op2
      */
     public static byte[] xor (byte[] op1, byte[] op2) {
-        byte[] result = null;
+        byte[] result;
         // Use the smallest array
         if (op2.length > op1.length) {
             result = new byte[op1.length];
@@ -953,8 +984,8 @@ public class ISOUtil {
 
     /**
      * Concatenates two byte arrays (array1 and array2)
-     * @param array1
-     * @param array2
+     * @param array1 first part
+     * @param array2 last part
      * @return the concatenated array
      */
     public static byte[] concat (byte[] array1, byte[] array2) {
@@ -966,12 +997,12 @@ public class ISOUtil {
 
     /**
      * Concatenates two byte arrays (array1 and array2)
-     * @param array1
-     * @param beginIndex1
-     * @param length1
-     * @param array2
-     * @param beginIndex2
-     * @param length2
+     * @param array1 first part
+     * @param beginIndex1 initial index
+     * @param length1  length
+     * @param array2 last part
+     * @param beginIndex2 last part index
+     * @param length2 last part length
      * @return the concatenated array
      */
     public static byte[] concat (byte[] array1, int beginIndex1, int length1, byte[] array2,
@@ -993,7 +1024,7 @@ public class ISOUtil {
     public static void sleep (long millis) {
         try {
             Thread.sleep (millis);
-        } catch (InterruptedException e) { }
+        } catch (InterruptedException ignored) { }
     }
 
     /**
@@ -1023,8 +1054,8 @@ public class ISOUtil {
         int end = s.length();
         if (end == 0)
             return s;
-        while ( ( 0 < end) && (s.charAt(end-1) == c) ) end --;
-        return ( 0 < end )? s.substring( 0, end ): s.substring( 0, 1 );
+        while ( 0 < end && s.charAt(end-1) == c) end --;
+        return 0 < end ? s.substring( 0, end ): s.substring( 0, 1 );
     }
 
     /**
@@ -1037,8 +1068,8 @@ public class ISOUtil {
         int fill = 0, end = s.length();
         if (end == 0)
             return s;
-        while ( (fill < end) && (s.charAt(fill) == c) ) fill ++;
-        return ( fill < end )? s.substring( fill, end ): s.substring( fill-1, end );
+        while ( fill < end && s.charAt(fill) == c) fill ++;
+        return fill < end ? s.substring( fill, end ): s.substring( fill-1, end );
     }
 
     /**
@@ -1046,17 +1077,17 @@ public class ISOUtil {
      **/
     public static boolean isZero( String s ) {
         int i = 0, len = s.length();
-        while ( i < len && ( s.charAt( i ) == '0' ) ){
+        while ( i < len && s.charAt( i ) == '0'){
             i++;
         }
-        return ( i >= len );
+        return i >= len;
     }
 
     /**
      * @return true if the string is blank filled (space char filled)
      */
     public static boolean isBlank( String s ){
-        return (s.trim().length() == 0);
+        return s.trim().length() == 0;
     }
 
     /**
@@ -1069,10 +1100,10 @@ public class ISOUtil {
         while ( i < len && ( Character.isLetterOrDigit( s.charAt( i ) ) ||
                              s.charAt( i ) == ' ' || s.charAt( i ) == '.' ||
                              s.charAt( i ) == '-' || s.charAt( i ) == '_' )
-                             || s.charAt( i ) == '?' ){
+                             || s.charAt(i) == '?' ){
             i++;
         }
-        return ( i >= len );
+        return i >= len;
     }
 
     /**
@@ -1082,10 +1113,10 @@ public class ISOUtil {
      **/
     public static boolean isNumeric ( String s, int radix ) {
         int i = 0, len = s.length();
-        while ( i < len && Character.digit( s.charAt( i ), radix ) > -1  ){
+        while ( i < len && Character.digit(s.charAt(i), radix) > -1  ){
             i++;
         }
-        return ( i >= len && len > 0);
+        return i >= len && len > 0;
     }
 
     /**
@@ -1101,7 +1132,7 @@ public class ISOUtil {
         byte[] d = new byte[len >> 3];
         for ( int i=0; i<len; i++ )
             if (b.get(i+1))
-                d[i >> 3] |= (0x80 >> (i % 8));
+                d[i >> 3] |= 0x80 >> i % 8;
         d[0] |= 0x80;
         return d;
     }
@@ -1121,7 +1152,7 @@ public class ISOUtil {
         int length = s.length();
         if (length > 9)
             throw new NumberFormatException ("Number can have maximum 9 digits");
-        int result = 0;
+        int result;
         int index = 0;
         int digit = Character.digit (s.charAt(index++), radix);
         if (digit == -1)
@@ -1166,7 +1197,7 @@ public class ISOUtil {
         int length = cArray.length;
         if (length > 9)
             throw new NumberFormatException ("Number can have maximum 9 digits");
-        int result = 0;
+        int result;
         int index = 0;
         int digit = Character.digit(cArray[index++], radix);
         if (digit == -1)
@@ -1211,7 +1242,7 @@ public class ISOUtil {
         int length = bArray.length;
         if (length > 9)
             throw new NumberFormatException ("Number can have maximum 9 digits");
-        int result = 0;
+        int result;
         int index = 0;
         int digit = Character.digit((char)bArray[index++], radix);
         if (digit == -1)
@@ -1241,7 +1272,7 @@ public class ISOUtil {
         return parseInt (bArray,10);
     }
     private static String hexOffset (int i) {
-        i = (i>>4) << 4;
+        i = i>>4 << 4;
         int w = i > 0xFFFF ? 8 : 4;
         try {
             return zeropad (Integer.toString (i, 16), w);
@@ -1258,6 +1289,15 @@ public class ISOUtil {
     public static String hexdump (byte[] b) {
         return hexdump (b, 0, b.length);
     }
+
+    /**
+     * @param b a byte[] buffer
+     * @param offset starting offset
+     */
+    public static String hexdump (byte[] b, int offset) {
+        return hexdump (b, offset, b.length-offset);
+    }
+
     /**
      * @param b a byte[] buffer
      * @param offset starting offset
@@ -1270,12 +1310,13 @@ public class ISOUtil {
         StringBuilder ascii = new StringBuilder ();
         String sep         = "  ";
         String lineSep     = System.getProperty ("line.separator");
+        len = offset + len;
 
         for (int i=offset; i<len; i++) {
             hex.append(hexStrings[(int)b[i] & 0xFF]);
             hex.append (' ');
             char c = (char) b[i];
-            ascii.append ((c >= 32 && c < 127) ? c : '.');
+            ascii.append (c >= 32 && c < 127 ? c : '.');
 
             int j = i % 16;
             switch (j) {
@@ -1385,14 +1426,18 @@ public class ISOUtil {
     }
     public static String millisToString (long millis) {
         StringBuilder sb = new StringBuilder();
+        if (millis < 0) {
+            millis = -millis;
+            sb.append('-');
+        }
         int ms = (int) (millis % 1000);
         millis /= 1000;
         int dd = (int) (millis/86400);
-        millis -= (dd * 86400);
+        millis -= dd * 86400;
         int hh = (int) (millis/3600);
-        millis -= (hh * 3600);
+        millis -= hh * 3600;
         int mm = (int) (millis/60);
-        millis -= (mm * 60);
+        millis -= mm * 60;
         int ss = (int) millis;
         if (dd > 0) {
             sb.append (Long.toString(dd));
@@ -1453,15 +1498,16 @@ public class ISOUtil {
         return bd.movePointLeft(pow).doubleValue();
     }
 
+
     /**
-     * Converts a string[] into a comma-delimited String.
+     * Converts a string[] or multiple strings into one comma-delimited String.
      *
      * Takes care of escaping commas using a backlash
      * @see org.jpos.iso.ISOUtil#commaDecode(String)
      * @param ss string array to be comma encoded
      * @return comma encoded string
      */
-    public static String commaEncode (String[] ss) {
+    public static String commaEncode (String... ss) {
         StringBuilder sb = new StringBuilder();
         for (String s : ss) {
             if (sb.length() > 0)
@@ -1541,12 +1587,12 @@ public class ISOUtil {
             }
             c = (char) (c - '0');
             if (i % 2 != odd)
-                crc+=(c*2) >= 10 ? ((c*2)-9) : (c*2);
+                crc+= c*2 >= 10 ? c*2 -9 : c*2;
             else
                 crc+=c;
         }
 
-        return (char) ((crc % 10 == 0 ? 0 : (10 - crc % 10)) + '0');
+        return (char) ((crc % 10 == 0 ? 0 : 10 - crc % 10) + '0');
     }
 
     public static String getRandomDigits(Random r, int l, int radix) {
@@ -1556,4 +1602,77 @@ public class ISOUtil {
         }
         return sb.toString();
     }
+
+    // See http://stackoverflow.com/questions/3263892/format-file-size-as-mb-gb-etc
+    // and http://physics.nist.gov/cuu/Units/binary.html
+    public static String readableFileSize(long size) {
+        if(size <= 0) return "0";
+        final String[] units = new String[] { "Bi", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
+        int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
+        return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+    }
+    
+    /**
+     * At times when the charset is not the default usual one the dump will have more unprintable characters than printable.
+     * The charset will allow printing of more printable character. Usually when your data is in EBCDIC format you will run into this.
+     * 
+     * The standard hexdump that exists would print a byte array of F0F1F2 as 
+     * F0 F1 F2        ...
+     * 
+     * This hexdump, if the Charset.forName("IBM1047") is passedin as charset will print
+     * F0 F1 F2       | 123      
+     * 
+     * 
+     * @param array
+     *            the array that needs to be dumped.
+     * @param offset
+     *            From where the data needs to be dumped.
+     * @param length
+     *            The number of byte that ned to be dumped.
+     * @param charSet
+     *            The Charset encoding the array is i.
+     * @return The hexdump string.
+     */
+    public static String hexDump(byte[] array, int offset, int length, Charset charSet) {
+        // https://gist.github.com/jen20/906db194bd97c14d91df
+        final int width = 16;
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int rowOffset = offset; rowOffset < offset + length; rowOffset += width) {
+            builder.append(String.format("%06d:  ", rowOffset));
+
+            for (int index = 0; index < width; index++) {
+                if (rowOffset + index < array.length) {
+                    builder.append(String.format("%02x ", array[rowOffset + index]).toUpperCase());
+                }
+                else {
+                    builder.append("   ");
+                }
+            }
+
+            if (rowOffset < array.length) {
+                int asciiWidth = Math.min(width, array.length - rowOffset);
+                builder.append("  |  ");
+                builder.append(new String(array, rowOffset, asciiWidth, charSet).replaceAll("\r\n", " ")
+                        .replaceAll("\n", " "));
+            }
+
+            builder.append(String.format("%n"));
+        }
+
+        return builder.toString();
+    }
+
+    public static byte[] decodeHexDump(String s) {
+        return hex2byte(
+            Arrays.stream(s.split("\\r\\n|[\\r\\n]"))
+                .map(x ->
+                         x.replaceAll("^.{4}  ", "").
+                             replaceAll("\\s\\s", " ").
+                             replaceAll("(([0-9A-F][0-9A-F]\\s){1,16}).*$", "$1").
+                             replaceAll("\\s", "")
+                ).collect(Collectors.joining()));
+    }
+    
 }

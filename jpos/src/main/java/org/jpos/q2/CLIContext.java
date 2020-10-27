@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,93 +18,179 @@
 
 package org.jpos.q2;
 
-import jline.ConsoleReader;
+import org.jline.reader.LineReader;
+import org.jpos.util.Loggeable;
 
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-public class CLIContext
-{
-    Q2 q2;
-    ConsoleReader consoleReader;
-    PrintStream outputStream;
-    boolean stopped = false;
+public class CLIContext {
+    private boolean stopped = false;
+    private OutputStream out;
+    private OutputStream err;
+    private InputStream in;
+    private LineReader reader;
+    private Map<Object, Object> userData;
+    private CLI cli;
+    private String activeSubSystem = null;
 
-    public boolean isStopped()
-    {
+    @SuppressWarnings("unused")
+    private CLIContext() { }
+
+    private CLIContext(CLI cli, OutputStream out, OutputStream err, InputStream in, LineReader reader, Map<Object, Object> userData) {
+        this.cli = cli;
+        this.out = out;
+        this.err = err;
+        this.in = in;
+        this.reader = reader;
+        this.userData = userData;
+    }
+
+    public String getActiveSubSystem() {
+        return activeSubSystem;
+    }
+
+    public void setActiveSubSystem(String subSystem) {
+        String activeSubSystem = getActiveSubSystem();
+        if (subSystem == null && activeSubSystem != null) {
+            getUserData().remove(activeSubSystem);
+        }
+        this.activeSubSystem = subSystem;
+    }
+
+    public boolean isStopped() {
         return stopped;
     }
 
-    public void setStopped(boolean stopped)
-    {
+    public void setStopped(boolean stopped) {
         this.stopped = stopped;
     }
 
-    public Q2 getQ2()
-    {
-        return q2;
+    public LineReader getReader() {
+        return reader;
     }
 
-    public void setQ2(Q2 q2)
-    {
-        this.q2 = q2;
+    public void setReader(LineReader reader) {
+        this.reader = reader;
     }
 
-    public ConsoleReader getConsoleReader()
-    {
-        return consoleReader;
+    public OutputStream getOutputStream() {
+        return out;
     }
 
-    public void setConsoleReader(ConsoleReader consoleReader)
-    {
-        this.consoleReader = consoleReader;
+    public OutputStream getErrorStream() {
+        return err;
     }
 
-    public PrintStream getOutputStream()
-    {
-        return outputStream;
+    public InputStream getInputStream() {
+        return in;
     }
 
-    public void setOutputStream(PrintStream outputStream)
-    {
-        this.outputStream = outputStream;
+    public Map<Object,Object> getUserData() {
+        return userData;
     }
 
-    public void printThrowable(Throwable t)
-    {
-        t.printStackTrace(outputStream);
-        outputStream.flush();
+    public boolean isInteractive() {
+        return cli.isInteractive();
     }
 
-    public void print(String s)
-    {
-        try
-        {
-            consoleReader.printString(s);
+    public CLI getCLI() {
+        return cli;
+    }
+
+    public void printUserData() {
+        getUserData().forEach((k,v) -> {
+            println("Key: " + k.toString());
+            println("Value: " + v.toString());
+        });
+    }
+
+    public void printThrowable(Throwable t) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        t.printStackTrace(new PrintStream(baos));
+        println (baos.toString());
+    }
+
+    public void printLoggeable(Loggeable l, String indent) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        l.dump (new PrintStream(baos), indent);
+        println (baos.toString());
+    }
+
+    public void print(String s) {
+        if (isInteractive()) {
+            PrintWriter writer = getReader().getTerminal().writer();
+            writer.print(s);
+            writer.flush();
         }
-        catch (IOException e)
-        {
-            e.printStackTrace(outputStream);
-            outputStream.flush();
+        else {
+            try {
+                out.write(s.getBytes());
+                out.flush();
+            } catch (IOException ignored) {
+                ignored.printStackTrace();
+            }
         }
     }
 
-    public void println(String s)
-    {
-        try
-        {
-            consoleReader.printString(s);
-            consoleReader.printNewline();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace(outputStream);
-            outputStream.flush();
-        }
+    public void println(String s)  {
+        print (s + System.getProperty("line.separator"));
     }
 
-    public boolean confirm(String prompt) throws IOException
-    {
-        return "yes".equalsIgnoreCase(consoleReader.readLine(prompt));
+    public boolean confirm(String prompt) {
+        return "yes".equalsIgnoreCase(getReader().readLine(prompt));
+    }
+
+    public String readSecurely(String prompt) {
+        return getReader().readLine(prompt, '*');
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        OutputStream out;
+        OutputStream err;
+        InputStream in;
+        LineReader reader;
+        CLI cli;
+        private Builder () { }
+
+        public Builder out (OutputStream out) {
+            this.out = out;
+            return this;
+        }
+
+        public Builder err (OutputStream err) {
+            this.err = err;
+            return this;
+        }
+
+        public Builder in (InputStream in) {
+            this.in = in;
+            return this;
+        }
+
+        public Builder reader (LineReader reader) {
+            this.reader = reader;
+            return this;
+        }
+
+        public Builder cli (CLI cli) {
+            this.cli = cli;
+            return this;
+        }
+
+        public CLIContext build() {
+            if (reader != null) {
+                if (out == null)
+                    out = reader.getTerminal().output();
+                if (err == null)
+                    err = out;
+            }
+            return new CLIContext(cli, out, err, in, reader, new LinkedHashMap());
+        }
     }
 }

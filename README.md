@@ -1,32 +1,24 @@
-## Build distribution
+[![][jpos-logo]][jpos-url]
+[![Build Status][badge-travis-image]][badge-travis-url]
+[![Javadocs](http://www.javadoc.io/badge/org.jpos/jpos.svg)](http://www.javadoc.io/doc/org.jpos/jpos)
 
-    ./gradlew dist
+## Documentation
 
-    
-## Install locally
+Visit [http://jpos.org/learn](http://jpos.org/learn).
 
-    ./gradlew install
-    
-## Verify version
+## Resources
 
-    ./gradlew version
-    
-## Maven POM
+Visit [http://jpos.org/resources](http://jpos.org/resources) for additional information.
 
-    <repository>
-      <id>jpos</id>
-      <name>jPOS Central Repository</name>
-      <url>http://jpos.org/maven</url>
-      <layout>default</layout>
-    </repository>
+        
+## License
 
-    <dependency>
-      <groupId>org.jpos</groupId>
-      <artifactId>jpos</artifactId>
-      <version>1.8.9-SNAPSHOT</version>
-    </dependency>
+Affero GPLv3 Visit [http://jpos.org/license](http://jpos.org/license).
 
-----
-See the [ChangeLog:](http://jpos.org/wiki/ChangeLog) or visit the [Resources](http://jpos.org/resources) page for additional information.
+Commercial-friendly licensing available: [Contact form](http://jpos.org/main/contact?p=license).
 
-
+[jpos-logo]: http://jpos.org/images/jpos_l.jpg
+[jpos-url]: http://jpos.org
+[badge-travis-url]: https://travis-ci.org/jpos/jPOS
+[badge-travis-image]: https://api.travis-ci.org/jpos/jPOS.svg
+[![Gitter](https://badges.gitter.im/jpos/jPOS.svg)](https://gitter.im/jpos/jPOS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)

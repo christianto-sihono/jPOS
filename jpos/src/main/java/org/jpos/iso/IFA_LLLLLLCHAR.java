@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,7 @@ package org.jpos.iso;
 /**
  * ISOFieldPackager ASCII variable len CHAR
  *
- * @author Alejandro Revilla 
+ * @author Alejandro Revilla
  * @see ISOComponent
  */
 public class IFA_LLLLLLCHAR extends ISOStringFieldPackager {
@@ -33,7 +33,7 @@ public class IFA_LLLLLLCHAR extends ISOStringFieldPackager {
      * @param description symbolic descrption
      */
     public  IFA_LLLLLLCHAR (int len, String description) {
-        super(len, description, NullPadder.INSTANCE, AsciiInterpreter.INSTANCE, AsciiPrefixer.LLLLL);
+        super(len, description, NullPadder.INSTANCE, AsciiInterpreter.INSTANCE, AsciiPrefixer.LLLLLL);
         checkLength(len, 999999);
     }
 

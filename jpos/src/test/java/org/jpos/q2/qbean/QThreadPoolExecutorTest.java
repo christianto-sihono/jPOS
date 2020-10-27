@@ -1,7 +1,27 @@
+/*
+ * jPOS Project [http://jpos.org]
+ * Copyright (C) 2000-2020 jPOS Software SRL
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.jpos.q2.qbean;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,16 +36,16 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.jdom.DataConversionException;
-import org.jdom.Document;
-import org.jdom.input.SAXBuilder;
+import org.jdom2.DataConversionException;
+import org.jdom2.Document;
+import org.jdom2.input.SAXBuilder;
 import org.jpos.core.ConfigurationException;
 import org.jpos.util.Log;
 import org.jpos.util.NameRegistrar;
 import org.jpos.util.NameRegistrar.NotFoundException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
@@ -52,7 +72,7 @@ public class QThreadPoolExecutorTest {
 
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
 
         mockedLog = mock(Log.class);
@@ -74,12 +94,12 @@ public class QThreadPoolExecutorTest {
         qbeanConfigBos = new ByteArrayOutputStream();
         qbeanConfigPw = new PrintWriter(new OutputStreamWriter(qbeanConfigBos));
 
-        NameRegistrar.getMap().clear();
+        NameRegistrar.getAsMap().clear();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
-        NameRegistrar.getMap().clear();
+        NameRegistrar.getAsMap().clear();
         if (null != executor) {
             try {
                 executor.shutdownNow();
@@ -91,28 +111,31 @@ public class QThreadPoolExecutorTest {
     @Test
     public void testStaticGetThreadPoolExecutor() throws NotFoundException {
         executor = new DummyThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(1));
+                new ArrayBlockingQueue<>(1)
+        );
         NameRegistrar.register(qbean.getRegistrationName(), executor);
-        assertThat(NameRegistrar.get(qbean.getRegistrationName())).isEqualTo(
-                executor);
+        ThreadPoolExecutor expected = NameRegistrar.get(qbean.getRegistrationName());
+        assertSame(expected, executor);
 
-        assertThat(
-                QThreadPoolExecutor.getThreadPoolExecutor(QBEAN_DEFAULT_NAME))
-                .isEqualTo(executor);
+        expected = QThreadPoolExecutor.getThreadPoolExecutor(QBEAN_DEFAULT_NAME);
+        assertSame(expected, executor);
     }
 
     @Test
     public void testStaticGetThreadPoolExecutor_SpecifyingExpectedClass()
             throws NotFoundException {
         executor = new DummyThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(1));
+                new ArrayBlockingQueue<>(1)
+        );
         NameRegistrar.register(qbean.getRegistrationName(), executor);
-        assertThat(NameRegistrar.get(qbean.getRegistrationName())).isEqualTo(
-                executor);
+        ThreadPoolExecutor expected = NameRegistrar.get(qbean.getRegistrationName());
+        assertSame(expected, executor);
 
-        assertThat(
-                QThreadPoolExecutor.getThreadPoolExecutor(QBEAN_DEFAULT_NAME,
-                        DummyThreadPoolExecutor.class)).isEqualTo(executor);
+        expected = QThreadPoolExecutor.getThreadPoolExecutor(
+                QBEAN_DEFAULT_NAME
+                , DummyThreadPoolExecutor.class
+        );
+        assertSame(expected, executor);
     }
 
     @Test
@@ -314,16 +337,16 @@ public class QThreadPoolExecutorTest {
     public void testStopService_NoTerminationTimeout() throws Exception {
         executor = mock(ThreadPoolExecutor.class);
         NameRegistrar.register(qbean.getRegistrationName(), executor);
-        assertThat(NameRegistrar.get(qbean.getRegistrationName())).isEqualTo(
-                executor);
+        ThreadPoolExecutor expected = NameRegistrar.get(qbean.getRegistrationName());
+        assertSame(expected, executor);
         when(
                 executor.awaitTermination(Mockito.anyLong(),
                         Mockito.any(TimeUnit.class))).thenReturn(true);
 
         qbean.stopService();
 
-        assertThat(NameRegistrar.getIfExists(qbean.getRegistrationName()))
-                .isNull();
+        expected = NameRegistrar.getIfExists(qbean.getRegistrationName());
+        assertNull(expected);
     }
 
     protected void setQBeanConfig(byte[] config) {

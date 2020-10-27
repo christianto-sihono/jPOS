@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,13 +35,13 @@ public interface CardTransactionResponse extends Serializable {
      * (suitable to be saved on persistent storage)
      * @return a serialized image of this transaction
      */
-    public byte[] getImage() throws CardAgentException;
+    byte[] getImage() throws CardAgentException;
 
-    public String  getAutCode();
-    public String  getMessage();
-    public String  getAutNumber();
-    public boolean isApproved();
-    public boolean canContinue();
-    public boolean isAuthoritative();
-    public String  getBatchName();
+    String  getAutCode();
+    String  getMessage();
+    String  getAutNumber();
+    boolean isApproved();
+    boolean canContinue();
+    boolean isAuthoritative();
+    String  getBatchName();
 }

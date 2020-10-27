@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -48,9 +48,9 @@ public class IFB_BITMAP extends ISOBitMapPackager {
      */
     public byte[] pack (ISOComponent c) throws ISOException {
         BitSet b = (BitSet) c.getValue();
-        int len = 
+        int len =                                           // bytes needed to encode BitSet (in 8-byte chunks)
             getLength() >= 8 ?
-                (((b.length()+62)>>6)<<3) : getLength();
+                    b.length()+62 >>6 <<3 : getLength();    // +62 because we don't use bit 0 in the BitSet
         return ISOUtil.bitSet2byte (b, len);
     }
     /**
@@ -67,9 +67,9 @@ public class IFB_BITMAP extends ISOBitMapPackager {
         BitSet bmap = ISOUtil.byte2BitSet (b, offset, getLength() << 3);
         c.setValue(bmap);
         len = bmap.get(1) ? 128 : 64;
-        if (getLength() > 16 && bmap.get(65))
+        if (getLength() > 16 && bmap.get(1) && bmap.get(65))
             len = 192;
-        return (Math.min (getLength(), len >> 3));
+        return Math.min (getLength(), len >> 3);
     }
     public void unpack (ISOComponent c, InputStream in) 
         throws IOException, ISOException

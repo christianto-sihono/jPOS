@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,6 @@
 
 package org.jpos.q2.iso;
 
-import org.jpos.q2.QBeanSupportMBean;
-
 /**
  * MBean interface.
  * @author Alejandro Revilla
@@ -27,6 +25,6 @@ import org.jpos.q2.QBeanSupportMBean;
  */
 @SuppressWarnings("unused")
 public interface MultiSessionChannelAdaptorMBean extends ChannelAdaptorMBean {
-    public int getSessions();
-    public void setSessions(int sessions);
+    int getSessions();
+    void setSessions(int sessions);
 }

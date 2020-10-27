@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,7 @@
 package org.jpos.util;
 
 public interface LogProducer {
-    public void addListener (LogListener l);
-    public void removeListener (LogListener l);
-    public void removeAllListeners ();
-
-
+    void addListener(LogListener l);
+    void removeListener(LogListener l);
+    void removeAllListeners();
 }

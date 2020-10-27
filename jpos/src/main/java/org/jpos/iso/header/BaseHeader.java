@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -62,12 +62,17 @@ public class BaseHeader implements ISOHeader, Loggeable {
     }
 
     public byte[] pack() {
-        return header;
+        return header != null ? header.clone() : null;
     }
 
     public int unpack (byte[] header) {
-        this.header = header;
-        return header != null ? header.length : 0;
+        if (header != null) {
+            this.header = header.clone();
+            return header.length;
+        } else {
+            this.header = null;
+        }
+        return 0;
     }
 
     public int getLength () {

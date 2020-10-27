@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,30 @@
 
 package org.jpos.q2.cli;
 
+import org.jpos.iso.ISOUtil;
 import org.jpos.q2.CLICommand;
 import org.jpos.q2.CLIContext;
+import org.jpos.q2.Q2;
+import org.jpos.q2.install.ModuleUtils;
+import org.jpos.util.PGPHelper;
 
-public class VERSION implements CLICommand
-{
-    public void exec(CLIContext cli, String[] args)
-    {
-        cli.println(cli.getQ2().getVersionString());
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.stream.Collectors;
+
+@SuppressWarnings("unused")
+public class VERSION implements CLICommand {
+    public void exec(CLIContext cli, String[] args) throws IOException, NoSuchAlgorithmException {
+        boolean all = args.length > 1 && args[1].startsWith("-a");
+        if (args.length > 1 && !all) {
+            cli.println ("Unknown option");
+            return;
+        }
+        cli.println(Q2.getVersionString());
+        if (all) {
+            cli.println(ModuleUtils.getModulesUUIDs().stream().collect(Collectors.joining(System.lineSeparator())));
+            cli.println(ModuleUtils.getSystemHash());
+            cli.println(PGPHelper.getLicenseeHash());
+        }
     }
 }

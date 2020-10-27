@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +18,14 @@
 
 package org.jpos.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ConfigurationExceptionTest {
 
@@ -31,30 +33,30 @@ public class ConfigurationExceptionTest {
     public void testConstructor() throws Throwable {
         Throwable nested = new ConfigurationException();
         ConfigurationException configurationException = new ConfigurationException("testConfigurationExceptionDetail", nested);
-        assertEquals("configurationException.getMessage()", "testConfigurationExceptionDetail", configurationException.getMessage());
-        assertSame("configurationException.getNested()", nested, configurationException.getNested());
+        assertEquals("testConfigurationExceptionDetail", configurationException.getMessage(), "configurationException.getMessage()");
+        assertSame(nested, configurationException.getNested(), "configurationException.getNested()");
     }
 
     @Test
     public void testConstructor1() throws Throwable {
         Throwable nested = new ConfigurationException();
         ConfigurationException configurationException = new ConfigurationException(nested);
-        assertEquals("configurationException.getMessage()", "org.jpos.core.ConfigurationException",
-                configurationException.getMessage());
-        assertSame("configurationException.getNested()", nested, configurationException.getNested());
+        assertEquals("org.jpos.core.ConfigurationException", configurationException.getMessage(),
+                "configurationException.getMessage()");
+        assertSame(nested, configurationException.getNested(), "configurationException.getNested()");
     }
 
     @Test
     public void testConstructor2() throws Throwable {
         ConfigurationException configurationException = new ConfigurationException("testConfigurationExceptionDetail");
-        assertEquals("configurationException.getMessage()", "testConfigurationExceptionDetail", configurationException.getMessage());
-        assertNull("configurationException.getNested()", configurationException.getNested());
+        assertEquals("testConfigurationExceptionDetail", configurationException.getMessage(), "configurationException.getMessage()");
+        assertNull(configurationException.getNested(), "configurationException.getNested()");
     }
 
     @Test
     public void testConstructor3() throws Throwable {
         ConfigurationException configurationException = new ConfigurationException();
-        assertNull("configurationException.getNested()", configurationException.getNested());
+        assertNull(configurationException.getNested(), "configurationException.getNested()");
     }
 
     @Test
@@ -63,7 +65,11 @@ public class ConfigurationExceptionTest {
             new ConfigurationException((Throwable) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.lang.Throwable.toString()\" because \"nested\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

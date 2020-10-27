@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,23 +18,25 @@
 
 package org.jpos.q2.ui;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jdom.Element;
-import org.junit.Test;
+import org.jdom2.Element;
+import org.junit.jupiter.api.Test;
 
 public class UITest {
 
     @Test
     public void testConstructor() throws Throwable {
         UI uI = new UI();
-        assertEquals("uI.getLog().getRealm()", "org.jpos.q2.ui.UI", uI.getLog().getRealm());
-        assertEquals("uI.getState()", -1, uI.getState());
-        assertTrue("uI.isModified()", uI.isModified());
+        assertEquals("org.jpos.q2.ui.UI", uI.getLog().getRealm(), "uI.getLog().getRealm()");
+        assertEquals(-1, uI.getState(), "uI.getState()");
+        assertTrue(uI.isModified(), "uI.isModified()");
     }
 
     @Test
@@ -43,7 +45,11 @@ public class UITest {
             new UI().newInstance("testUIClazz");
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getFactory()\" because the return value of \"org.jpos.q2.QBeanSupport.getServer()\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -55,9 +61,13 @@ public class UITest {
             uI.startService();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertFalse("uI.isModified()", uI.isModified());
-            assertNull("uI.ui", uI.ui);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getFactory()\" because the return value of \"org.jpos.q2.QBeanSupport.getServer()\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertFalse(uI.isModified(), "uI.isModified()");
+            assertNull(uI.ui, "uI.ui");
         }
     }
 
@@ -68,9 +78,13 @@ public class UITest {
             uI.startService();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertFalse("uI.isModified()", uI.isModified());
-            assertNull("uI.ui", uI.ui);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jdom2.Element.getAttributeValue(String, String)\" because \"config\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertFalse(uI.isModified(), "uI.isModified()");
+            assertNull(uI.ui, "uI.ui");
         }
     }
 
@@ -79,6 +93,6 @@ public class UITest {
         UI uI = new UI();
         uI.setName("ui");
         uI.stopService();
-        assertNull("uI.ui", uI.ui);
+        assertNull(uI.ui, "uI.ui");
     }
 }

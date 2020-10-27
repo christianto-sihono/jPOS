@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -45,29 +45,29 @@ public interface Space<K,V> {
      * @param key Entry's key
      * @param value Object value
      */
-    public void out (K key, V value);
+    void out(K key, V value);
 
     /**
      * Write a new entry into the Space, with an timeout value
      * @param key Entry's key
      * @param value Object value
-     * @param timeout timeout value
+     * @param timeout timeout value in millis
      */
-    public void out (K key, V value, long timeout);
+    void out(K key, V value, long timeout);
 
     /**
      * Take an entry from the space, waiting forever until one exists.
      * @param key Entry's key
      * @return value
      */
-    public V in  (Object key);
+    V in(K key);
 
     /**
      * Read an entry from the space, waiting forever until one exists.
      * @param key Entry's key
      * @return value
      */
-    public V rd  (Object key);
+    V rd(K key);
 
     /**
      * Take an entry from the space, waiting a limited amount of time
@@ -76,7 +76,7 @@ public interface Space<K,V> {
      * @param timeout millis to wait
      * @return value or null
      */
-    public V in  (Object key, long timeout);
+    V in(K key, long timeout);
 
 
     /**
@@ -86,7 +86,7 @@ public interface Space<K,V> {
      * @param timeout millis to wait
      * @return value or null
      */
-    public V rd  (Object key, long timeout);
+    V rd(K key, long timeout);
 
 
     /**
@@ -95,7 +95,7 @@ public interface Space<K,V> {
      * @param key Entry's key
      * @return value or null
      */
-    public V inp (Object key);
+    V inp(K key);
 
 
     /**
@@ -104,35 +104,51 @@ public interface Space<K,V> {
      * @param key Entry's key
      * @return value or null
      */
-    public V rdp (Object key);
+    V rdp(K key);
+
+    /**
+     * Nrd (not read) waits forever until Key is not present in space
+     * Resolution for expiring entries is implementation dependant, but a minimum one-second is suggested.
+     * @param key Entry's key
+     */
+    void nrd(K key);
+
+    /**
+     * Nrd (not read) waits up to timeout until Key is not present in space
+     * Resolution for expiring entries is implementation dependant, but a minimum one-second is suggested.
+     * @param key Entry's key
+     * @param timeout millis to wait
+     * @return value or null
+     */
+    V nrd(K key, long timeout);
 
     /**
      * Write a new entry at the head of a queue.
      * @param key Entry's key
      * @param value Object value
      */
-    public void push (K key, V value);
+    void push(K key, V value);
 
     /**
      * Write a new entry at the head of the queue with a timeout value
      * @param key Entry's key
      * @param value Object value
-     * @param timeout timeout value
+     * @param timeout timeout value in millis
      */
-    public void push (K key, V value, long timeout);
+    void push(K key, V value, long timeout);
 
     /**
      * @param keys array of keys to check
      * @return true if one or more keys are available in the space
      */
-    public boolean existAny (K[] keys);
+    boolean existAny(K[] keys);
 
     /**
      * @param keys array of keys to check
-     * @param timeout to wait for any of the entries to become available
+     * @param timeout to wait for any of the entries to become available in millis
      * @return true if one or more keys are available in the space
      */
-    public boolean existAny (K[] keys, long timeout);
+    boolean existAny(K[] keys, long timeout);
 
     /**
      * Write a single entry at the head of the queue discarding the other entries
@@ -140,14 +156,13 @@ public interface Space<K,V> {
      * @param value Object value
 
      */
-    public void put (K key, V value);
+    void put(K key, V value);
 
     /**
      * Write a single entry at the head of the queue discarding the other entries, with timeout.
      * @param key Entry's key
      * @param value Object value
-     * @param timeout timeout value
+     * @param timeout timeout value in millis
      */
-    public void put (K key, V value, long timeout);
-
+    void put(K key, V value, long timeout);
 }

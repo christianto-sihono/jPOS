@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,15 +25,12 @@ import java.util.*;
  * @author Alejandro Revilla
  * @version $Revision$ $Date$
  * @since 2.0
- * @jmx:mbean description "TransientSpace"
  */
+@SuppressWarnings("unchecked")
 public class TransientSpace implements LocalSpace, TransientSpaceMBean {
     protected Map map;
     static LocalSpace defaultSpace = new TransientSpace ();
 
-    /**
-     * @jmx:managed-constructor description="Default Constructor"
-     */
     public TransientSpace () {
         super();
         map = new HashMap ();
@@ -43,7 +40,7 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
         synchronized (this) {
             Data data = (Data) map.get (key);
             if (data == null) 
-                map.put (key, (data = new Data ()));
+                map.put (key, data = new Data ());
             data.add (value);
             this.notifyAll ();
             listeners = data.getListeners();
@@ -90,8 +87,8 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = inp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -112,8 +109,8 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = rdp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -130,7 +127,7 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
     public synchronized void addListener    (Object key, SpaceListener listener) {
         Data data = (Data) map.get (key);
         if (data == null) 
-            map.put (key, (data = new Data()));
+            map.put (key, data = new Data());
         data.addListener (listener);
     }
     public synchronized void addListener 
@@ -145,6 +142,7 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
             data.removeListener (listener);
     }
 
+    @SuppressWarnings("unchecked")
     protected static final class Data {
         LinkedList data;
         LinkedList listeners;
@@ -214,10 +212,10 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
             return listeners;
         }
     }
-    public static final LocalSpace getSpace () {
+    public static LocalSpace getSpace () {
         return defaultSpace;
     }
-    public static final LocalSpace getSpace (String spaceName) {
+    public static LocalSpace getSpace (String spaceName) {
         String key = "jpos:space/"+spaceName;
         Object obj = getSpace().rdp (key);
         Space sp   = getSpace();
@@ -234,7 +232,6 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
     }
     /**
      * @return set of keys present in the Space
-     * @jmx:managed-attribute description="Keys in Space"
      */
     public Set getKeySet () {
         Set keySet;
@@ -261,9 +258,6 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
      * same as Space.out (key,value)
      * @param key Key
      * @param value value
-     * @jmx:managed-operation description="Write value to key"
-     * @jmx:managed-operation-parameter position="0" name="key" description="Space Key"
-     * @jmx:managed-operation-parameter position="1" name="value" description="Value to write"
      */
     public void write (String key, String value) {
         out (key, value);
@@ -273,12 +267,10 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
      * same as (String) Space.rdp (key)
      * @param key Key
      * @return value.toString()
-     * @jmx:managed-operation description="Read value from key"
-     * @jmx:managed-operation-parameter position="0" name="key" description="Space Key"
      */
     public String read (String key) {
         Object o = rdp (key);
-        return (o != null) ? o.toString() : "null";
+        return o != null ? o.toString() : "null";
     }
     public int size (Object key) {
         Data data  = (Data) map.get (key);
@@ -295,6 +287,12 @@ public class TransientSpace implements LocalSpace, TransientSpaceMBean {
     }
     public boolean existAny (Object[] keys, long timeout) {
         throw new SpaceError ("Unsupported operation");
+    }
+    public void nrd(Object key) {
+        throw new SpaceError("Not implemented");
+    }
+    public Object nrd(Object key, long timeout) {
+        throw new SpaceError("Not implemented");
     }
 }
 

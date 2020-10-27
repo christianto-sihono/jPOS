@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -105,8 +105,7 @@ public class ISOStringFieldPackager extends ISOFieldPackager
 
     /**
      * Returns the prefixer's packed length and the interpreter's packed length.
-	 * @see org.jpos.iso.ISOFieldPackager#getMaxPackedLength()
-	 */
+     */
     public int getMaxPackedLength()
     {
         return prefixer.getPackedLength() + interpreter.getPackedLength(getLength());
@@ -128,15 +127,18 @@ public class ISOStringFieldPackager extends ISOFieldPackager
     }
 
     /**
-	 * Convert the component into a byte[].
+     * Convert the component into a byte[].
+     * @return byte array representation of component
+     * @throws org.jpos.iso.ISOException
 	 */
+    @Override
     public byte[] pack(ISOComponent c) throws ISOException
     {
         try
         {
             String data;
             if(c.getValue() instanceof byte[])
-                data = new String(c.getBytes(), ISOUtil.ENCODING); // transparent handling of complex fields
+                data = new String(c.getBytes(), ISOUtil.CHARSET); // transparent handling of complex fields
             else
                 data = (String)c.getValue();
 
@@ -171,7 +173,7 @@ public class ISOStringFieldPackager extends ISOFieldPackager
             if (len == -1) {
                 // The prefixer doesn't know how long the field is, so use
                 // maxLength instead
-                len = getLength();
+                len = trim ? Math.min(getLength(),b.length-offset) : getLength();
             }
             else if (getLength() > 0 && len > getLength())
                 throw new ISOException("Field length " + len + " too long. Max: " + getLength());
@@ -215,6 +217,13 @@ public class ISOStringFieldPackager extends ISOFieldPackager
         {
             throw new ISOException(makeExceptionMessage(c, "unpacking"), e);
         }
+    }
+
+    @Override
+    public void setTrim (boolean trim) {
+        super.setTrim (trim);
+        if (trim)
+            padder = NullPadder.INSTANCE; // no padding
     }
 
     /**

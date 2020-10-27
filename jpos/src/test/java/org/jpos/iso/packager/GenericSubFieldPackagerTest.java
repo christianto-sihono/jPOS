@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,11 @@
 
 package org.jpos.iso.packager;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.iso.IFA_LCHAR;
 import org.jpos.iso.IFA_LLLLCHAR;
@@ -29,15 +31,15 @@ import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOFieldPackager;
 import org.jpos.iso.ISOMsg;
 import org.jpos.util.Logger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class GenericSubFieldPackagerTest {
 
     @Test
     public void testConstructor() throws Throwable {
         GenericSubFieldPackager genericSubFieldPackager = new GenericSubFieldPackager();
-        assertNull("genericSubFieldPackager.getLogger()", genericSubFieldPackager.getLogger());
-        assertNull("genericSubFieldPackager.getRealm()", genericSubFieldPackager.getRealm());
+        assertNull(genericSubFieldPackager.getLogger(), "genericSubFieldPackager.getLogger()");
+        assertNull(genericSubFieldPackager.getRealm(), "genericSubFieldPackager.getRealm()");
     }
 
     @Test
@@ -46,8 +48,13 @@ public class GenericSubFieldPackagerTest {
             new GenericSubFieldPackager().pack(new ISOMsg());
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "java.lang.NullPointerException", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("java.lang.NullPointerException", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("java.lang.NullPointerException: Cannot load from object array because \"this.fld\" is null", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot load from object array because \"this.fld\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -57,8 +64,13 @@ public class GenericSubFieldPackagerTest {
             new GenericSubFieldPackager().pack(null);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "java.lang.NullPointerException", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("java.lang.NullPointerException", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("java.lang.NullPointerException: Cannot invoke \"org.jpos.iso.ISOComponent.getChildren()\" because \"m\" is null", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOComponent.getChildren()\" because \"m\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -72,8 +84,12 @@ public class GenericSubFieldPackagerTest {
             genericSubFieldPackager.pack(new ISOBinaryField(100));
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "org.jpos.iso.IFA_LCHAR: Problem packing field unknown", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            assertEquals("org.jpos.iso.IFA_LCHAR: Problem packing field unknown", ex.getMessage(), "ex.getMessage()");
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOComponent.getValue()\" because \"c\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -99,8 +115,13 @@ public class GenericSubFieldPackagerTest {
             new GenericSubFieldPackager().unpack(new ISOMsg(), b);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "java.lang.NullPointerException", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("java.lang.NullPointerException", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("java.lang.NullPointerException: Cannot read the array length because \"this.fld\" is null", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot read the array length because \"this.fld\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -115,8 +136,8 @@ public class GenericSubFieldPackagerTest {
             genericSubFieldPackager.unpack(new ISOMsg(100), b);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "org.jpos.iso.IFA_LCHAR: Problem unpacking field -1", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            assertEquals("org.jpos.iso.IFA_LCHAR: Problem unpacking field -1", ex.getMessage(), "ex.getMessage()");
+            assertEquals("Invalid character found. Expected digit.", ex.getNested().getMessage(), "ex.getNested().getMessage()");
         }
     }
 
@@ -128,8 +149,13 @@ public class GenericSubFieldPackagerTest {
             genericSubFieldPackager.unpack(new ISOMsg(), (byte[]) null);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "java.lang.NullPointerException", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("java.lang.NullPointerException", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("java.lang.NullPointerException: Cannot read the array length because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot read the array length because \"b\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -140,8 +166,13 @@ public class GenericSubFieldPackagerTest {
             new GenericSubFieldPackager().unpack(null, b);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "java.lang.NullPointerException", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("java.lang.NullPointerException", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("java.lang.NullPointerException: Cannot invoke \"org.jpos.iso.ISOComponent.getComposite()\" because \"m\" is null", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOComponent.getComposite()\" because \"m\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
         }
     }
 
@@ -152,8 +183,8 @@ public class GenericSubFieldPackagerTest {
             new GenericSubFieldPackager().unpack(new ISOBinaryField(), b);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "Can't call packager on non Composite", ex.getMessage());
-            assertNull("ex.getNested()", ex.getNested());
+            assertEquals("Can't call packager on non Composite", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.getNested(), "ex.getNested()");
         }
     }
 
@@ -189,8 +220,8 @@ public class GenericSubFieldPackagerTest {
             genericSubFieldPackager.unpack(new ISOMsg(), b);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "org.jpos.iso.IFA_LLLLCHAR: Problem unpacking field -1", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            assertEquals("org.jpos.iso.IFA_LLLLCHAR: Problem unpacking field -1", ex.getMessage(), "ex.getMessage()");
+            assertEquals("Invalid character found. Expected digit.", ex.getNested().getMessage(), "ex.getNested().getMessage()");
         }
     }
 

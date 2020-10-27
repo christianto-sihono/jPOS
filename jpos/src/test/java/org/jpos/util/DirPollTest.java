@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,22 +18,32 @@
 
 package org.jpos.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.jpos.core.Configuration;
 import org.jpos.core.SubConfiguration;
 import org.jpos.iso.ISOUtil;
 import org.jpos.q2.Q2;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class DirPollTest {
 
@@ -42,7 +52,7 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.addPriority("testDirPollFileExtension");
         boolean result = dirPoll.accept(new File("testDirPollParam1"), "testDirPollName");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
@@ -50,7 +60,7 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.setPriorities("");
         boolean result = dirPoll.accept(new File("testDirPollParam1"), "testDirPollName");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
@@ -59,7 +69,7 @@ public class DirPollTest {
             new DirPoll().accept(new File("testDirPollParam1"), "testDirPollName");
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0 >= 0", ex.getMessage());
+            assertEquals("0 >= 0", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -71,48 +81,52 @@ public class DirPollTest {
             dirPoll.accept(new File("testDirPollParam1"), null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.endsWith(String)\" because \"name\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testConstructor() throws Throwable {
         DirPoll dirPoll = new DirPoll();
-        assertNull("dirPoll.logger", dirPoll.logger);
-        assertEquals("dirPoll.getPath()", ".", dirPoll.getPath());
-        assertNull("dirPoll.realm", dirPoll.realm);
-        assertEquals("dirPoll.getPollInterval()", 1000L, dirPoll.getPollInterval());
-        assertFalse("dirPoll.isPaused()", dirPoll.isPaused());
+        assertNull(dirPoll.logger, "dirPoll.logger");
+        assertEquals(".", dirPoll.getPath(), "dirPoll.getPath()");
+        assertNull(dirPoll.realm, "dirPoll.realm");
+        assertEquals(1000L, dirPoll.getPollInterval(), "dirPoll.getPollInterval()");
+        assertFalse(dirPoll.isPaused(), "dirPoll.isPaused()");
     }
 
     @Test
     public void testDirPollExceptionConstructor() throws Throwable {
         Exception nested = new DirPoll.DirPollException("testDirPollExceptionDetail");
         DirPoll.DirPollException dirPollException = new DirPoll.DirPollException(nested);
-        assertEquals("dirPollException.getMessage()", "org.jpos.util.DirPoll$DirPollException: testDirPollExceptionDetail",
-                dirPollException.getMessage());
-        assertSame("dirPollException.getNested()", nested, dirPollException.getNested());
+        assertEquals("org.jpos.util.DirPoll$DirPollException: testDirPollExceptionDetail",
+                dirPollException.getMessage(), "dirPollException.getMessage()");
+        assertSame(nested, dirPollException.getNested(), "dirPollException.getNested()");
     }
 
     @Test
     public void testDirPollExceptionConstructor1() throws Throwable {
         DirPoll.DirPollException dirPollException = new DirPoll.DirPollException();
-        assertNull("dirPollException.getNested()", dirPollException.getNested());
+        assertNull(dirPollException.getNested(), "dirPollException.getNested()");
     }
 
     @Test
     public void testDirPollExceptionConstructor2() throws Throwable {
         Exception nested = new NumberFormatException();
         DirPoll.DirPollException dirPollException = new DirPoll.DirPollException("testDirPollExceptionDetail", nested);
-        assertEquals("dirPollException.getMessage()", "testDirPollExceptionDetail", dirPollException.getMessage());
-        assertSame("dirPollException.getNested()", nested, dirPollException.getNested());
+        assertEquals("testDirPollExceptionDetail", dirPollException.getMessage(), "dirPollException.getMessage()");
+        assertSame(nested, dirPollException.getNested(), "dirPollException.getNested()");
     }
 
     @Test
     public void testDirPollExceptionConstructor3() throws Throwable {
         DirPoll.DirPollException dirPollException = new DirPoll.DirPollException("testDirPollExceptionDetail");
-        assertEquals("dirPollException.getMessage()", "testDirPollExceptionDetail", dirPollException.getMessage());
-        assertNull("dirPollException.getNested()", dirPollException.getNested());
+        assertEquals("testDirPollExceptionDetail", dirPollException.getMessage(), "dirPollException.getMessage()");
+        assertNull(dirPollException.getNested(), "dirPollException.getNested()");
     }
 
     @Test
@@ -121,14 +135,18 @@ public class DirPollTest {
             new DirPoll.DirPollException((Exception) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.lang.Throwable.toString()\" because \"nested\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testIsPaused() throws Throwable {
         boolean result = new DirPoll().isPaused();
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
@@ -136,14 +154,14 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.pause();
         boolean result = dirPoll.isPaused();
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testPause() throws Throwable {
         DirPoll dirPoll = new DirPoll();
         dirPoll.pause();
-        assertTrue("dirPoll.isPaused()", dirPoll.isPaused());
+        assertTrue(dirPoll.isPaused(), "dirPoll.isPaused()");
     }
 
     @Test
@@ -151,7 +169,7 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.pause();
         dirPoll.pause();
-        assertTrue("dirPoll.isPaused()", dirPoll.isPaused());
+        assertTrue(dirPoll.isPaused(), "dirPoll.isPaused()");
     }
 
     @Test
@@ -160,7 +178,11 @@ public class DirPollTest {
             new DirPoll().new ProcessorRunner(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.File.getName()\" because \"f\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -171,7 +193,7 @@ public class DirPollTest {
             dirPoll.setArchiveDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -182,7 +204,7 @@ public class DirPollTest {
             dirPoll.setBadDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -204,7 +226,11 @@ public class DirPollTest {
             dirPoll.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.get(String, String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -217,7 +243,11 @@ public class DirPollTest {
             dirPoll.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.get(String, String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -230,7 +260,11 @@ public class DirPollTest {
             dirPoll.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.get(String, String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -242,7 +276,11 @@ public class DirPollTest {
             dirPoll.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.get(String, String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -255,7 +293,7 @@ public class DirPollTest {
             processor.setConfiguration(cfg);
             fail("Expected StackOverflowError to be thrown");
         } catch (StackOverflowError ex) {
-            assertEquals("ex.getClass()", StackOverflowError.class, ex.getClass());
+            assertEquals(StackOverflowError.class, ex.getClass(), "ex.getClass()");
         }
     }
 
@@ -263,14 +301,14 @@ public class DirPollTest {
     public void testSetPath() throws Throwable {
         DirPoll dirPoll = new DirPoll();
         dirPoll.setPath("testDirPollBase");
-        assertEquals("dirPoll.getPath()", "testDirPollBase", dirPoll.getPath());
+        assertEquals("testDirPollBase", dirPoll.getPath(), "dirPoll.getPath()");
     }
 
     @Test
     public void testSetPollInterval() throws Throwable {
         DirPoll dirPoll = new DirPoll();
         dirPoll.setPollInterval(100L);
-        assertEquals("dirPoll.getPollInterval()", 100L, dirPoll.getPollInterval());
+        assertEquals(100L, dirPoll.getPollInterval(), "dirPoll.getPollInterval()");
     }
 
     @Test
@@ -280,7 +318,11 @@ public class DirPollTest {
             dirPoll.setPriorities(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"str\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -291,7 +333,7 @@ public class DirPollTest {
             dirPoll.setRequestDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -302,7 +344,7 @@ public class DirPollTest {
             dirPoll.setResponseDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -313,7 +355,7 @@ public class DirPollTest {
             dirPoll.setRunDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -324,7 +366,7 @@ public class DirPollTest {
             dirPoll.setTmpDir(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -333,7 +375,7 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.unpause();
         dirPoll.unpause();
-        assertFalse("dirPoll.isPaused()", dirPoll.isPaused());
+        assertFalse(dirPoll.isPaused(), "dirPoll.isPaused()");
     }
 
     @Test
@@ -341,19 +383,20 @@ public class DirPollTest {
         DirPoll dirPoll = new DirPoll();
         dirPoll.pause();
         dirPoll.unpause();
-        assertFalse("dirPoll.isPaused()", dirPoll.isPaused());
+        assertFalse(dirPoll.isPaused(), "dirPoll.isPaused()");
     }
 
     @Test
-    public void testRetry() throws IOException {
-        Q2 q2 = new Q2("build/resources/test/org/jpos/util/dirpoll_retry/deploy");
+    public void testRetry(@TempDir Path deployDir) throws IOException {
+        Files.copy(Paths.get("build/resources/test/org/jpos/util/dirpoll_retry"), deployDir, REPLACE_EXISTING);
+        Q2 q2 = new Q2(deployDir.resolve("deploy").toString());
         q2.start();
         ISOUtil.sleep(5000L);
-        createTestFile("build/resources/test/org/jpos/util/dirpoll_retry/request/REQ1", "RETRYME");
+        createTestFile(deployDir.resolve("request/REQ1"), "RETRYME");
         ISOUtil.sleep(5000L);
         q2.stop();
         ISOUtil.sleep(2000L);
-        assertTrue("Can't read request", new File("build/resources/test/org/jpos/util/dirpoll_retry/request/REQ1").canRead());
+        assertTrue(Files.isReadable(deployDir.resolve("request/REQ1")), "Can't read request");
     }
     public static class RetryTest implements DirPoll.Processor {
         public byte[] process(String name, byte[] request) throws DirPoll.DirPollException {
@@ -365,10 +408,10 @@ public class DirPollTest {
             return new byte[0];
         }
     }
-    private void createTestFile (String path, String content) throws IOException {
-        File tmp = new File(path);
-        FileOutputStream out = new FileOutputStream(tmp);
-        out.write(content.getBytes());
+    private void createTestFile (Path path, String content) throws IOException {
+        Files.createDirectories(path.getParent());
+        AsynchronousFileChannel out = AsynchronousFileChannel.open(path, WRITE, CREATE);
+        out.write(ByteBuffer.wrap(content.getBytes()), 0);
         out.close();
     }
 }

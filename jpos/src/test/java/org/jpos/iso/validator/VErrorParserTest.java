@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,10 +18,12 @@
 
 package org.jpos.iso.validator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -35,22 +37,22 @@ import org.jpos.iso.ISOVError;
 import org.jpos.iso.ISOVField;
 import org.jpos.iso.ISOVMsg;
 import org.jpos.util.Logger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class VErrorParserTest {
 
     @Test
     public void testConstructor() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
-        assertNull("vErrorParser.realm", vErrorParser.realm);
-        assertNull("vErrorParser.logger", vErrorParser.logger);
+        assertNull(vErrorParser.realm, "vErrorParser.realm");
+        assertNull(vErrorParser.logger, "vErrorParser.logger");
     }
 
     @Test
     public void testDump() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
         vErrorParser.dump(new PrintStream(new ByteArrayOutputStream(), true), "testVErrorParserIndent");
-        assertNull("vErrorParser.getRealm()", vErrorParser.getRealm());
+        assertNull(vErrorParser.getRealm(), "vErrorParser.getRealm()");
     }
 
     @Test
@@ -59,13 +61,13 @@ public class VErrorParserTest {
         Logger logger = new Logger();
         vErrorParser.setLogger(logger, "testVErrorParserRealm");
         Logger result = vErrorParser.getLogger();
-        assertSame("result", logger, result);
+        assertSame(logger, result, "result");
     }
 
     @Test
     public void testGetRealm() throws Throwable {
         String result = new VErrorParser().getRealm();
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
@@ -73,7 +75,7 @@ public class VErrorParserTest {
         VErrorParser vErrorParser = new VErrorParser();
         vErrorParser.setLogger(new Logger(), "testVErrorParserRealm");
         String result = vErrorParser.getRealm();
-        assertEquals("result", "testVErrorParserRealm", result);
+        assertEquals("testVErrorParserRealm", result, "result");
     }
 
     @SuppressWarnings("unchecked")
@@ -81,7 +83,7 @@ public class VErrorParserTest {
     public void testGetVErrors() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
         Vector result = vErrorParser.getVErrors(new ISOVMsg(new ISOMsg("testVErrorParserMti")));
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -91,8 +93,8 @@ public class VErrorParserTest {
         ISOVError FirstError = new ISOVError("testVErrorParserDescription");
         ISOComponent c = new ISOVField(new ISOField(), FirstError);
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("result.size()", 1, result.size());
-        assertSame("result.get(0)", FirstError, result.get(0));
+        assertEquals(1, result.size(), "result.size()");
+        assertSame(FirstError, result.get(0), "result.get(0)");
     }
 
     @SuppressWarnings("unchecked")
@@ -101,7 +103,7 @@ public class VErrorParserTest {
         VErrorParser vErrorParser = new VErrorParser();
         ISOComponent c = new ISOMsg("testVErrorParserMti");
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -111,8 +113,8 @@ public class VErrorParserTest {
         ISOVError FirstError = new ISOVError("testVErrorParserDescription", "testVErrorParserRejectCode");
         ISOComponent c = new ISOVMsg(new ISOMsg("testVErrorParserMti"), FirstError);
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("result.size()", 1, result.size());
-        assertSame("result.get(0)", FirstError, result.get(0));
+        assertEquals(1, result.size(), "result.size()");
+        assertSame(FirstError, result.get(0), "result.get(0)");
     }
 
     @SuppressWarnings("unchecked")
@@ -122,7 +124,7 @@ public class VErrorParserTest {
         ISOMsg c = new ISOMsg();
         c.set(100, "testVErrorParserValue");
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -131,8 +133,8 @@ public class VErrorParserTest {
         VErrorParser vErrorParser = new VErrorParser();
         ISOComponent c = new ISOMsg();
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("(ISOMsg) c.getMaxField()", 0, ((ISOMsg) c).getMaxField());
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, c.getMaxField(), "(ISOMsg) c.getMaxField()");
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -140,7 +142,7 @@ public class VErrorParserTest {
     public void testGetVErrors5() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
         Vector result = vErrorParser.getVErrors(new ISOVMsg(new ISOMsg()));
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -150,7 +152,7 @@ public class VErrorParserTest {
         ISOMsg Source = new ISOVMsg(new ISOMsg(), new ISOVError("testVErrorParserDescription"));
         Source.set(100, "testVErrorParserValue");
         Vector result = vErrorParser.getVErrors(new ISOVMsg(Source));
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -158,7 +160,7 @@ public class VErrorParserTest {
     public void testGetVErrors7() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
         Vector result = vErrorParser.getVErrors(new ISOVField(new ISOField(100)));
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @SuppressWarnings("unchecked")
@@ -168,8 +170,8 @@ public class VErrorParserTest {
         ISOVError FirstError = new ISOVError("testVErrorParserDescription");
         ISOComponent c = new ISOVMsg(new ISOMsg(), FirstError);
         Vector result = vErrorParser.getVErrors(c);
-        assertEquals("result.size()", 1, result.size());
-        assertSame("result.get(0)", FirstError, result.get(0));
+        assertEquals(1, result.size(), "result.size()");
+        assertSame(FirstError, result.get(0), "result.get(0)");
     }
 
     @SuppressWarnings("unchecked")
@@ -177,7 +179,7 @@ public class VErrorParserTest {
     public void testGetVErrors9() throws Throwable {
         VErrorParser vErrorParser = new VErrorParser();
         Vector result = vErrorParser.getVErrors(new ISOBinaryField());
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @Test
@@ -189,7 +191,11 @@ public class VErrorParserTest {
             vErrorParser.getVErrors(c);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOVError.setId(String)\" because \"error\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -200,7 +206,11 @@ public class VErrorParserTest {
             vErrorParser.getVErrors(new ISOVMsg(new ISOMsg(), null));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOVError.setId(String)\" because \"error\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -213,7 +223,11 @@ public class VErrorParserTest {
             vErrorParser.getVErrors(c);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOVError.setId(String)\" because \"error\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -226,14 +240,18 @@ public class VErrorParserTest {
             vErrorParser.getVErrors(c);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOVError.setId(String)\" because \"error\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testParseXMLErrorList() throws Throwable {
         String result = new VErrorParser().parseXMLErrorList();
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
@@ -247,7 +265,7 @@ public class VErrorParserTest {
         VErrorParser vErrorParser = new VErrorParser();
         Logger logger = new Logger();
         vErrorParser.setLogger(logger, "testVErrorParserRealm");
-        assertSame("vErrorParser.logger", logger, vErrorParser.logger);
-        assertEquals("vErrorParser.realm", "testVErrorParserRealm", vErrorParser.realm);
+        assertSame(logger, vErrorParser.logger, "vErrorParser.logger");
+        assertEquals("testVErrorParserRealm", vErrorParser.realm, "vErrorParser.realm");
     }
 }

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,9 +22,9 @@ import org.jpos.iso.*;
 import org.jpos.util.LogEvent;
 import org.jpos.util.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -38,6 +38,7 @@ import java.util.Set;
  * This packager is used by EuroPackager to package subfields
  * such as field 48.
  */
+@SuppressWarnings("unchecked")
 public class EuroSubFieldPackager extends ISOBasePackager
 {
     protected static Prefixer tagPrefixer = AsciiPrefixer.LL;
@@ -54,13 +55,11 @@ public class EuroSubFieldPackager extends ISOBasePackager
     @Override
     public byte[] pack (ISOComponent c) throws ISOException {
         LogEvent evt = new LogEvent (this, "pack");
-        try {
-            int len =0;
+        try (ByteArrayOutputStream bout = new ByteArrayOutputStream(100)) {
             Map tab = c.getChildren();
-            List<byte[]> l = new ArrayList();
 
-            for (Map.Entry ent: (Set<Map.Entry>)tab.entrySet()){
-                Integer i = (Integer)ent.getKey();
+            for (Entry ent : (Set<Entry>) tab.entrySet()) {
+                Integer i = (Integer) ent.getKey();
                 if (i < 0)
                     continue;
                 if (fld[i] == null)
@@ -69,8 +68,7 @@ public class EuroSubFieldPackager extends ISOBasePackager
                     try {
                         ISOComponent f = (ISOComponent) ent.getValue();
                         byte[] b = fld[i].pack(f);
-                        len += b.length;
-                        l.add (b);
+                        bout.write(b);
                     } catch (Exception e) {
                         evt.addMessage ("error packing subfield "+i);
                         evt.addMessage (c);
@@ -78,12 +76,8 @@ public class EuroSubFieldPackager extends ISOBasePackager
                         throw e;
                     }
             }
-            int k=0;
-            byte[] d = new byte[len];
-            for (byte[] b :l) {
-                System.arraycopy(b, 0, d, k, b.length);
-                k += b.length;
-            }
+
+            byte[] d = bout.toByteArray();
             if (logger != null)  // save a few CPU cycle if no logger available
                 evt.addMessage (ISOUtil.hexString (d));
             return d;
@@ -99,15 +93,16 @@ public class EuroSubFieldPackager extends ISOBasePackager
     {
         LogEvent evt = new LogEvent (this, "unpack");
         int consumed = 0;
-        ISOComponent c;
+        ISOComponent c = null;
 
         // Unpack the fields
         while (consumed < b.length) {
-            //Determine current tag
-            int i = consumed==0&&fld[0]!=null?0:tagPrefixer.decodeLength(b, consumed);
+            //If this is first iteration and there is a packager for SE 0 then i=0, i.e. use field packager for SE 0
+            //Else determine current tag
+            int i = c == null && fld[0] != null ? 0 : tagPrefixer.decodeLength(b, consumed);
 
-            if (!(i < fld.length) || fld[i] == null)
-                throw new ISOException ("Unsupported sub-field " + i + " unpacking field " + m.getKey());
+            if (i >= fld.length || fld[i] == null)
+                throw new ISOException("Unsupported sub-field " + i + " unpacking field " + m.getKey());
 
             c = fld[i].createComponent(i);
             consumed += fld[i].unpack (c, b, consumed);

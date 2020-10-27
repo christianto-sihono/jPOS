@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,15 @@
 
 package org.jpos.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.security.jceadapter.JCEHandlerException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SMExceptionTest {
 
@@ -32,33 +34,33 @@ public class SMExceptionTest {
     public void testConstructor() throws Throwable {
         Exception e = new NumberFormatException("testSMExceptionParam1");
         SMException sMException = new SMException(e);
-        assertEquals("sMException.getMessage()", "java.lang.NumberFormatException: testSMExceptionParam1", sMException.getMessage());
-        assertNull("sMException.nested", sMException.nested);
-        assertSame("sMException.getNested()", e, sMException.getNested());
+        assertEquals("java.lang.NumberFormatException: testSMExceptionParam1", sMException.getMessage(), "sMException.getMessage()");
+        assertNull(sMException.nested, "sMException.nested");
+        assertSame(e, sMException.getNested(), "sMException.getNested()");
     }
 
     @Test
     public void testConstructor1() throws Throwable {
         SMException sMException = new SMException();
-        assertNull("sMException.nested", sMException.nested);
-        assertNull("sMException.getNested()", sMException.getNested());
+        assertNull(sMException.nested, "sMException.nested");
+        assertNull(sMException.getNested(), "sMException.getNested()");
     }
 
     @Test
     public void testConstructor2() throws Throwable {
         Exception e = new IndexOutOfBoundsException("testSMExceptionParam1");
         SMException sMException = new SMException("testSMExceptions", e);
-        assertEquals("sMException.getMessage()", "testSMExceptions", sMException.getMessage());
-        assertNull("sMException.nested", sMException.nested);
-        assertSame("sMException.getNested()", e, sMException.getNested());
+        assertEquals("testSMExceptions", sMException.getMessage(), "sMException.getMessage()");
+        assertNull(sMException.nested, "sMException.nested");
+        assertSame(e, sMException.getNested(), "sMException.getNested()");
     }
 
     @Test
     public void testConstructor3() throws Throwable {
         SMException sMException = new SMException("testSMExceptions");
-        assertEquals("sMException.getMessage()", "testSMExceptions", sMException.getMessage());
-        assertNull("sMException.nested", sMException.nested);
-        assertNull("sMException.getNested()", sMException.getNested());
+        assertEquals("testSMExceptions", sMException.getMessage(), "sMException.getMessage()");
+        assertNull(sMException.nested, "sMException.nested");
+        assertNull(sMException.getNested(), "sMException.getNested()");
     }
 
     @Test
@@ -67,7 +69,11 @@ public class SMExceptionTest {
             new SMException((Exception) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.lang.Throwable.toString()\" because \"nested\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -75,6 +81,6 @@ public class SMExceptionTest {
     public void testGetTagName() throws Throwable {
         SMException jCEHandlerException = new JCEHandlerException("testSMExceptions");
         String result = jCEHandlerException.getTagName();
-        assertEquals("result", "security-module-exception", result);
+        assertEquals("security-module-exception", result, "result");
     }
 }

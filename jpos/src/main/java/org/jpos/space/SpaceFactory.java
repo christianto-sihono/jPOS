@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,9 +22,7 @@ import org.jpos.util.ConcurrentUtil;
 import org.jpos.util.NameRegistrar;
 
 import java.util.StringTokenizer;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * Creates a space based on a space URI.
@@ -113,7 +111,7 @@ public class SpaceFactory {
             try {
                 sp = (Space) NameRegistrar.get (uri);
             } catch (NameRegistrar.NotFoundException e) {
-                if (SPACELET.equals (scheme))
+                if (SPACELET.equals (scheme) || "rspace".equals(scheme))
                     throw new SpaceError (uri + " not found.");
 
                 sp = createSpace (scheme, name, param);

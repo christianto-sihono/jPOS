@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,17 @@
 
 package org.jpos.space;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import static org.apache.commons.lang3.JavaVersion.JAVA_10;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+
+import org.junit.jupiter.api.Test;
 
 public class JDBMSpaceTest {
 
@@ -33,13 +37,13 @@ public class JDBMSpaceTest {
         byte[] b = new byte[11];
         b[0] = (byte) 48;
         long result = JDBMSpace.getLong(b, 0);
-        assertEquals("result", 3458764513820540928L, result);
+        assertEquals(3458764513820540928L, result, "result");
     }
 
     @Test
     public void testGetLong1() throws Throwable {
         long result = JDBMSpace.getLong(new JDBMSpace.Ref(100L, 1000L).serialize(new JDBMSpace.Ref()), 0);
-        assertEquals("result", 0L, result);
+        assertEquals(0L, result, "result");
     }
 
     @Test
@@ -49,7 +53,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -1);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 9", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -60,7 +68,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -4);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 7", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -71,7 +83,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -6);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 5", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -82,7 +98,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -7);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -93,7 +113,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -2);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 8", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -104,7 +128,11 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -3);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 5", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -115,25 +143,33 @@ public class JDBMSpaceTest {
             JDBMSpace.getLong(b, -5);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testGetLongThrowsNullPointerException() throws Throwable {
         try {
-            JDBMSpace.getLong((byte[]) null, 100);
+            JDBMSpace.getLong(null, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot load from byte/boolean array because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testHeadConstructor() throws Throwable {
         JDBMSpace.Head head = new JDBMSpace.Head();
-        assertEquals("head.last", -1L, head.last);
-        assertEquals("head.first", -1L, head.first);
+        assertEquals(-1L, head.last, "head.last");
+        assertEquals(-1L, head.first, "head.first");
     }
 
     @Test
@@ -143,17 +179,21 @@ public class JDBMSpaceTest {
             head.readExternal(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("head.count", 0L, head.count);
-            assertEquals("head.last", -1L, head.last);
-            assertEquals("head.first", -1L, head.first);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.ObjectInput.readLong()\" because \"in\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0L, head.count, "head.count");
+            assertEquals(-1L, head.last, "head.last");
+            assertEquals(-1L, head.first, "head.first");
         }
     }
 
     @Test
     public void testHeadToString() throws Throwable {
         new JDBMSpace.Head().toString();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
@@ -162,7 +202,11 @@ public class JDBMSpaceTest {
             new JDBMSpace.Head().writeExternal(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.ObjectOutput.writeLong(long)\" because \"out\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -170,7 +214,7 @@ public class JDBMSpaceTest {
     public void testPutLong() throws Throwable {
         byte[] b = new byte[66];
         JDBMSpace.putLong(b, 0, 100L);
-        assertEquals("b[7]", (byte) 100, b[7]);
+        assertEquals((byte) 100, b[7], "b[7]");
     }
 
     @Test
@@ -180,9 +224,13 @@ public class JDBMSpaceTest {
             JDBMSpace.putLong(b, -6, 100L);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("b[0]", (byte) 0, b[0]);
-            assertEquals("ex.getMessage()", "-1", ex.getMessage());
-            assertEquals("b.length", 2, b.length);
+            assertEquals((byte) 0, b[0], "b[0]");
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index -1 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(2, b.length, "b.length");
         }
     }
 
@@ -193,33 +241,41 @@ public class JDBMSpaceTest {
             JDBMSpace.putLong(b, 100, 100L);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "107", ex.getMessage());
-            assertEquals("b.length", 3, b.length);
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("107", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 107 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(3, b.length, "b.length");
         }
     }
 
     @Test
     public void testPutLongThrowsNullPointerException() throws Throwable {
         try {
-            JDBMSpace.putLong((byte[]) null, 100, 100L);
+            JDBMSpace.putLong(null, 100, 100L);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot store to byte/boolean array because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testRefConstructor() throws Throwable {
         JDBMSpace.Ref ref = new JDBMSpace.Ref(100L, 1000L);
-        assertEquals("ref.recid", 100L, ref.recid);
-        assertEquals("ref.next", -1L, ref.next);
-        assertEquals("ref.expires", 1000L, ref.expires);
+        assertEquals(100L, ref.recid, "ref.recid");
+        assertEquals(-1L, ref.next, "ref.next");
+        assertEquals(1000L, ref.expires, "ref.expires");
     }
 
     @Test
     public void testRefConstructor1() throws Throwable {
         JDBMSpace.Ref ref = new JDBMSpace.Ref();
-        assertTrue("ref.isExpired()", ref.isExpired());
+        assertTrue(ref.isExpired(), "ref.isExpired()");
     }
 
     @Test
@@ -227,10 +283,10 @@ public class JDBMSpaceTest {
         JDBMSpace.Ref ref = new JDBMSpace.Ref();
         byte[] serialized = new byte[26];
         JDBMSpace.Ref result = (JDBMSpace.Ref) ref.deserialize(serialized);
-        assertTrue("result.isExpired()", result.isExpired());
-        assertEquals("ref.recid", 0L, ref.recid);
-        assertEquals("ref.expires", 0L, ref.expires);
-        assertEquals("ref.next", 0L, ref.next);
+        assertTrue(result.isExpired(), "result.isExpired()");
+        assertEquals(0L, ref.recid, "ref.recid");
+        assertEquals(0L, ref.expires, "ref.expires");
+        assertEquals(0L, ref.next, "ref.next");
     }
 
     @Test
@@ -241,10 +297,14 @@ public class JDBMSpaceTest {
             ref.deserialize(serialized);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "7", ex.getMessage());
-            assertEquals("ref.recid", 100L, ref.recid);
-            assertEquals("ref.expires", 1000L, ref.expires);
-            assertEquals("ref.next", -1L, ref.next);
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("7", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 7 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(100L, ref.recid, "ref.recid");
+            assertEquals(1000L, ref.expires, "ref.expires");
+            assertEquals(-1L, ref.next, "ref.next");
         }
     }
 
@@ -252,35 +312,39 @@ public class JDBMSpaceTest {
     public void testRefDeserializeThrowsNullPointerException() throws Throwable {
         JDBMSpace.Ref ref = new JDBMSpace.Ref(100L, 1000L);
         try {
-            ref.deserialize((byte[]) null);
+            ref.deserialize(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("ref.recid", 100L, ref.recid);
-            assertEquals("ref.expires", 1000L, ref.expires);
-            assertEquals("ref.next", -1L, ref.next);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot load from byte/boolean array because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(100L, ref.recid, "ref.recid");
+            assertEquals(1000L, ref.expires, "ref.expires");
+            assertEquals(-1L, ref.next, "ref.next");
         }
     }
 
     @Test
     public void testRefIsExpired() throws Throwable {
-        long expirytime = System.currentTimeMillis() + (365 * 24 * 60 * 60 * 1000);
+        long expirytime = System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000;
         boolean result = new JDBMSpace.Ref(100L, expirytime).isExpired();
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testRefIsExpired1() throws Throwable {
         boolean result = new JDBMSpace.Ref(100L, 1000L).isExpired();
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testRefSerialize() throws Throwable {
         JDBMSpace.Ref ref = new JDBMSpace.Ref(100L, 1000L);
         byte[] result = ref.serialize(new JDBMSpace.Ref(1000L, 0L));
-        assertEquals("result.length", 24, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(24, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
@@ -289,7 +353,7 @@ public class JDBMSpaceTest {
             new JDBMSpace.Ref(100L, 1000L).serialize(Integer.valueOf(0));
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
         }
     }
 
@@ -299,13 +363,17 @@ public class JDBMSpaceTest {
             new JDBMSpace.Ref().serialize(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read field \"recid\" because \"d\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testRefToString() throws Throwable {
         new JDBMSpace.Ref(100L, 1000L).toString();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 }

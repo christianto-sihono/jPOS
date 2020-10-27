@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,13 +22,10 @@ import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
 import org.jpos.iso.ISOException;
-import org.jpos.iso.ISOUtil;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.StringTokenizer;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * DirPoll operates on a set of directories which defaults to
@@ -49,7 +46,8 @@ import java.util.Vector;
  * @since jPOS 1.2.7
  * @version $Revision$ $Date$
  */
-public class DirPoll extends SimpleLogSource 
+@SuppressWarnings("unchecked")
+public class DirPoll extends SimpleLogSource
     implements Runnable, FilenameFilter, Configurable, Destroyable
 {
     private long pollInterval;
@@ -65,13 +63,17 @@ public class DirPoll extends SimpleLogSource
     private String responseSuffix;
     private ThreadPool pool;
     private Object processor;
+    private final Object shutdownMonitor = new Object();
 
     private boolean shutdown;
     private boolean paused = false;
     private boolean shouldArchive;
+    private boolean shouldCompressArchive;
     private boolean shouldTimestampArchive;
     private String archiveDateFormat;
     private boolean acceptZeroLength = false;
+    private boolean regexPriorityMatching = false;
+    private List<String> poolBatchFiles = new ArrayList<>();
 
     public DirPoll () {
         prio = new Vector();
@@ -96,6 +98,9 @@ public class DirPoll extends SimpleLogSource
     }
     public void setShouldArchive(boolean shouldArchive) {
         this.shouldArchive = shouldArchive;
+    }
+    public void setShouldCompressArchive(boolean shouldCompressArchive) {
+        this.shouldCompressArchive = shouldCompressArchive;
     }
     public void setAcceptZeroLength(boolean acceptZeroLength) {
         this.acceptZeroLength = acceptZeroLength;
@@ -133,6 +138,39 @@ public class DirPoll extends SimpleLogSource
     public void setProcessor (Object processor) {
         this.processor = processor;
     }
+
+    protected File getRequestDir() {
+        return requestDir;
+    }
+
+    protected File getResponseDir() {
+        return responseDir;
+    }
+
+    protected File getTmpDir() {
+        return tmpDir;
+    }
+
+    protected File getBadDir() {
+        return badDir;
+    }
+
+    protected File getRunDir() {
+        return runDir;
+    }
+
+    protected File getArchiveDir() {
+        return archiveDir;
+    }
+
+    public boolean isRegexPriorityMatching() {
+        return regexPriorityMatching;
+    }
+
+    public void setRegexPriorityMatching(boolean regexPriorityMatching) {
+        this.regexPriorityMatching = regexPriorityMatching;
+    }
+
     /**
      * Return instance implementing {@link FileProcessor} or {@link Processor}
      * @return
@@ -156,18 +194,20 @@ public class DirPoll extends SimpleLogSource
                 ((Configurable) processor).setConfiguration (cfg);
             }
             setRequestDir  (cfg.get ("request.dir",  "request"));
-            setResponseDir (cfg.get ("response.dir", "response"));
-            setTmpDir      (cfg.get ("tmp.dir",      "tmp"));
-            setRunDir      (cfg.get ("run.dir",      "run"));
-            setBadDir      (cfg.get ("bad.dir",      "bad"));
-            setArchiveDir  (cfg.get ("archive.dir",  "archive"));
-            setResponseSuffix (cfg.get ("response.suffix", null));
-            setShouldArchive (cfg.getBoolean ("archive", false));
+            setResponseDir(cfg.get("response.dir", "response"));
+            setTmpDir(cfg.get("tmp.dir", "tmp"));
+            setRunDir(cfg.get("run.dir", "run"));
+            setBadDir(cfg.get("bad.dir", "bad"));
+            setArchiveDir(cfg.get("archive.dir", "archive"));
+            setResponseSuffix(cfg.get("response.suffix", null));
+            setShouldArchive(cfg.getBoolean("archive", false));
+            setShouldCompressArchive(cfg.getBoolean("archive.compress", false));
             setAcceptZeroLength (cfg.getBoolean ("zero-length", false));
             setArchiveDateFormat (
                 cfg.get ("archive.dateformat", "yyyyMMddHHmmss")
             );
             setShouldTimestampArchive (cfg.getBoolean ("archive.timestamp", false));
+            setRegexPriorityMatching(cfg.getBoolean("priority.regex", false));
         }
     }
     /**
@@ -192,15 +232,22 @@ public class DirPoll extends SimpleLogSource
     //--------------------------------------- FilenameFilter implementation
     public boolean accept(File dir, String name) {
         boolean result;
-        String ext = currentPriority >= 0 ? 
-            ((String) prio.elementAt(currentPriority)) : null;
-        if (ext != null && !name.endsWith(ext))
-            return false;
+        String ext = currentPriority >= 0 ?
+                (String) prio.elementAt(currentPriority) : null;
+        if (ext != null) {
+            if (isRegexPriorityMatching()) {
+                if (!name.matches(ext))
+                    return false;
+            } else {
+                if (!name.endsWith(ext))
+                    return false;
+            }
+        }
         File f = new File (dir, name);
         if (acceptZeroLength){
              result = f.isFile();
         } else {
-             result = f.isFile() && (f.length() > 0);
+             result = f.isFile() && f.length() > 0;
         }
         return result;
     }
@@ -230,19 +277,31 @@ public class DirPoll extends SimpleLogSource
                     getPool().execute (new ProcessorRunner (f));
                     Thread.yield(); // be nice
                 }
-                else
-                    Thread.sleep(pollInterval);
-            } catch (InterruptedException e) { 
+                else {
+                    synchronized (shutdownMonitor) {
+                        if (!shutdown) {
+                            shutdownMonitor.wait(pollInterval);
+                        }
+                    }
+                }
+            } catch (InterruptedException e) {
             } catch (Throwable e) {
                 Logger.log (new LogEvent (this, "dirpoll", e));
                 try {
-                    Thread.sleep(pollInterval * 10);    // anti hog
+                    synchronized (shutdownMonitor) {
+                        if (!shutdown) {
+                            shutdownMonitor.wait(pollInterval * 10);
+                        }
+                    }
                 } catch (InterruptedException ex) { }
             }
-        }   
+        }
     }
     public void destroy () {
-        shutdown = true;
+        synchronized (shutdownMonitor) {
+            shutdown = true;
+            shutdownMonitor.notifyAll();
+        }
     }
 
     //----------------------------------------------------- public helpers
@@ -286,26 +345,48 @@ public class DirPoll extends SimpleLogSource
     private File moveTo(File f, File dir) throws IOException {
         File destination = new File(dir, f.getName());
         if (!f.renameTo(destination))
-            throw new IOException("Unable to move"+f.getName());
+            throw new IOException("Unable to move "+f.getName());
         return destination;
     }
 
-    private void store(File f, File destinationDirectory) throws IOException {
+    private File store(File f, File destinationDirectory) throws IOException {
         String storedFilename = f.getName();
         if (shouldTimestampArchive)
             storedFilename = f.getName() + "." + new SimpleDateFormat(archiveDateFormat).format(new Date());
         File destination = new File(destinationDirectory, storedFilename);
         if (!f.renameTo(destination))
             throw new IOException("Unable to archive " + "'" + f.getName() + "' in directory " + destinationDirectory);
+        return destination;
     }
-    
-    private File scan() {
-        for (currentPriority=0; 
-            currentPriority < prio.size(); currentPriority++)
-        {
-            String files[] = requestDir.list(this);
-            if (files != null && files.length > 0)
-                return new File(requestDir, files[0]);
+
+    private void compress(File f) throws IOException {
+        ZipUtil.zipFile(f, new File(f.getAbsolutePath() + ".zip"));
+        f.delete();
+    }
+
+    protected File scan() {
+        if (prio.size() > 1) {
+            for (currentPriority = 0; currentPriority < prio.size(); currentPriority++) {
+                if (poolBatchFiles.isEmpty()) {
+                    String[] files = requestDir.list(this);
+                    if (files != null && files.length > 0) {
+                        poolBatchFiles = new ArrayList(Arrays.asList(files));
+                        return new File(requestDir, poolBatchFiles.remove(0));
+                    }
+                } else {
+                    return new File(requestDir, poolBatchFiles.remove(0));
+                }
+            }
+        } else {
+            if (poolBatchFiles.isEmpty()) {
+                String[] files = requestDir.list();
+                if (files != null && files.length > 0) {
+                    poolBatchFiles = new ArrayList(Arrays.asList(files));
+                    return new File(requestDir, poolBatchFiles.remove(0));
+                }
+            } else {
+                return new File(requestDir, poolBatchFiles.remove(0));
+            }
         }
         return null;
     }
@@ -323,7 +404,7 @@ public class DirPoll extends SimpleLogSource
          * @param request request image
          * @return response (or null)
          */
-        public byte[] process(String name, byte[] request) 
+        byte[] process(String name, byte[] request)
             throws DirPollException;
     }
     public interface FileProcessor {
@@ -331,7 +412,7 @@ public class DirPoll extends SimpleLogSource
          * @param name request File
          * @throws org.jpos.util.DirPoll.DirPollException on errors
          */
-        public void process (File name) throws DirPollException;
+        void process(File name) throws DirPollException;
     }
     public class ProcessorRunner implements Runnable {
         File request;
@@ -359,7 +440,10 @@ public class DirPoll extends SimpleLogSource
                     ((FileProcessor) processor).process (request);
 
                 if (shouldArchive) {
-                    store(request, archiveDir);
+                    File archivedFile = store(request, archiveDir);
+                    if (shouldCompressArchive) {
+                        compress(archivedFile);
+                    }
                 } else {
                     if (!request.delete ())
                         throw new DirPollException 
@@ -370,10 +454,17 @@ public class DirPoll extends SimpleLogSource
                 logEvent = evt;
                 evt.addMessage (e);
                 try {
-                    if ((e instanceof DirPollException && ((DirPollException)e).isRetry())) {
-                        ISOUtil.sleep(pollInterval*10); // retry delay (pollInterval defaults to 100ms)
+                    if (e instanceof DirPollException && ((DirPollException)e).isRetry()) {
+                        synchronized (shutdownMonitor) {
+                            if (!shutdown) {
+                                try {
+                                    shutdownMonitor.wait(pollInterval * 10); // retry delay (pollInterval defaults to 100ms)
+                                } catch (InterruptedException ie) {
+                                }
+                            }
+                        }
                         evt.addMessage("retrying");
-                        store(request, requestDir);
+                        moveTo(request, requestDir);
                     } else {
                         store(request, badDir);
                     }

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,15 +30,15 @@ public interface Channel {
     /**
      * @param m message to send
      */
-    public void send (ISOMsg m);
+    void send(ISOMsg m);
     /**
      * @return received message
      */
-    public ISOMsg receive ();
+    ISOMsg receive();
     /**
      * @param timeout time to wait for a message
      * @return received message or null
      */
-    public ISOMsg receive (long timeout);
+    ISOMsg receive(long timeout);
 }
 

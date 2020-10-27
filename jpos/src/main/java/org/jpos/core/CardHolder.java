@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,17 +25,17 @@ import org.jpos.util.Loggeable;
 
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.StringTokenizer;
 
 /**
  * @author apr@cs.com.uy
- * @version $Id$
  * @since jPOS 1.1
  *
- * represents a CardHolder
+ * This class is called 'CardHolder', but a better name could have been 'Card'
+ * At some point we'll deprecate this one and create a new 'Card' class.
  */
 public class CardHolder implements Cloneable, Serializable, Loggeable {
-
     private static final long serialVersionUID = 7449770625551878435L;
     private static final String TRACK1_SEPARATOR = "^";
     private static final char TRACK2_SEPARATOR = '=';
@@ -55,7 +55,7 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
      * Track2 trailler
      * @serial
      */
-    protected String trailler;
+    protected String trailer;
     /**
      * Optional security code (CVC, CVV, Locale ID, wse)
      * @serial
@@ -88,7 +88,6 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
 
     /**
      * creates a new CardHolder based on pan and exp
-     * @param track2 cards track2
      * @exception InvalidCardException
      */
     public CardHolder (String pan, String exp) 
@@ -109,24 +108,20 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
         throws InvalidCardException
     {
         super();
-        try {
-            if (m.hasField(35))
-                parseTrack2 ((String) m.getValue(35));
-            else if (m.hasField(2)) {
-                setPAN ((String) m.getValue(2));
-                if (m.hasField (14))
-                    setEXP ((String) m.getValue(14));
-            } else {
-                throw new InvalidCardException("required fields not present");
-            }
-            if (m.hasField(45)) {
-                setTrack1((String) m.getValue(45));
-            }
-            if (m.hasField(55)) {
-                setSecurityCode (m.getString(55));
-            }
-        } catch (ISOException e) {
-            throw new InvalidCardException();
+        if (m.hasField(35))
+            parseTrack2((String) m.getValue(35));
+        else if (m.hasField(2)) {
+            setPAN((String) m.getValue(2));
+            if (m.hasField(14))
+                setEXP((String) m.getValue(14));
+        } else {
+            throw new InvalidCardException("required fields not present");
+        }
+        if (m.hasField(45)) {
+            setTrack1((String) m.getValue(45));
+        }
+        if (m.hasField(55)) {
+            setSecurityCode(m.getString(55));
         }
     }
 
@@ -141,12 +136,12 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
         if (s == null)
             throw new InvalidCardException ("null track2 data");
         int separatorIndex = s.replace ('D','=').indexOf(TRACK2_SEPARATOR);
-        if ((separatorIndex > 0) && (s.length() > separatorIndex+4)) {
+        if (separatorIndex > 0 && s.length() > separatorIndex+4) {
             pan = s.substring(0, separatorIndex);
             exp = s.substring(separatorIndex+1, separatorIndex+1+4);
-            trailler = s.substring(separatorIndex+1+4);
+            trailer = s.substring(separatorIndex+1+4);
         } else 
-            throw new InvalidCardException (s);
+            throw new InvalidCardException ("Invalid track2 format");
     }
 
     /**
@@ -167,7 +162,7 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
      * @return true if we have a track1
      */
     public boolean hasTrack1() {
-        return (track1!=null);
+        return track1!=null;
     }
 
     /**
@@ -191,7 +186,7 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
      */
     public String getTrack2() {
         if (hasTrack2())
-            return pan + TRACK2_SEPARATOR + exp + trailler;
+            return pan + TRACK2_SEPARATOR + exp + trailer;
         else
             return null;
     }
@@ -199,12 +194,12 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
      * @return true if we have a (may be valid) track2
      */
     public boolean hasTrack2() {
-        return (pan != null && exp != null && trailler != null);
+        return pan != null && exp != null && trailer != null;
     }
 
     /**
      * assigns securityCode to this CardHolder object
-     * @param securityCode
+     * @param securityCode Card's security code
      */
     public void setSecurityCode(String securityCode) {
         this.securityCode = securityCode;
@@ -222,29 +217,41 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
         return securityCode != null;
     }
     /**
-     * @return trailler (may be null)
+     * @deprecated use getTrailer()
+     * @return trailer (may be null)
      */
+    @SuppressWarnings("unused")
     public String getTrailler() {
-        return trailler;
+        return trailer;
     }
     /**
-     * Set Trailler (used by OR-mapping stuff)
-     * @param trailler
+     * Set Card's trailer
+     * @deprecated use setTrailer
+     * @param trailer Card's trailer
      */
-    public void setTrailler (String trailler) {
-        this.trailler = trailler;
+    @SuppressWarnings("unused")
+    public void setTrailler (String trailer) {
+        this.trailer = trailer;
+    }
+
+    public String getTrailer() {
+        return trailer;
+    }
+
+    public void setTrailer(String trailer) {
+        this.trailer = trailer;
     }
 
     /**
      * Sets Primary Account Number
-     * @param pan
+     * @param pan Primary Account NUmber
      * @exception InvalidCardException
      */
     public void setPAN (String pan) 
         throws InvalidCardException
     { 
         if (pan.length() < MINPANLEN)
-            throw new InvalidCardException (pan);
+            throw new InvalidCardException ("PAN length smaller than min required");
         this.pan = pan;
     }
 
@@ -272,7 +279,7 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
         throws InvalidCardException
     { 
         if (exp.length() != 4)
-            throw new InvalidCardException (pan+"/"+exp);
+            throw new InvalidCardException ("Invalid Exp length, must be 4");
         this.exp = exp;
     }
 
@@ -286,21 +293,32 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
 
     /**
      * Y2K compliant expiration check
-     * @return true if card is expired (or invalid exp)
+     * @return true if card is expired (or expiration is invalid)
      */
     public boolean isExpired () {
+        return isExpired(new Date());
+    }
+
+    /**
+     * Y2K compliant expiration check
+     * @param currentDate current system's date
+     * @return true if card is expired (or expiration is invalid)
+     */
+    public boolean isExpired(Date currentDate) {
         if (exp == null || exp.length() != 4)
             return true;
-        String now = ISODate.formatDate(new java.util.Date(), "yyyyMM");
+        String now = ISODate.formatDate(currentDate, "yyyyMM");
         try {
             int mm = Integer.parseInt(exp.substring(2));
             int aa = Integer.parseInt(exp.substring(0,2));
-            if ((aa < 100) && (mm > 0) && (mm <= 12)) {
-                String expDate = ((aa < 70) ? "20" : "19") + exp;
+            if (aa < 100 && mm > 0 && mm <= 12) {
+                String expDate = (aa < 70 ? "20" : "19") + exp;
                 if (expDate.compareTo(now) >= 0)
                     return false;
             }
-        } catch (NumberFormatException e) { }
+        } catch (NumberFormatException ignored) {
+            // NOPMD
+        }
         return true;
     }
     public boolean isValidCRC () {
@@ -317,7 +335,7 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
                 return false;
             c = (char) (c - '0');
             if (i % 2 == odd)
-                crc+=(c*2) >= 10 ? ((c*2)-9) : (c*2);        
+                crc+= c*2 >= 10 ? c*2 -9 : c*2;
             else
                 crc+=c;
         }
@@ -356,20 +374,20 @@ public class CardHolder implements Cloneable, Serializable, Loggeable {
      * @return ServiceCode (if available) or a String with three blanks
      */
     public String getServiceCode () {
-        return (trailler != null && trailler.length() >= 3) ?
-            trailler.substring (0, 3) :
+        return trailer != null && trailer.length() >= 3 ?
+            trailer.substring (0, 3) :
             "   ";
     }
     public boolean seemsManualEntry() {
-        return trailler == null ? true : (trailler.trim().length() == 0);
+        return trailer == null || trailer.trim().length() == 0;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((exp == null) ? 0 : exp.hashCode());
-        result = prime * result + ((pan == null) ? 0 : pan.hashCode());
+        result = prime * result + (exp == null ? 0 : exp.hashCode());
+        result = prime * result + (pan == null ? 0 : pan.hashCode());
         return result;
     }
 

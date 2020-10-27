@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,12 +26,16 @@ package org.jpos.iso;
  * @see IFA_LLNUM
  */
 public class IF_NOP extends ISOFieldPackager {
+    public IF_NOP () {
+        super(0, "<dummy>");
+    }
+
     /**
      * @param len - field len
      * @param description symbolic descrption
      */
-    public IF_NOP () {
-        super(0, "<dummy>");
+    public IF_NOP (int len, String description) {
+        super(len, description);
     }
     /**
      * @param c - a component

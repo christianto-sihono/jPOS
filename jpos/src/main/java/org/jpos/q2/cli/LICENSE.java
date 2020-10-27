@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,9 +25,8 @@ import org.jpos.q2.CLICommand;
 import org.jpos.q2.CLIContext;
 
 public class LICENSE implements CLICommand {
-
     public void exec(CLIContext cli, String[] args) throws IOException {
-        InputStream input = new BufferedInputStream(getClass().getResourceAsStream("/LICENSE"));
+        InputStream input = new BufferedInputStream(getClass().getResourceAsStream("/JPOS_LICENSE"));
         try {
             display(cli, input);
         } finally {

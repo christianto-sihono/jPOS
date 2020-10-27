@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -39,7 +39,6 @@ public class EbcdicHexInterpreter implements BinaryInterpreter
 
     /**
      * Converts the binary data into EBCDIC hex digits.
-     * @see org.jpos.iso.BinaryInterpreter#interpret(byte[], byte[], int)
      */
     public void interpret(byte[] data, byte[] b, int offset)
     {
@@ -51,7 +50,6 @@ public class EbcdicHexInterpreter implements BinaryInterpreter
 
     /**
      * Converts the EBCDIC hex digits into binary data.
-     * @see org.jpos.iso.BinaryInterpreter#uninterpret(byte[], int, int)
      */
     public byte[] uninterpret(byte[] rawData, int offset, int length)
     {
@@ -61,8 +59,8 @@ public class EbcdicHexInterpreter implements BinaryInterpreter
         	//TODO: what if the data is not EBCDIC? validation is required.
             byte hi = rawData[offset + i * 2];
             byte lo = rawData[offset + i * 2 + 1];
-            int h = hi < 0xF0 ? 10 + hi - 0xC0 : hi - 0xF0;
-            int l = lo < 0xF0 ? 10 + lo - 0xC0 : lo - 0xF0;
+            int h = hi < (byte) 0xF0 ? 10 + hi - 0xC0 : hi - 0xF0;
+            int l = lo < (byte) 0xF0 ? 10 + lo - 0xC0 : lo - 0xF0;
             ret[i] = (byte)(h << 4 | l);
         }
         return ret;
@@ -70,8 +68,7 @@ public class EbcdicHexInterpreter implements BinaryInterpreter
 
     /**
      * Returns double nBytes because the hex representation of 1 byte needs 2 hex digits.
-     * 
-     * @see org.jpos.iso.BinaryInterpreter#getPackedLength(int)
+     *
      */
     public int getPackedLength(int nBytes)
     {

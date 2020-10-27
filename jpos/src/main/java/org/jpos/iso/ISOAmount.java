@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,6 +22,7 @@ import org.jpos.iso.packager.XMLPackager;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public class ISOAmount 
     extends ISOComponent 
@@ -44,8 +45,14 @@ public class ISOAmount
     public ISOAmount (int fieldNumber, int currencyCode, BigDecimal amount) throws ISOException {
         super ();
         setFieldNumber(fieldNumber);
-        this.amount = amount.setScale(ISOCurrency.getCurrency(currencyCode).getDecimals());
         this.currencyCode = currencyCode;
+        try {
+            this.amount = amount.setScale(ISOCurrency.getCurrency(currencyCode).getDecimals());
+        } catch (ArithmeticException e) {
+            throw new ISOException (
+              "rounding problem, amount=" + amount + " scale=" + ISOCurrency.getCurrency(currencyCode).getDecimals()
+            );
+        }
     }
     public Object getKey() {
         return fieldNumber;
@@ -85,6 +92,11 @@ public class ISOAmount
     }
     public void setFieldNumber (int fieldNumber) {
         this.fieldNumber = fieldNumber;
+    }
+
+    @Override
+    public int getFieldNumber () {
+        return fieldNumber;
     }
     public BigDecimal getAmount () {
         return amount;
@@ -145,6 +157,30 @@ public class ISOAmount
         } catch (ISOException e) {
             throw new IOException (e.getMessage());
         }
-    }       
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ISOAmount isoAmount = (ISOAmount) o;
+        return fieldNumber == isoAmount.fieldNumber &&
+          currencyCode == isoAmount.currencyCode &&
+          Objects.equals(amount, isoAmount.amount);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fieldNumber, currencyCode, amount);
+    }
+
+    @Override
+    public String toString() {
+        return "ISOAmount{" +
+          "fieldNumber=" + fieldNumber +
+          ", currencyCode=" + currencyCode +
+          ", amount=" + amount +
+          '}';
+    }
 }
 

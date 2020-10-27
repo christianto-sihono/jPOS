@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,10 +18,12 @@
 
 package org.jpos.util;
 
+import org.jpos.space.SpaceUtil;
+import org.jpos.space.TSpace;
+
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Allow runtime binding of jPOS's components (ISOChannels, Logger, MUXes, etc)
@@ -31,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class NameRegistrar implements Loggeable {
     private static final NameRegistrar instance = new NameRegistrar();
-    private static final ConcurrentMap<String, Object> registrar = new ConcurrentHashMap<String, Object>();
+    private static final TSpace<String, Object> sp = new TSpace<String,Object>();
 
     public static class NotFoundException extends Exception {
         private static final long serialVersionUID = 8744022794646381475L;
@@ -49,8 +51,21 @@ public class NameRegistrar implements Loggeable {
         super();
     }
 
-    public static ConcurrentMap<String, Object> getMap() {
-        return getInstance().registrar;
+    public static TSpace<String, Object> getSpace() {
+        return sp;
+    }
+
+    /**
+     * @return a copy of the NameRegistrar's entries as a Map
+     */
+    public static Map<String,Object> getAsMap() {
+        Map<String,Object> map = new HashMap<String,Object>();
+        for (String k : sp.getKeySet()) {
+            Object v  = sp.rdp(k);
+            if (v != null)
+                map.put(k,v);
+        }
+        return map;
     }
 
     /**
@@ -69,7 +84,7 @@ public class NameRegistrar implements Loggeable {
      *            - value to be associated with the specified key
      */
     public static void register(String key, Object value) {
-        getMap().put(key, value);
+        sp.put(key, value);
     }
 
     /**
@@ -77,17 +92,20 @@ public class NameRegistrar implements Loggeable {
      *            key whose mapping is to be removed from registrar.
      */
     public static void unregister(String key) {
-        getMap().remove(key);
+        SpaceUtil.wipe(sp, key);
     }
 
     /**
-     * @param key
-     *            key whose associated value is to be returned.
-     * @throws NotFoundException
-     *             if key not present in registrar
+     * Get a value from the registry.
+     *
+     * @param <T> desired type of entry value.
+     * @param key the key whose associated value is to be returned.
+     * @return a value
+     * @throws NotFoundException if key not present in registrar
      */
-    public static Object get(String key) throws NotFoundException {
-        Object obj = getMap().get(key);
+    public static <T> T get(String key) throws NotFoundException {
+        @SuppressWarnings("unchecked")
+        T obj = (T) sp.rdp(key);
         if (obj == null) {
             throw new NotFoundException(key);
         }
@@ -95,11 +113,29 @@ public class NameRegistrar implements Loggeable {
     }
 
     /**
-     * @param key
-     *            key whose associated value is to be returned, null if not present.
+     * Get a value from the registry - wait for it specified time.
+     *
+     * @param <T> desired type of value.
+     * @param key the key whose associated value is to be returned.
+     * @param timeout the maximum waiting time (in miliseconds) for
+     * the appearance of value in the registry.
+     * @return a value or {@code null} if it does not exist
      */
-    public static Object getIfExists(String key) {
-        return getMap().get(key);
+    public static <T> T get(String key, long timeout) {
+        return (T) sp.rd(key, timeout);
+    }
+
+    /**
+     * Get a value from the registry - without casting {@code NotFoundException}.
+     *
+     * @param <T> desired type of value.
+     * @param key the key whose associated value is to be returned.
+     * @return a value or {@code null} if it does not exist
+     */
+    public static <T> T getIfExists(String key) {
+        @SuppressWarnings("unchecked")
+        T obj = (T) sp.rdp(key);
+        return obj;
     }
 
     public void dump(PrintStream p, String indent) {
@@ -109,13 +145,9 @@ public class NameRegistrar implements Loggeable {
     public void dump(PrintStream p, String indent, boolean detail) {
         String inner = indent + "  ";
         p.println(indent + "name-registrar:");
-        for (Map.Entry<String, Object> entry : registrar.entrySet()) {
-            Object obj = entry.getValue();
-            String key = entry.getKey();
-            if (key == null) {
-                key = "null";
-            }
-            String objectClassName = (obj == null) ? "<NULL>" : obj.getClass().getName();
+        for (String key : sp.getKeySet()) {
+            Object obj = sp.rdp(key);
+            String objectClassName = obj == null ? "<NULL>" : obj.getClass().getName();
             p.println(inner + key + ": " + objectClassName);
             if (detail && obj instanceof Loggeable) {
                 ((Loggeable) obj).dump(p, inner + "  ");

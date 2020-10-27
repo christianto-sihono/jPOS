@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,14 +30,14 @@ package org.jpos.q2;
 public interface QBean {
 
     // State
-    public static final int STOPPED    = 0;
-    public static final int STOPPING   = 1;
-    public static final int STARTING   = 2;
-    public static final int STARTED    = 3;
-    public static final int FAILED     = 4;
-    public static final int DESTROYED  = 5;
+    int STOPPED    = 0;
+    int STOPPING   = 1;
+    int STARTING   = 2;
+    int STARTED    = 3;
+    int FAILED     = 4;
+    int DESTROYED  = 5;
 
-    public static final String stateString[] = {
+    String stateString[] = {
         "Stopped", "Stopping", "Starting", "Started", "Failed", "Destroyed"
     };
 

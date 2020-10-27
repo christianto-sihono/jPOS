@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,6 @@ import org.jpos.util.Loggeable;
 import org.jpos.util.Logger;
 
 import java.io.PrintStream;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.Map;
@@ -38,6 +37,7 @@ import java.util.Map;
  * @author Jose Eduardo Leon
  * @version 1.0
  */
+@SuppressWarnings("unchecked")
 public class VErrorParser implements LogSource, Loggeable  {
 
     /**

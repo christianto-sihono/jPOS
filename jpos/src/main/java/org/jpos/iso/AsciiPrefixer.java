@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,33 +27,33 @@ package org.jpos.iso;
 public class AsciiPrefixer implements Prefixer
 {
     /**
-     * A length prefixer for upto 9 chars. The length is encoded with 1 ASCII
+     * A length prefixer for up to 9 chars. The length is encoded with 1 ASCII
      * char representing 1 decimal digit.
      */
     public static final AsciiPrefixer L = new AsciiPrefixer(1);
     /**
-	 * A length prefixer for upto 99 chars. The length is encoded with 2 ASCII
+	 * A length prefixer for up to 99 chars. The length is encoded with 2 ASCII
 	 * chars representing 2 decimal digits.
 	 */
     public static final AsciiPrefixer LL = new AsciiPrefixer(2);
     /**
-	 * A length prefixer for upto 999 chars. The length is encoded with 3 ASCII
+	 * A length prefixer for up to 999 chars. The length is encoded with 3 ASCII
 	 * chars representing 3 decimal digits.
 	 */
     public static final AsciiPrefixer LLL = new AsciiPrefixer(3);
     /**
-	 * A length prefixer for upto 9999 chars. The length is encoded with 4
+	 * A length prefixer for up to 9999 chars. The length is encoded with 4
 	 * ASCII chars representing 4 decimal digits.
 	 */
     public static final AsciiPrefixer LLLL = new AsciiPrefixer(4);
     /**
-     * A length prefixer for upto 99999 chars. The length is encoded with 5
+     * A length prefixer for up to 99999 chars. The length is encoded with 5
      * ASCII chars representing 5 decimal digits.
      */
     public static final AsciiPrefixer LLLLL = new AsciiPrefixer(5);
 
     /**
-     * A length prefixer for upto 999999 chars. The length is encoded with 6
+     * A length prefixer for up to 999999 chars. The length is encoded with 6
      * ASCII chars representing 6 decimal digits.
      */
     public static final AsciiPrefixer LLLLLL = new AsciiPrefixer(6);
@@ -69,11 +69,7 @@ public class AsciiPrefixer implements Prefixer
         this.nDigits = nDigits;
     }
 
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Prefixer#encodeLength(int, byte[])
-	 */
+    @Override
     public void encodeLength(int length, byte[] b) throws ISOException
     {
         int n = length;
@@ -89,26 +85,22 @@ public class AsciiPrefixer implements Prefixer
         }
     }
 
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Prefixer#decodeLength(byte[], int)
-	 */
-    public int decodeLength(byte[] b, int offset)
-    {
+    @Override
+    public int decodeLength(byte[] b, int offset) throws ISOException {
         int len = 0;
         for (int i = 0; i < nDigits; i++)
         {
-            len = len * 10 + b[offset + i] - (byte)'0';
+            byte d = b[offset + i];
+            if(d < '0' || d > '9')
+            {
+                throw new ISOException("Invalid character found. Expected digit.");
+            }
+            len = len * 10 + d - (byte)'0';
         }
         return len;
     }
 
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see xcom.traxbahn.iso.Prefixer#getLengthInBytes()
-	 */
+    @Override
     public int getPackedLength()
     {
         return nDigits;

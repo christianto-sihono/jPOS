@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -38,6 +38,6 @@ public interface ISOClientSocketFactory {
     * @exception IOException should an I/O error occur
     * @exception ISOException on any other error
     */
-    public Socket createSocket(String host, int port)
+    Socket createSocket(String host, int port)
         throws IOException, ISOException;
 }

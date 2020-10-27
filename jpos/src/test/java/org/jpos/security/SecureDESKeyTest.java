@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,125 +18,140 @@
 
 package org.jpos.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SecureDESKeyTest {
 
+    static final byte[] kcv  = new byte[0];
+    static final byte[] kcv1 = new byte[1];
+    static final short  length = (short) 100;
+    static final String keyType = "Key-Type123";
+    static final String keyHEX  = "testKeyHEX";
+    static final String kcvHEX  = "testKeyKCV_HEX";
+
     @Test
     public void testConstructor() throws Throwable {
-        SecureDESKey secureDESKey = new SecureDESKey((short) 100, "testSecureDESKeyKeyType", "testSecureDESKeyKeyHexString",
-                "testSecureDESKeyKeyCheckValueHexString");
-        assertEquals("secureDESKey.keyType", "testSecureDESKeyKeyType", secureDESKey.keyType);
-        assertEquals("secureDESKey.keyCheckValue.length", 19, secureDESKey.keyCheckValue.length);
-        assertEquals("secureDESKey.keyBytes.length", 14, secureDESKey.keyBytes.length);
-        assertEquals("secureDESKey.keyLength", (short) 100, secureDESKey.keyLength);
+        SecureDESKey key = new SecureDESKey(length, keyType, keyHEX,kcvHEX);
+        assertEquals(keyType, key.getKeyType());
+        assertEquals(7, key.getKeyCheckValue().length);
+        assertEquals(5, key.getKeyBytes().length);
+        assertEquals(length, key.getKeyLength());
     }
 
     @Test
     public void testConstructor1() throws Throwable {
         byte[] keyBytes = new byte[2];
-        byte[] keyCheckValue = new byte[0];
-        SecureDESKey secureDESKey = new SecureDESKey((short) 100, "testSecureDESKeyKeyType", keyBytes, keyCheckValue);
-        assertEquals("secureDESKey.keyType", "testSecureDESKeyKeyType", secureDESKey.keyType);
-        assertSame("secureDESKey.keyCheckValue", keyCheckValue, secureDESKey.keyCheckValue);
-        assertSame("secureDESKey.keyBytes", keyBytes, secureDESKey.keyBytes);
-        assertEquals("secureDESKey.keyLength", (short) 100, secureDESKey.keyLength);
+        SecureDESKey key = new SecureDESKey(length, keyType, keyBytes, kcv);
+        assertEquals(keyType, key.getKeyType());
+        assertSame(kcv, key.getKeyCheckValue());
+        assertSame(keyBytes, key.getKeyBytes());
+        assertEquals(length, key.getKeyLength());
     }
 
     @Test
     public void testConstructor2() throws Throwable {
-        SecureDESKey secureDESKey = new SecureDESKey();
-        assertNull("secureDESKey.keyCheckValue", secureDESKey.keyCheckValue);
-        assertNull("secureDESKey.keyBytes", secureDESKey.keyBytes);
+        SecureDESKey key = new SecureDESKey();
+        assertNull(key.getKeyCheckValue());
+        assertNull(key.getKeyBytes());
+    }
+
+    @Test
+    public void testConstructorExtType() throws Throwable {
+        byte[] keyBytes = new byte[2];
+        String kt = "Key-Type123:4U";
+        SecureDESKey key = new SecureDESKey(length, kt, keyBytes, kcv);
+        assertEquals(kt, key.getKeyType());
+        assertSame(kcv, key.getKeyCheckValue());
+        assertSame(keyBytes, key.getKeyBytes());
+        assertEquals(length, key.getKeyLength());
+        assertEquals(4, key.getVariant());
+        assertEquals(KeyScheme.U, key.getScheme());
+    }
+
+    @Test
+    public void testConstructorExtType_InvalidVariant() throws Throwable {
+        assertThrows(IllegalArgumentException.class, () -> {
+            byte[] keyBytes = new byte[2];
+            new SecureDESKey(length, "Key-Type123:JU", keyBytes, kcv);
+        });
+    }
+
+    @Test
+    public void testConstructorExtType_InvalidScheme() throws Throwable {
+        assertThrows(IllegalArgumentException.class, () -> {
+            byte[] keyBytes = new byte[2];
+            new SecureDESKey(length, "Key-Type123:3H", keyBytes, kcv);
+        });
     }
 
     @Test
     public void testConstructorThrowsNullPointerException() throws Throwable {
-        try {
-            new SecureDESKey((short) 100, "testSecureDESKeyKeyType", (String) null, "testSecureDESKeyKeyCheckValueHexString");
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-        }
+        assertThrows(NullPointerException.class, () -> {
+            new SecureDESKey(length, keyType, null, "testSecureDESKeyKeyCheckValueHexString");
+        });
     }
 
     @Test
     public void testConstructorUnevenHexDigits() throws Throwable {
-        new SecureDESKey((short) 100, "testSecureDESKeyKeyType", "testSecureDESKeyKeyHexString",
-                "testSecureDESKeyKeyCheckValueHexString1");
-        assertTrue("Test completed without Exception", true);
+        new SecureDESKey(length, keyType, keyHEX, kcvHEX);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testDump() throws Throwable {
-        byte[] keyCheckValue = new byte[0];
         byte[] keyBytes = new byte[1];
-        PrintStream p = new PrintStream(new ByteArrayOutputStream(), true, "UTF-16");
-        new SecureDESKey((short) 100, "testSecureDESKeyKeyType", keyBytes, keyCheckValue).dump(p, "testSecureDESKeyIndent");
-        assertTrue("Test completed without Exception", true);
+        PrintStream p = new PrintStream(new ByteArrayOutputStream());
+        new SecureDESKey(length, keyType, keyBytes, kcv).dump(p, "testIndent");
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testDumpThrowsNullPointerException() throws Throwable {
-        byte[] keyCheckValue = new byte[1];
-        PrintStream p = new PrintStream(new ByteArrayOutputStream(), true, "UTF-16");
-        try {
-            new SecureDESKey((short) 100, "testSecureDESKeyKeyType", (byte[]) null, keyCheckValue).dump(p, "testSecureDESKeyIndent");
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-        }
+        assertThrows(NullPointerException.class, () -> {
+            PrintStream p = new PrintStream(new ByteArrayOutputStream());
+            new SecureDESKey(length, keyType, null, kcv1).dump(p, "");
+        });
     }
 
     @Test
     public void testDumpThrowsNullPointerException1() throws Throwable {
-        byte[] keyBytes = new byte[2];
-        byte[] keyCheckValue = new byte[0];
-        try {
-            new SecureDESKey((short) 100, "testSecureDESKeyKeyType", keyBytes, keyCheckValue).dump(null, "testSecureDESKeyIndent");
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-        }
+        assertThrows(NullPointerException.class, () -> {
+            byte[] keyBytes = new byte[2];
+            new SecureDESKey(length, keyType, keyBytes, kcv).dump(null, "");
+        });
     }
 
     @Test
     public void testGetKeyCheckValue() throws Throwable {
-        SecureDESKey secureDESKey = new SecureDESKey((short) 100, "testSecureDESKeyKeyType", "testSecureDESKeyKeyHexString",
-                "testSecureDESKeyKeyCheckValueHexString");
-        byte[] keyCheckValue = new byte[0];
-        secureDESKey.setKeyCheckValue(keyCheckValue);
-        byte[] result = secureDESKey.getKeyCheckValue();
-        assertSame("result", keyCheckValue, result);
+        SecureDESKey key = new SecureDESKey(length, keyType, keyHEX, kcvHEX);
+        key.setKeyCheckValue(kcv);
+        assertSame(kcv, key.getKeyCheckValue());
     }
 
     @Test
     public void testGetKeyCheckValue1() throws Throwable {
-        SecureDESKey secureDESKey = new SecureDESKey((short) 100, "testSecureDESKeyKeyType", "testSecureDESKeyKeyHexString",
-                "testSecureDESKeyKeyCheckValueHexString");
-        byte[] keyCheckValue = new byte[1];
-        secureDESKey.setKeyCheckValue(keyCheckValue);
-        byte[] result = secureDESKey.getKeyCheckValue();
-        assertSame("result", keyCheckValue, result);
-        assertEquals("keyCheckValue[0]", (byte) 0, keyCheckValue[0]);
+        SecureDESKey key = new SecureDESKey(length, keyType, keyHEX, kcvHEX);
+        key.setKeyCheckValue(kcv1);
+        assertSame(kcv1, key.getKeyCheckValue());
+        assertEquals((byte) 0, kcv1[0]);
     }
 
     @Test
     public void testSetKeyCheckValue() throws Throwable {
-        byte[] keyCheckValue = new byte[1];
         byte[] keyBytes = new byte[3];
-        SecureDESKey secureDESKey = new SecureDESKey((short) 100, "testSecureDESKeyKeyType", keyBytes, keyCheckValue);
-        byte[] keyCheckValue2 = new byte[0];
-        secureDESKey.setKeyCheckValue(keyCheckValue2);
-        assertSame("secureDESKey.keyCheckValue", keyCheckValue2, secureDESKey.keyCheckValue);
+        SecureDESKey key = new SecureDESKey(length, keyType, keyBytes, kcv1);
+        byte[] kcv2 = new byte[0];
+        key.setKeyCheckValue(kcv2);
+        assertSame(kcv2, key.getKeyCheckValue());
     }
+
 }

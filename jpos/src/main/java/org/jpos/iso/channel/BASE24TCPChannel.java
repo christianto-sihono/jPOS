@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -42,6 +42,7 @@ import java.net.ServerSocket;
  * @see ISOChannel
  */
 
+@SuppressWarnings("deprecation")
 public class BASE24TCPChannel extends BaseChannel {
     /**
      * Public constructor (used by Class.forName("...").newInstance())
@@ -99,7 +100,7 @@ public class BASE24TCPChannel extends BaseChannel {
         Logger.log (new LogEvent (this, "get-message-length"));
         while (l == 0) {
             serverIn.readFully(b,0,2);
-            l = ((((int)b[0])&0xFF) << 8) | (((int)b[1])&0xFF);
+            l = ((int)b[0] &0xFF) << 8 | (int)b[1] &0xFF;
             if (l == 0) {
                 serverOut.write(b);
                 serverOut.flush();

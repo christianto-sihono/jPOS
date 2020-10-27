@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,16 +18,18 @@
 
 package org.jpos.q2;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
-import org.jpos.util.ConcurrentUtil;
-import org.jpos.util.Log;
+import org.jpos.util.*;
 
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Iterator;
@@ -36,62 +38,80 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 /**
  * @author <a href="mailto:taherkordy@dpi2.dpi.net.ir">Alireza Taherkordi</a>
  * @author <a href="mailto:apr@cs.com.uy">Alejandro P. Revilla</a>
- * @version $Revision$ $Date$
  */
-public class QBeanSupport 
-    implements QBean, QPersist, QBeanSupportMBean, Configurable 
+public class QBeanSupport
+    implements QBean, QPersist, QBeanSupportMBean, Configurable
 {
     Element persist;
     int state;
     Q2 server;
+    final Object modifyLock = new Object();
     boolean modified;
     String name;
     protected Log log;
     protected Configuration cfg;
     protected ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-        
+
     public QBeanSupport () {
         super();
         setLogger (Q2.LOGGER_NAME);
         state = -1;
     }
+
+    @Override
     public void setServer (Q2 server) {
         this.server = server;
     }
+
+    @Override
     public Q2 getServer () {
         return server;
     }
     public QFactory getFactory () {
         return getServer().getFactory ();
     }
+
+    @Override
     public void setName (String name) {
-        if (this.name == null) 
+        if (this.name == null)
             this.name = name;
         if (log != null)
             log.setRealm (name);
         setModified (true);
     }
+
+    @Override
     public void setLogger (String loggerName) {
         log = Log.getLog (loggerName, getClass().getName());
         setModified (true);
     }
+
+    @Override
     public void setRealm (String realm) {
         if (log != null)
             log.setRealm (realm);
     }
+
+    @Override
     public String getRealm() {
         return log != null ? log.getRealm() : null;
     }
 
+    @Override
     public String getLogger () {
         return log != null ? log.getLogger().getName() : null;
     }
+
     public Log getLog () {
         return log;
     }
+
+    @Override
     public String getName () {
         return name;
     }
+
+    @Override
     public void init () {
         if (state == -1) {
             setModified (false);
@@ -103,9 +123,11 @@ public class QBeanSupport
             }
         }
     }
+
+    @Override
     public synchronized void start() {
-        if (state != QBean.DESTROYED && 
-            state != QBean.STOPPED   && 
+        if (state != QBean.DESTROYED &&
+            state != QBean.STOPPED   &&
             state != QBean.FAILED)
            return;
 
@@ -120,6 +142,8 @@ public class QBeanSupport
         }
         state = QBean.STARTED;
     }
+
+    @Override
     public synchronized void stop () {
         if (state != QBean.STARTED)
            return;
@@ -133,6 +157,8 @@ public class QBeanSupport
         }
         state = QBean.STOPPED;
     }
+
+    @Override
     public void destroy () {
         if (state == QBean.DESTROYED)
            return;
@@ -151,39 +177,77 @@ public class QBeanSupport
         }
         state = QBean.DESTROYED;
     }
-    public void shutdownQ2 () {
-        getServer().shutdown ();
-    }
+
+    @Override
     public int getState () {
         return state;
     }
+
+    @Override
     public URL[] getLoaderURLS() {
         return server.getLoader().getURLs();
-    }    
+    }
+
+    @Override
     public QClassLoader getLoader() {
         return server.getLoader();
     }
+
+    @Override
     public String getStateAsString () {
         return state >= 0 ? stateString[state] : "Unknown";
     }
+
     public void setState (int state) {
         this.state = state;
     }
+
+    @Override
     public void setPersist (Element persist) {
         this.persist = persist ;
     }
-    public synchronized Element getPersist () {
+
+    @Override
+    public Element getPersist () {
         setModified (false);
         return persist;
     }
-    public synchronized void setModified (boolean modified) {
-        this.modified = modified;
+
+    public void setModified (boolean modified) {
+        synchronized (this.modifyLock) {
+            this.modified = modified;
+        }
     }
-    public synchronized boolean isModified () {
-        return modified;
+
+    @Override
+    public boolean isModified () {
+        synchronized (this.modifyLock) {
+            return modified;
+        }
     }
+
     public boolean running () {
         return state == QBean.STARTING || state == QBean.STARTED;
+    }
+
+    @Override
+    public void setConfiguration (Configuration cfg)
+      throws ConfigurationException
+    {
+        this.cfg = cfg;
+    }
+    public Configuration getConfiguration () {
+        return cfg;
+    }
+
+    public String getDump () {
+        if (this instanceof Loggeable) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream p = new PrintStream(baos);
+            ((Loggeable)this).dump(p, "");
+            return baos.toString();
+        }
+        return toString();
     }
     protected void initService()    throws Exception {}
     protected void startService()   throws Exception {}
@@ -215,7 +279,7 @@ public class QBeanSupport
             for (PropertyDescriptor aDesc : desc) {
                 if (aDesc.getWriteMethod() != null) {
                     Method read = aDesc.getReadMethod();
-                    Object obj = read.invoke(this, new Object[]{});
+                    Object obj = read.invoke(this);
                     String type = read.getReturnType().getName();
                     if ("java.lang.String".equals(type))
                         type = null;
@@ -225,7 +289,7 @@ public class QBeanSupport
             }
         } catch (Exception ex) {
             log.warn ("get-persist", ex);
-        } 
+        }
         return e;
     }
     protected void addAttr (Element e, String name, Object obj, String type) {
@@ -241,15 +305,15 @@ public class QBeanSupport
         return getPersist().getChildren ("attr").iterator();
     }
     protected Iterator getAttrs (String parent) {
-        return getPersist().getChild (parent).
-            getChildren ("attr").iterator();
+        return getPersist().getChild(parent).
+            getChildren("attr").iterator();
     }
     protected void setAttr (Iterator attrs, String name, Object obj) {
         String value = obj == null ? "null" : obj.toString ();
         while (attrs.hasNext ()) {
             Element e = (Element) attrs.next ();
             if (name.equals (e.getAttributeValue ("name")))  {
-                e.setText (value);
+                e.setText(value);
                 break;
             }
         }
@@ -276,12 +340,18 @@ public class QBeanSupport
         }
         return null;
     }
-    public void setConfiguration (Configuration cfg)
-        throws ConfigurationException
-    {
-        this.cfg = cfg;
-    }
-    public Configuration getConfiguration () {
-        return cfg;
+    protected void close (Closeable... closeables) {
+        LogEvent evt = null;
+        for (Closeable c : closeables) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                if (evt == null)
+                    evt = getLog().createWarn();
+                evt.addMessage(e);
+            }
+        }
+        if (evt != null)
+            Logger.log(evt);
     }
 }

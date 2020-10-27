@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.q2.iso;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.ConfigurationException;
 import org.jpos.iso.*;
 import org.jpos.space.SpaceUtil;
@@ -33,7 +33,7 @@ import java.util.Date;
  * @author apr
  * @since 1.8.5
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "unchecked"})
 public class MultiSessionChannelAdaptor 
     extends ChannelAdaptor
     implements MultiSessionChannelAdaptorMBean, Channel, Loggeable
@@ -56,7 +56,7 @@ public class MultiSessionChannelAdaptor
             for (int i=0; i<sessions; i++) {
                 ISOChannel c = initChannel();
                 if (c instanceof LogSource) {
-                    LogSource ls = ((LogSource) c);
+                    LogSource ls = (LogSource) c;
                     ls.setLogger(ls.getLogger(), ls.getRealm()+"-"+i);
 
                 }
@@ -77,6 +77,7 @@ public class MultiSessionChannelAdaptor
     public void setSessions(int sessions) {
         this.sessions = sessions;
     }
+    @SuppressWarnings("unchecked")
     public class Sender implements Runnable {
         public Sender () {
             super ();
@@ -92,11 +93,9 @@ public class MultiSessionChannelAdaptor
                     Object o = sp.in (in, delay);
                     channel = getNextChannel(); // we want to call getNextChannel even if o is null so that
                                                 // it can pull the 'ready' indicator.
-                    if (o instanceof ISOMsg) {
-                        if (channel != null) {
-                            channel.send ((ISOMsg) o);
-                            tx++;
-                        }
+                    if (o instanceof ISOMsg && channel != null) {
+                        channel.send ((ISOMsg) o);
+                        tx++;
                     }
                 } catch (ISOFilter.VetoException e) { 
                     getLog().warn ("channel-sender-"+in, e.getMessage ());
@@ -115,6 +114,7 @@ public class MultiSessionChannelAdaptor
             disconnectAll();
         }
     }
+    @SuppressWarnings("unchecked")
     public class Receiver implements Runnable {
         int slot;
         ISOChannel channel;

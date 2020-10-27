@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -125,15 +125,13 @@ public class FSDProtectedLogListener implements LogListener, Configurable
                  Object v = null;
                  try {
                      v = m.getFSDMsg().get(f);
-                 } catch (Exception e) {
-                     // ignore error
+                 } catch (Exception ignored) {
+                     // NOPMD: NOP
                  }
-                 if (v != null) {
-                     if (v instanceof String) {
-                         String x = ((String) v);
-                         if (x.length() > len) {
-                             m.getFSDMsg().set(f, x.substring(0, len));
-                         }
+                 if (v instanceof String) {
+                     String x = (String) v;
+                     if (x.length() > len) {
+                         m.getFSDMsg().set(f, x.substring(0, len));
                      }
                  }
              }
@@ -144,8 +142,8 @@ public class FSDProtectedLogListener implements LogListener, Configurable
             Object v = null;
             try {
                 v = m.getFSDMsg().get(f);
-            } catch (Exception e) {
-                // ignore error
+            } catch (Exception ignored) {
+                // NOPMD: ignore error
             }
             if (v != null) {
                 if (v instanceof String)
@@ -160,8 +158,8 @@ public class FSDProtectedLogListener implements LogListener, Configurable
             Object v = null;
             try {
                 v = m.getFSDMsg().get (f);
-            } catch (Exception e) {
-                // ignore error
+            } catch (Exception ignored) {
+                // NOPMD ignore error
             }
             if (v != null) {
                 if (v instanceof String)

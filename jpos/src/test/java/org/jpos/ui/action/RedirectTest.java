@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +18,14 @@
 
 package org.jpos.ui.action;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.awt.event.ActionEvent;
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RedirectTest {
 
@@ -35,7 +35,7 @@ public class RedirectTest {
             new Redirect().actionPerformed(new ActionEvent("", 100, "", 100L, 1000));
             fail("Expected NoSuchElementException to be thrown");
         } catch (NoSuchElementException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -45,7 +45,11 @@ public class RedirectTest {
             new Redirect().actionPerformed(new ActionEvent(Long.valueOf(0L), 100, null, 100L, 1000));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"str\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -55,7 +59,11 @@ public class RedirectTest {
             new Redirect().actionPerformed(new ActionEvent("", 100, "testRedirectParam3", 100L, 1000));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.ui.UI.reconfigure(String, String)\" because \"this.ui\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -65,14 +73,18 @@ public class RedirectTest {
             new Redirect().actionPerformed(new ActionEvent("", 100, "testRedirect\rParam3", 100L, 1000));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.ui.UI.reconfigure(String, String)\" because \"this.ui\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testConstructor() throws Throwable {
         new Redirect();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
 }

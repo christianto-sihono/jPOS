@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,7 @@ public class SystemMonitor implements Runnable, LogSource, Loggeable
     private int sleepTime = 0;
     private int delay     = 0;
     private Thread thread = null;
+    private volatile boolean shutdown = false;
 
     /**
      * noargs constructor
@@ -84,7 +85,7 @@ public class SystemMonitor implements Runnable, LogSource, Loggeable
     }
 
     public void run() {
-        for (;;) {
+        while (!shutdown) {
             Logger.log (new LogEvent (this, "SystemMonitor", this));
             try {
                 long expected = System.currentTimeMillis() + sleepTime;
@@ -93,6 +94,11 @@ public class SystemMonitor implements Runnable, LogSource, Loggeable
             } catch (InterruptedException e) { }
         }
     }
+
+    public void shutdown() {
+        shutdown = true;
+    }
+
     public void dump (PrintStream p, String indent) {
         String newIndent = indent + "  ";
         Runtime r = Runtime.getRuntime();

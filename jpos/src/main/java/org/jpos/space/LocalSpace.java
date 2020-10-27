@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,7 +30,7 @@ public interface LocalSpace<K,V> extends Space<K,V> {
      * @param key Entry's key
      * @param listener a SpaceListener
      */
-    public void addListener    (Object key, SpaceListener listener);
+    void addListener(K key, SpaceListener<K, V> listener);
 
     /**
      * add a SpaceListener associated with a given key for a given 
@@ -38,25 +38,24 @@ public interface LocalSpace<K,V> extends Space<K,V> {
      * <b>Warning: not supported by all space implementations.</b>
      * @param key Entry's key
      * @param listener a SpaceListener
-     * @param timeout 
+     * @param timeout listener registration timeout in millis
      */
-    public void addListener (Object key, SpaceListener listener, long timeout);
+    void addListener(K key, SpaceListener<K, V> listener, long timeout);
 
     /**
      * removes a SpaceListener associated with a given key
      * @param key Entry's key
      * @param listener the SpaceListener
      */
-    public void removeListener (Object key, SpaceListener listener);
+    void removeListener(K key, SpaceListener<K, V> listener);
 
     /**
      * @return Set containing all keys in Space
      */
-    public Set getKeySet ();
+    Set<K> getKeySet();
 
     /**
      * @return number of entries in a given key
      */
-    public int size (Object key);
+    int size(K key);
 }
-

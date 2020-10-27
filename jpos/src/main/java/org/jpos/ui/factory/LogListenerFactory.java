@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.ui.factory;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.ui.UI;
 import org.jpos.ui.UIFactory;
 import org.jpos.util.*;
@@ -114,7 +114,7 @@ public class LogListenerFactory implements UIFactory {
             evt.dump (ps, "");
             text.insert (str.toString(), 0);
 
-            if ((++cnt % maxEvents) == 0) {
+            if (++cnt % maxEvents == 0) {
                 SwingUtilities.invokeLater (this);
             }
             return evt;

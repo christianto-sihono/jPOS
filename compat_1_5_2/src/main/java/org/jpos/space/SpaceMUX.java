@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +18,20 @@
 
 package org.jpos.space;
 
+import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
-import org.jpos.core.ReConfigurable;
-import org.jpos.iso.*;
+import org.jpos.iso.ISOException;
+import org.jpos.iso.ISOMsg;
+import org.jpos.iso.ISOResponseListener;
+import org.jpos.iso.ISOUtil;
+import org.jpos.iso.MUX;
 import org.jpos.util.LogEvent;
 import org.jpos.util.Logger;
 import org.jpos.util.NameRegistrar;
 import org.jpos.util.SimpleLogSource;
+
+import java.io.IOException;
 
 /**
  * Space based MUX implementation
@@ -33,8 +39,9 @@ import org.jpos.util.SimpleLogSource;
  * @version $Revision$ $Date$
  * @see org.jpos.iso.MUX
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class SpaceMUX extends SimpleLogSource
-       implements MUX, ReConfigurable, SpaceListener
+       implements MUX, Configurable, SpaceListener
 {
     LocalSpace sp;
     Configuration cfg;
@@ -88,6 +95,9 @@ public class SpaceMUX extends SimpleLogSource
             resp = (ISOMsg) sp.in (key, 10000);
         }
         return resp;
+    }
+    public void send (ISOMsg m) throws ISOException, IOException {
+        sp.out (to, m);
     }
     protected String getFrom () {
         return from;

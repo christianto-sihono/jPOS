@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,51 +29,51 @@ public interface ISOHeader extends Cloneable,Serializable
     /**
      * Return this header as byte array.
      */
-    public byte[] pack();
+    byte[] pack();
 
     /**
      * Create a new ISOHeader from a byte array.
      *
      * @return The Number of bytes consumed.
      */
-    public int unpack (byte[] b);
+    int unpack(byte[] b);
 
     /**
      * Set the Destination address in this ISOHeader.
      */
-    public void setDestination(String dst);
+    void setDestination(String dst);
 
     /**
      * Return the destination address in this ISOHeader.
      * returns null if there is no destination address
      */
-    public String getDestination();
+    String getDestination();
 
     /**
      * Set the Source address in this ISOHeader.
      */
-    public void setSource(String src);
+    void setSource(String src);
 
     /**
      * Return the source address in this ISOHeader.
      * returns null if there is no source address
      */
-    public String getSource();
+    String getSource();
 
     /**
      * return the number of bytes in this ISOHeader
      */
-    public int getLength();
+    int getLength();
     
     /**
      * Swap the source and destination addresses in this ISOHeader
      * (if they exist).
      */
-    public void swapDirection();
+    void swapDirection();
 
     /**
      * Allow object to be cloned.
      */
-    public Object clone();
+    Object clone();
 }
 

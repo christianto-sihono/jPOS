@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.q2;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 
 import java.net.URL;
 
@@ -28,17 +28,16 @@ import java.net.URL;
  * @version $Revision$ $Date$
  */
 public interface QBeanSupportMBean extends QBean, QPersist {
-    public void setServer (Q2 server);
-    public Q2 getServer ();
-    public void setPersist (Element e);
-    public void setName (String name);
-    public String getName ();
-    public void setLogger (String name);
-    public void setRealm (String realm);
-    public String getRealm ();
-    public String getLogger ();
-    public void shutdownQ2 ();
-    public URL[] getLoaderURLS();
-    public QClassLoader getLoader();
+    void setServer(Q2 server);
+    Q2 getServer();
+    void setPersist(Element e);
+    void setName(String name);
+    String getName();
+    void setLogger(String name);
+    void setRealm(String realm);
+    String getRealm();
+    String getLogger();
+    URL[] getLoaderURLS();
+    QClassLoader getLoader();
+    String getDump();
 }
-

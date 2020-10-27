@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,11 +18,13 @@
 
 package org.jpos.iso.channel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.ServerSocket;
 
@@ -33,26 +35,26 @@ import org.jpos.iso.packager.CTCSubFieldPackager;
 import org.jpos.iso.packager.ISO93APackager;
 import org.jpos.iso.packager.ISO93BPackager;
 import org.jpos.iso.packager.PostPackager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class NACChannelTest {
 
     @Test
     public void testConstructor() throws Throwable {
         NACChannel nACChannel = new NACChannel();
-        assertEquals("nACChannel.getIncomingFilters().size()", 0, nACChannel.getIncomingFilters().size());
-        assertEquals("nACChannel.getMaxPacketLength()", 100000, nACChannel.getMaxPacketLength());
-        assertEquals("nACChannel.getPort()", 0, nACChannel.getPort());
-        assertEquals("nACChannel.getName()", "", nACChannel.getName());
-        assertEquals("nACChannel.getCounters().length", 3, nACChannel.getCounters().length);
-        assertNull("nACChannel.getLogger()", nACChannel.getLogger());
-        assertNull("nACChannel.getSocketFactory()", nACChannel.getSocketFactory());
-        assertNull("nACChannel.getHeader()", nACChannel.getHeader());
-        assertEquals("nACChannel.getOutgoingFilters().size()", 0, nACChannel.getOutgoingFilters().size());
-        assertNull("nACChannel.getServerSocket()", nACChannel.getServerSocket());
-        assertEquals("nACChannel.getOriginalRealm()", "org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm());
-        assertNull("nACChannel.getRealm()", nACChannel.getRealm());
-        assertNull("nACChannel.getHost()", nACChannel.getHost());
+        assertEquals(0, nACChannel.getIncomingFilters().size(), "nACChannel.getIncomingFilters().size()");
+        assertEquals(100000, nACChannel.getMaxPacketLength(), "nACChannel.getMaxPacketLength()");
+        assertEquals(0, nACChannel.getPort(), "nACChannel.getPort()");
+        assertEquals("", nACChannel.getName(), "nACChannel.getName()");
+        assertEquals(3, nACChannel.getCounters().length, "nACChannel.getCounters().length");
+        assertNull(nACChannel.getLogger(), "nACChannel.getLogger()");
+        assertNull(nACChannel.getSocketFactory(), "nACChannel.getSocketFactory()");
+        assertNull(nACChannel.getHeader(), "nACChannel.getHeader()");
+        assertEquals(0, nACChannel.getOutgoingFilters().size(), "nACChannel.getOutgoingFilters().size()");
+        assertNull(nACChannel.getServerSocket(), "nACChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm(), "nACChannel.getOriginalRealm()");
+        assertNull(nACChannel.getRealm(), "nACChannel.getRealm()");
+        assertNull(nACChannel.getHost(), "nACChannel.getHost()");
     }
 
     @Test
@@ -60,20 +62,20 @@ public class NACChannelTest {
         byte[] TPDU = new byte[3];
         ISOPackager p = new ISO93APackager();
         NACChannel nACChannel = new NACChannel("testNACChannelHost", 100, p, TPDU);
-        assertEquals("nACChannel.getIncomingFilters().size()", 0, nACChannel.getIncomingFilters().size());
-        assertEquals("nACChannel.getMaxPacketLength()", 100000, nACChannel.getMaxPacketLength());
-        assertSame("nACChannel.getPackager()", p, nACChannel.getPackager());
-        assertEquals("nACChannel.getPort()", 100, nACChannel.getPort());
-        assertEquals("nACChannel.getName()", "", nACChannel.getName());
-        assertEquals("nACChannel.getCounters().length", 3, nACChannel.getCounters().length);
-        assertNull("nACChannel.getLogger()", nACChannel.getLogger());
-        assertNull("nACChannel.getSocketFactory()", nACChannel.getSocketFactory());
-        assertSame("nACChannel.getHeader()", TPDU, nACChannel.getHeader());
-        assertEquals("nACChannel.getOutgoingFilters().size()", 0, nACChannel.getOutgoingFilters().size());
-        assertNull("nACChannel.getServerSocket()", nACChannel.getServerSocket());
-        assertEquals("nACChannel.getOriginalRealm()", "org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm());
-        assertNull("nACChannel.getRealm()", nACChannel.getRealm());
-        assertEquals("nACChannel.getHost()", "testNACChannelHost", nACChannel.getHost());
+        assertEquals(0, nACChannel.getIncomingFilters().size(), "nACChannel.getIncomingFilters().size()");
+        assertEquals(100000, nACChannel.getMaxPacketLength(), "nACChannel.getMaxPacketLength()");
+        assertSame(p, nACChannel.getPackager(), "nACChannel.getPackager()");
+        assertEquals(100, nACChannel.getPort(), "nACChannel.getPort()");
+        assertEquals("", nACChannel.getName(), "nACChannel.getName()");
+        assertEquals(3, nACChannel.getCounters().length, "nACChannel.getCounters().length");
+        assertNull(nACChannel.getLogger(), "nACChannel.getLogger()");
+        assertNull(nACChannel.getSocketFactory(), "nACChannel.getSocketFactory()");
+        assertSame(TPDU, nACChannel.getHeader(), "nACChannel.getHeader()");
+        assertEquals(0, nACChannel.getOutgoingFilters().size(), "nACChannel.getOutgoingFilters().size()");
+        assertNull(nACChannel.getServerSocket(), "nACChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm(), "nACChannel.getOriginalRealm()");
+        assertNull(nACChannel.getRealm(), "nACChannel.getRealm()");
+        assertEquals("testNACChannelHost", nACChannel.getHost(), "nACChannel.getHost()");
     }
 
     @Test
@@ -82,20 +84,20 @@ public class NACChannelTest {
         byte[] TPDU = new byte[0];
         ServerSocket serverSocket = new ServerSocket();
         NACChannel nACChannel = new NACChannel(p, TPDU, serverSocket);
-        assertEquals("nACChannel.getIncomingFilters().size()", 0, nACChannel.getIncomingFilters().size());
-        assertEquals("nACChannel.getMaxPacketLength()", 100000, nACChannel.getMaxPacketLength());
-        assertSame("nACChannel.getPackager()", p, nACChannel.getPackager());
-        assertEquals("nACChannel.getPort()", 0, nACChannel.getPort());
-        assertEquals("nACChannel.getName()", "", nACChannel.getName());
-        assertEquals("nACChannel.getCounters().length", 3, nACChannel.getCounters().length);
-        assertNull("nACChannel.getLogger()", nACChannel.getLogger());
-        assertNull("nACChannel.getSocketFactory()", nACChannel.getSocketFactory());
-        assertSame("nACChannel.getHeader()", TPDU, nACChannel.getHeader());
-        assertEquals("nACChannel.getOutgoingFilters().size()", 0, nACChannel.getOutgoingFilters().size());
-        assertSame("nACChannel.getServerSocket()", serverSocket, nACChannel.getServerSocket());
-        assertEquals("nACChannel.getOriginalRealm()", "org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm());
-        assertNull("nACChannel.getRealm()", nACChannel.getRealm());
-        assertNull("nACChannel.getHost()", nACChannel.getHost());
+        assertEquals(0, nACChannel.getIncomingFilters().size(), "nACChannel.getIncomingFilters().size()");
+        assertEquals(100000, nACChannel.getMaxPacketLength(), "nACChannel.getMaxPacketLength()");
+        assertSame(p, nACChannel.getPackager(), "nACChannel.getPackager()");
+        assertEquals(0, nACChannel.getPort(), "nACChannel.getPort()");
+        assertEquals("", nACChannel.getName(), "nACChannel.getName()");
+        assertEquals(3, nACChannel.getCounters().length, "nACChannel.getCounters().length");
+        assertNull(nACChannel.getLogger(), "nACChannel.getLogger()");
+        assertNull(nACChannel.getSocketFactory(), "nACChannel.getSocketFactory()");
+        assertSame(TPDU, nACChannel.getHeader(), "nACChannel.getHeader()");
+        assertEquals(0, nACChannel.getOutgoingFilters().size(), "nACChannel.getOutgoingFilters().size()");
+        assertSame(serverSocket, nACChannel.getServerSocket(), "nACChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm(), "nACChannel.getOriginalRealm()");
+        assertNull(nACChannel.getRealm(), "nACChannel.getRealm()");
+        assertNull(nACChannel.getHost(), "nACChannel.getHost()");
     }
 
     @Test
@@ -103,20 +105,20 @@ public class NACChannelTest {
         byte[] TPDU = new byte[0];
         ISOPackager p = new PostPackager();
         NACChannel nACChannel = new NACChannel(p, TPDU);
-        assertEquals("nACChannel.getIncomingFilters().size()", 0, nACChannel.getIncomingFilters().size());
-        assertEquals("nACChannel.getMaxPacketLength()", 100000, nACChannel.getMaxPacketLength());
-        assertSame("nACChannel.getPackager()", p, nACChannel.getPackager());
-        assertEquals("nACChannel.getPort()", 0, nACChannel.getPort());
-        assertEquals("nACChannel.getName()", "", nACChannel.getName());
-        assertEquals("nACChannel.getCounters().length", 3, nACChannel.getCounters().length);
-        assertNull("nACChannel.getLogger()", nACChannel.getLogger());
-        assertNull("nACChannel.getSocketFactory()", nACChannel.getSocketFactory());
-        assertSame("nACChannel.getHeader()", TPDU, nACChannel.getHeader());
-        assertEquals("nACChannel.getOutgoingFilters().size()", 0, nACChannel.getOutgoingFilters().size());
-        assertNull("nACChannel.getServerSocket()", nACChannel.getServerSocket());
-        assertEquals("nACChannel.getOriginalRealm()", "org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm());
-        assertNull("nACChannel.getRealm()", nACChannel.getRealm());
-        assertNull("nACChannel.getHost()", nACChannel.getHost());
+        assertEquals(0, nACChannel.getIncomingFilters().size(), "nACChannel.getIncomingFilters().size()");
+        assertEquals(100000, nACChannel.getMaxPacketLength(), "nACChannel.getMaxPacketLength()");
+        assertSame(p, nACChannel.getPackager(), "nACChannel.getPackager()");
+        assertEquals(0, nACChannel.getPort(), "nACChannel.getPort()");
+        assertEquals("", nACChannel.getName(), "nACChannel.getName()");
+        assertEquals(3, nACChannel.getCounters().length, "nACChannel.getCounters().length");
+        assertNull(nACChannel.getLogger(), "nACChannel.getLogger()");
+        assertNull(nACChannel.getSocketFactory(), "nACChannel.getSocketFactory()");
+        assertSame(TPDU, nACChannel.getHeader(), "nACChannel.getHeader()");
+        assertEquals(0, nACChannel.getOutgoingFilters().size(), "nACChannel.getOutgoingFilters().size()");
+        assertNull(nACChannel.getServerSocket(), "nACChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.NACChannel", nACChannel.getOriginalRealm(), "nACChannel.getOriginalRealm()");
+        assertNull(nACChannel.getRealm(), "nACChannel.getRealm()");
+        assertNull(nACChannel.getHost(), "nACChannel.getHost()");
     }
 
     @Test
@@ -126,7 +128,11 @@ public class NACChannelTest {
             nACChannel.getMessageLength();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataInputStream.readFully(byte[], int, int)\" because \"this.serverIn\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -135,7 +141,7 @@ public class NACChannelTest {
         NACChannel nACChannel = new NACChannel();
         ISOMsg m = new ISOMsg();
         nACChannel.sendMessageHeader(m, 100);
-        assertTrue("Execute without Exception", true);
+        assertTrue(true, "Execute without Exception");
     }
 
     @Test
@@ -145,7 +151,11 @@ public class NACChannelTest {
             nACChannel.sendMessageHeader(null, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOMsg.getHeader()\" because \"m\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -158,7 +168,11 @@ public class NACChannelTest {
             nACChannel.sendMessageHeader(m, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataOutputStream.write(byte[])\" because \"this.serverOut\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -172,8 +186,12 @@ public class NACChannelTest {
             nACChannel.sendMessageHeader(m, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("m.getDirection()", 0, m.getDirection());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataOutputStream.write(byte[])\" because \"this.serverOut\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, m.getDirection(), "m.getDirection()");
         }
     }
 
@@ -185,7 +203,11 @@ public class NACChannelTest {
             nACChannel.sendMessageLength(100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataOutputStream.write(int)\" because \"this.serverOut\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -193,7 +215,7 @@ public class NACChannelTest {
     public void testSetHeader() throws Throwable {
         NACChannel nACChannel = new NACChannel();
         nACChannel.setHeader("testNACChannelHeader");
-        assertEquals("nACChannel.getHeader().length", 10, nACChannel.getHeader().length);
+        assertEquals(10, nACChannel.getHeader().length, "nACChannel.getHeader().length");
     }
 
     @Test
@@ -206,8 +228,12 @@ public class NACChannelTest {
             nACChannel.setHeader((String) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertSame("nACChannel.getHeader()", TPDU2, nACChannel.getHeader());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"s\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertSame(TPDU2, nACChannel.getHeader(), "nACChannel.getHeader()");
         }
     }
 }

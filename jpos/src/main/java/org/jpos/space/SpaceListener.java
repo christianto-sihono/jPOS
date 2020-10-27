@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ package org.jpos.space;
  * @since 2.0
  * @see Space
  */
-public interface SpaceListener {
+public interface SpaceListener<K,V> {
     /**
      * <p>Called by Space implementation whenever an object 
      * with the given key is being placed in the Space.</p>
@@ -32,6 +32,5 @@ public interface SpaceListener {
      * @param key   Object's key
      * @param value Object's value
      */
-    public void notify (Object key, Object value);
+    void notify(K key, V value);
 }
-

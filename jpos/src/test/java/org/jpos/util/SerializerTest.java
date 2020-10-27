@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,20 +18,22 @@
 
 package org.jpos.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SerializerTest {
     private Calendar cal;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         cal = new GregorianCalendar(2012, Calendar.MAY, 31, 23, 47, 58);
         cal.set(Calendar.MILLISECOND, 56);
@@ -45,5 +47,15 @@ public class SerializerTest {
         assertNotNull(reconstituted);
         assertEquals(cal, reconstituted);
         assertNotSame(cal, reconstituted);
+    }
+
+    @Test
+    public void testStringMapSerializer() throws Exception {
+        Map<String,String> smap = new HashMap<>();
+        smap.put ("A", "ABC");
+        smap.put ("B", "CBA");
+        byte[] b = Serializer.serializeStringMap(smap);
+        Map<String,String> smap2 = Serializer.deserializeStringMap(b);
+        assertEquals(smap, smap2);
     }
 }

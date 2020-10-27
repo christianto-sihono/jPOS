@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,7 +35,7 @@ public class Install
 
     public static void main(String[] args) throws Exception
     {
-        CommandLineParser parser = new PosixParser();
+        CommandLineParser parser = new DefaultParser();
         Options options = new Options ();
         options.addOption ("p", "prefix", true, String.format("prefix, defaults to '%s'", DEFAULT_PREFIX));
         options.addOption ("q", "quiet", false, "do not show information about files being extracted");
@@ -116,12 +116,16 @@ public class Install
             }
             finally
             {
-                try { output.close(); } catch (IOException ignored) {}
+                try { output.close(); } catch (IOException ex) {
+                    ex.printStackTrace(System.err);
+                }
             }
         }
         finally
         {
-            try { if(source!=null) source.close(); } catch (IOException ignored) {}
+            try { if(source!=null) source.close(); } catch (IOException ex) {
+                ex.printStackTrace(System.err);
+            }
         }
     }
 }

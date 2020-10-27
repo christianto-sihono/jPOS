@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,19 +18,17 @@
 
 package org.jpos.q2.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.jpos.q2.Q2;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
 public class SMAdaptorTest {
     @Mock
     Q2 q2;
@@ -38,9 +36,9 @@ public class SMAdaptorTest {
     @Test
     public void testConstructor() throws Throwable {
         SMAdaptor sMAdaptor = new SMAdaptor();
-        assertEquals("sMAdaptor.getLog().getRealm()", "org.jpos.q2.security.SMAdaptor", sMAdaptor.getLog().getRealm());
-        assertEquals("sMAdaptor.getState()", -1, sMAdaptor.getState());
-        assertTrue("sMAdaptor.isModified()", sMAdaptor.isModified());
+        assertEquals("org.jpos.q2.security.SMAdaptor", sMAdaptor.getLog().getRealm(), "sMAdaptor.getLog().getRealm()");
+        assertEquals(-1, sMAdaptor.getState(), "sMAdaptor.getState()");
+        assertTrue(sMAdaptor.isModified(), "sMAdaptor.isModified()");
     }
 
     @Test
@@ -48,13 +46,13 @@ public class SMAdaptorTest {
         SMAdaptor sMAdaptor = new SMAdaptor();
         sMAdaptor.setImpl("testSMAdaptorClazz");
         String result = sMAdaptor.getImpl();
-        assertEquals("result", "testSMAdaptorClazz", result);
+        assertEquals("testSMAdaptorClazz", result, "result");
     }
 
     @Test
     public void testGetImpl1() throws Throwable {
         String result = new SMAdaptor().getImpl();
-        assertNull("result", result);
+        assertNotNull(result, "result");
     }
 
     @Test
@@ -67,9 +65,13 @@ public class SMAdaptorTest {
             sMAdaptor.initService();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("sMAdaptor.sm", sMAdaptor.sm);
-            assertFalse("sMAdaptor.isModified()", sMAdaptor.isModified());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.QFactory.newInstance(String)\" because \"factory\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(sMAdaptor.sm, "sMAdaptor.sm");
+            assertFalse(sMAdaptor.isModified(), "sMAdaptor.isModified()");
         }
     }
 
@@ -80,9 +82,13 @@ public class SMAdaptorTest {
             sMAdaptor.initService();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("sMAdaptor.sm", sMAdaptor.sm);
-            assertFalse("sMAdaptor.isModified()", sMAdaptor.isModified());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getFactory()\" because the return value of \"org.jpos.q2.security.SMAdaptor.getServer()\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(sMAdaptor.sm, "sMAdaptor.sm");
+            assertFalse(sMAdaptor.isModified(), "sMAdaptor.isModified()");
         }
     }
 
@@ -90,7 +96,7 @@ public class SMAdaptorTest {
     public void testSetImpl() throws Throwable {
         SMAdaptor sMAdaptor = new SMAdaptor();
         sMAdaptor.setImpl("testSMAdaptorClazz");
-        assertEquals("sMAdaptor.clazz", "testSMAdaptorClazz", sMAdaptor.clazz);
+        assertEquals("testSMAdaptorClazz", sMAdaptor.clazz, "sMAdaptor.clazz");
     }
 
     @Test
@@ -98,7 +104,7 @@ public class SMAdaptorTest {
         SMAdaptor sMAdaptor = new SMAdaptor();
         sMAdaptor.setName("testSMAdaptorName");
         sMAdaptor.stopService();
-        assertEquals("sMAdaptor.getName()", "testSMAdaptorName", sMAdaptor.getName());
+        assertEquals("testSMAdaptorName", sMAdaptor.getName(), "sMAdaptor.getName()");
     }
 
 }

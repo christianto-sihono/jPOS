@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,7 +40,7 @@ import java.util.Map;
  */
 public interface SecureKeyStore {
 
-    public static class SecureKeyStoreException extends ISOException {
+    class SecureKeyStoreException extends ISOException {
 
         private static final long serialVersionUID = 1976885367352075834L;
 
@@ -62,17 +62,16 @@ public interface SecureKeyStore {
     }
 
 
-
     /**
-     * returns the key assiciated with the given alias
+     * Returns the key assiciated with the given alias.
+     *
+     * @param <T> desired type of requested key
      * @param alias the alias name
-     * @return the requested key, or null if the given alias does not exist.
+     * @return the requested key, or {@code null} if the given alias does not exist.
      * @throws SecureKeyStoreException if SecureKeyStore is not initialized or if
      * the operation fails for some other reason.
      */
-    public SecureKey getKey (String alias) throws SecureKeyStoreException;
-
-
+    <T extends SecureKey> T getKey(String alias) throws SecureKeyStoreException;
 
     /**
      * Assigns the given key to the given alias.
@@ -83,15 +82,18 @@ public interface SecureKeyStore {
      * @throws SecureKeyStoreException if SecureKeyStore is not initialized or the key
      * can't be recovered.
      */
-    public void setKey (String alias, SecureKey key) throws SecureKeyStoreException;
+    void setKey(String alias, SecureKey key) throws SecureKeyStoreException;
 
     /**
-     * return map of existing keys assiciated with aliases.
+     * Returns map of existing keys assiciated with aliases.
+     *
+     * @param <T> desired type of requested keys
      * @return map of existing keys assiciated with aliases.
-     * @throws if SecureKeyStore is not initialized or if
+     * @throws SecureKeyStoreException if SecureKeyStore is not initialized or if
      * the operation fails for some other reason.
      */
-    public Map<String,SecureKey> getKeys() throws SecureKeyStoreException;
+    <T extends SecureKey> Map<String, T> getKeys() throws SecureKeyStoreException;
+
 }
 
 

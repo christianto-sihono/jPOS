@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +19,17 @@
 package org.jpos.iso.channel;
 
 import org.jpos.iso.*;
+import org.jpos.core.Configuration;
+import org.jpos.core.ConfigurationException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.math.BigInteger;
 
 /**
  * ISOChannel implementation suitable for OASIS Ltd &copy; hosts<br>
- * (four ASCII characters header indicating message length)
+ * Message length header: n ASCII digits, configurable by setLengthDigits() (default: 4)
+ * or the 'length-digits' Configuration property.
  *
  * @author apr@cs.com.uy
  * @version $Id$
@@ -34,6 +38,12 @@ import java.net.ServerSocket;
  * @see ISOChannel
  */
 public class ASCIIChannel extends BaseChannel {
+
+    /** Number of digits for the message length header */
+    protected int lengthDigits= 4;                                      // 4 is default
+
+    private static final BigInteger ten= BigInteger.valueOf(10L);     // just a static 10
+
     /**
      * Public constructor (used by Class.forName("...").newInstance())
      */
@@ -71,19 +81,24 @@ public class ASCIIChannel extends BaseChannel {
     {
         super(p, serverSocket);
     }
+
+
+    public void setLengthDigits(int len) { lengthDigits= len; }
+    public int getLengthDigits() { return lengthDigits; }
+
+
     /**
      * @param len the packed Message len
      * @exception IOException
      */
     protected void sendMessageLength(int len) throws IOException {
-        if (len > 9999)
-            throw new IOException ("len exceeded");
+        int maxLen= ten.pow(lengthDigits).intValue() - 1;       // 10^lengthDigits - 1
 
-        try {
-            serverOut.write(
-                ISOUtil.zeropad(Integer.toString(len), 4).getBytes()
-            );
-        } catch (ISOException e) { }
+        if (len > maxLen)
+            throw new IOException ("len exceeded ("+len+" > "+maxLen+")");
+        else if (len < 0)
+            throw new IOException ("invalid negative length ("+len+")");
+        serverOut.write(ISOUtil.zeropad(len, lengthDigits).getBytes());
     }
     /**
      * @return the Message len
@@ -91,9 +106,9 @@ public class ASCIIChannel extends BaseChannel {
      */
     protected int getMessageLength() throws IOException, ISOException {
         int l = 0;
-        byte[] b = new byte[4];
+        byte[] b = new byte[lengthDigits];
         while (l == 0) {
-            serverIn.readFully(b,0,4);
+            serverIn.readFully(b, 0, lengthDigits);
             try {
                 if ((l=Integer.parseInt(new String(b))) == 0) {
                     serverOut.write(b);
@@ -104,6 +119,22 @@ public class ASCIIChannel extends BaseChannel {
             }
         }
         return l;
+    }
+
+
+    /**
+     *
+     * Calls super.setConfiguration() and then reads the 'length-digits' property,
+     * defaulting to 4
+     *
+     * @param cfg Configuration
+     * @throws ConfigurationException
+     */
+    @Override
+    public void setConfiguration (Configuration cfg) throws ConfigurationException
+    {
+        super.setConfiguration(cfg);
+        setLengthDigits(cfg.getInt("length-digits", 4));
     }
 }
 

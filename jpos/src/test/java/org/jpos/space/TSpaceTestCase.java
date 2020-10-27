@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,32 +18,29 @@
 
 package org.jpos.space;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashSet;
 import java.util.Set;
 
 import org.jpos.iso.ISOUtil;
 import org.jpos.util.Profiler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+@SuppressWarnings("unchecked")
 public class TSpaceTestCase implements SpaceListener {
     TSpace<String, Object> sp;
     public static final int COUNT = 100000;
     Object notifiedValue = null;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         sp = new TSpace<String, Object>();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         Set keySet = new HashSet(sp.getKeySet());
         for (Object key : keySet) {
@@ -71,11 +68,9 @@ public class TSpaceTestCase implements SpaceListener {
             sp.out("testNull", null);
             fail("NullPointerException should have been called");
         } catch (NullPointerException e) {
-            assertNull("Verify null entry (rdp)", sp.rdp("testNull"));
-            assertNull("Verify null entry (inp)", sp.inp("testNull"));
-            return;
+            assertNull(sp.rdp("testNull"), "Verify null entry (rdp)");
+            assertNull(sp.inp("testNull"), "Verify null entry (inp)");
         }
-     
     }
 
     @Test
@@ -86,7 +81,7 @@ public class TSpaceTestCase implements SpaceListener {
             Thread.sleep(60);
         } catch (InterruptedException e) {
         }
-        assertNull("ABC", sp.rdp("testExpiration_Key"));
+        assertNull(sp.rdp("testExpiration_Key"), "ABC");
     }
 
     @Test
@@ -231,6 +226,38 @@ public class TSpaceTestCase implements SpaceListener {
     }
 
     @Test
+    public void testOutExpire() {
+        sp.out ("OUT", "ONE", 1000L);
+        sp.out ("OUT", "TWO", 2000L);
+        sp.out ("OUT", "THREE", 3000L);
+        sp.out  ("OUT", "FOUR", 4000L);
+        assertEquals ("ONE", sp.rdp ("OUT"));
+        ISOUtil.sleep (1500L);
+        assertEquals ("TWO", sp.rdp ("OUT"));
+        ISOUtil.sleep (1000L);
+        assertEquals ("THREE", sp.rdp ("OUT"));
+        assertEquals ("THREE", sp.inp ("OUT"));
+        assertEquals ("FOUR", sp.inp ("OUT"));
+        assertNull (sp.rdp ("OUT"));
+    }
+
+    @Test
+    public void testPushExpire() {
+        sp.push ("PUSH", "FOUR", 4000L);
+        sp.push ("PUSH", "THREE", 3000L);
+        sp.push ("PUSH", "TWO", 2000L);
+        sp.push  ("PUSH", "ONE", 1000L);
+        assertEquals ("ONE", sp.rdp ("PUSH"));
+        ISOUtil.sleep (1500L);
+        assertEquals ("TWO", sp.rdp ("PUSH"));
+        ISOUtil.sleep (1000L);
+        assertEquals ("THREE", sp.rdp ("PUSH"));
+        assertEquals ("THREE", sp.inp ("PUSH"));
+        assertEquals ("FOUR", sp.inp ("PUSH"));
+        assertNull (sp.rdp ("PUSH"));
+    }
+
+    @Test
     public void testPut() {
         sp.out("PUT", "ONE");
         sp.out("PUT", "TWO");
@@ -244,16 +271,16 @@ public class TSpaceTestCase implements SpaceListener {
     public void testExist() {
         sp.out("KEYA", Boolean.TRUE);
         sp.out("KEYB", Boolean.TRUE);
-        assertTrue("existAny ([KEYA])", sp.existAny(new String[] { "KEYA" }));
-        assertTrue("existAny ([KEYB])", sp.existAny(new String[] { "KEYB" }));
-        assertTrue("existAny ([KEYA,KEYB])", sp.existAny(new String[] { "KEYA", "KEYB" }));
-        assertFalse("existAny ([KEYC,KEYD])", sp.existAny(new String[] { "KEYC", "KEYD" }));
+        assertTrue(sp.existAny(new String[] { "KEYA" }), "existAny ([KEYA])");
+        assertTrue(sp.existAny(new String[] { "KEYB" }), "existAny ([KEYB])");
+        assertTrue(sp.existAny(new String[] { "KEYA", "KEYB" }), "existAny ([KEYA,KEYB])");
+        assertFalse(sp.existAny(new String[] { "KEYC", "KEYD" }), "existAny ([KEYC,KEYD])");
     }
 
     @Test
     public void testExistWithTimeout() {
-        assertFalse("existAnyWithTimeout ([KA,KB])", sp.existAny(new String[] { "KA", "KB" }));
-        assertFalse("existAnyWithTimeout ([KA,KB], delay)", sp.existAny(new String[] { "KA", "KB" }, 1000L));
+        assertFalse(sp.existAny(new String[] { "KA", "KB" }), "existAnyWithTimeout ([KA,KB])");
+        assertFalse(sp.existAny(new String[] { "KA", "KB" }, 1000L), "existAnyWithTimeout ([KA,KB], delay)");
         new Thread() {
             public void run() {
                 ISOUtil.sleep(1000L);
@@ -261,11 +288,30 @@ public class TSpaceTestCase implements SpaceListener {
             }
         }.start();
         long now = System.currentTimeMillis();
-        assertTrue("existAnyWithTimeout ([KA,KB], delay)", sp.existAny(new String[] { "KA", "KB" }, 2000L));
+        assertTrue(sp.existAny(new String[] { "KA", "KB" }, 2000L), "existAnyWithTimeout ([KA,KB], delay)");
         long elapsed = System.currentTimeMillis() - now;
-        assertTrue("delay was > 1000", elapsed > 900L);
+        assertTrue(elapsed > 900L, "delay was > 1000");
     }
 
+    @Test
+    public void testNRD() {
+        long now  = System.currentTimeMillis();
+        sp.out("NRD", "NRDTEST", 1000L);
+        sp.nrd("NRD");
+        long elapsed = System.currentTimeMillis() - now;
+        assertTrue(elapsed >= 1000L, "Invalid elapsed time " + elapsed);
+    }
+    @Test
+    public void testNRDWithDelay() {
+        long now  = System.currentTimeMillis();
+        sp.out("NRD", "NRDTEST", 1000L);
+        Object obj = sp.nrd("NRD", 500L);
+        assertNotNull(obj, "Object should not be null");
+        obj = sp.nrd("NRD", 5000L);
+        long elapsed = System.currentTimeMillis() - now;
+        assertTrue(elapsed >= 1000L && elapsed <= 2000L, "Invalid elapsed time " + elapsed);
+        assertNull(obj, "Object should be null");
+    }
     public void notify(Object key, Object value) {
         this.notifiedValue = value;
     }

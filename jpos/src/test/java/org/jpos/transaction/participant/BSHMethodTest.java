@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,15 +18,17 @@
 
 package org.jpos.transaction.participant;
 
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 
 import java.io.FileNotFoundException;
@@ -35,25 +37,25 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jdom.Element;
-import org.jdom.Namespace;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jdom2.Element;
+import org.jdom2.Namespace;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import bsh.EvalError;
 import bsh.ParseException;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
 public class BSHMethodTest {
     @Mock
     Element e;
     private Map arguments;
 
-    @Before
+    @BeforeEach
     public void onSetup() {
         arguments = new HashMap();
     }
@@ -61,13 +63,13 @@ public class BSHMethodTest {
     @Test
     public void testCreateBshMethod() throws Throwable {
         BSHMethod result = BSHMethod.createBshMethod(null);
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
     public void testCreateBshMethod1() throws Throwable {
         BSHMethod result = BSHMethod.createBshMethod(new Element("testBSHMethodName", Namespace.NO_NAMESPACE));
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
@@ -75,13 +77,13 @@ public class BSHMethodTest {
         when(e.getTextTrim()).thenReturn("testStringtestStringtestStringIll(gal Surrogate Pair");
         when(e.getAttributeValue("file")).thenReturn(null);
         BSHMethod result = BSHMethod.createBshMethod(e);
-        assertNotNull("result", result);
+        assertNotNull(result, "result");
     }
 
     @Test
     public void testExecute() throws Throwable {
         HashMap result = (HashMap) new BSHMethod("testBSHMethodBshData", false).execute(arguments, new ArrayList());
-        assertEquals("result.size()", 0, result.size());
+        assertEquals(0, result.size(), "result.size()");
     }
 
     @Test
@@ -89,8 +91,8 @@ public class BSHMethodTest {
         Collection<String> returnNames = new ArrayList();
         returnNames.add("testString");
         HashMap result = (HashMap) new BSHMethod("testBSHMethodBshData", false).execute(new HashMap(), returnNames);
-        assertEquals("result.size()", 1, result.size());
-        assertNull("(HashMap) result.get(\"testString\")", result.get("testString"));
+        assertEquals(1, result.size(), "result.size()");
+        assertNull(result.get("testString"), "(HashMap) result.get(\"testString\")");
     }
 
     @Test
@@ -98,7 +100,7 @@ public class BSHMethodTest {
         HashMap arguments = new HashMap();
         arguments.put("testString", "testString");
         String result = (String) new BSHMethod("testBSHMethodBshData", false).execute(arguments, "testString");
-        assertEquals("result", "testString", result);
+        assertEquals("testString", result, "result");
     }
 
     @Test
@@ -107,7 +109,7 @@ public class BSHMethodTest {
         Integer integer = Integer.valueOf(33);
         arguments.put("testString", integer);
         Integer result = (Integer) new BSHMethod("testBSHMethodBshData", false).execute(arguments, "testString");
-        assertSame("result", integer, result);
+        assertSame(integer, result, "result");
     }
 
     @Test
@@ -115,13 +117,13 @@ public class BSHMethodTest {
         Integer integer = Integer.valueOf(0);
         arguments.put("testString", integer);
         Integer result = (Integer) new BSHMethod("testBSHMethodBshData", false).execute(arguments, "testString");
-        assertSame("result", integer, result);
+        assertSame(integer, result, "result");
     }
 
     @Test
     public void testExecute5() throws Throwable {
         Object result = new BSHMethod("testBSHMethodBshData", false).execute(new HashMap(), "testBSHMethodResultName");
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
@@ -133,9 +135,9 @@ public class BSHMethodTest {
             new BSHMethod("testBSHMethodBshData", true).execute(arguments, returnNames);
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 1, arguments.size());
-            assertEquals("(ArrayList) returnNames.size()", 0, returnNames.size());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(1, arguments.size(), "(HashMap) arguments.size()");
+            assertEquals(0, returnNames.size(), "(ArrayList) returnNames.size()");
         }
     }
 
@@ -147,8 +149,8 @@ public class BSHMethodTest {
             new BSHMethod("testBSHMethodBshData", true).execute(arguments, "testBSHMethodResultName");
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 1, arguments.size());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(1, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -160,15 +162,13 @@ public class BSHMethodTest {
             fail("Expected EvalError to be thrown");
         } catch (EvalError ex) {
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod BshData;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
+                    ex.getMessage(), "ex.getMessage()");
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod BshData;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
-            assertEquals("(ArrayList) returnNames.size()", 0, returnNames.size());
+                    ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
+            assertEquals(0, returnNames.size(), "(ArrayList) returnNames.size()");
         }
     }
 
@@ -180,14 +180,12 @@ public class BSHMethodTest {
             fail("Expected EvalError to be thrown");
         } catch (EvalError ex) {
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod BshData;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
+                    ex.getMessage(), "ex.getMessage()");
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod BshData;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+                    ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -199,9 +197,9 @@ public class BSHMethodTest {
             new BSHMethod("testBSHMethodBshData", true).execute(arguments, returnNames);
             fail("Expected FileNotFoundException to be thrown");
         } catch (FileNotFoundException ex) {
-            assertEquals("ex.getClass()", FileNotFoundException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
-            assertEquals("(ArrayList) returnNames.size()", 0, returnNames.size());
+            assertEquals(FileNotFoundException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
+            assertEquals(0, returnNames.size(), "(ArrayList) returnNames.size()");
         }
     }
 
@@ -211,8 +209,8 @@ public class BSHMethodTest {
             new BSHMethod("testBSHMethodBshData", true).execute(arguments, "testBSHMethodResultName");
             fail("Expected FileNotFoundException to be thrown");
         } catch (FileNotFoundException ex) {
-            assertEquals("ex.getClass()", FileNotFoundException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+            assertEquals(FileNotFoundException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -223,9 +221,13 @@ public class BSHMethodTest {
             new BSHMethod(null, false).execute(arguments, returnNames);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
-            assertEquals("(ArrayList) returnNames.size()", 0, returnNames.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.endsWith(String)\" because \"statements\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
+            assertEquals(0, returnNames.size(), "(ArrayList) returnNames.size()");
         }
     }
 
@@ -235,8 +237,12 @@ public class BSHMethodTest {
             new BSHMethod("testBSHMethodBshData", false).execute(arguments, (Collection) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.util.Collection.iterator()\" because \"returnNames\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -247,9 +253,9 @@ public class BSHMethodTest {
             new BSHMethod(null, true).execute(arguments, returnNames);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
-            assertEquals("(ArrayList) returnNames.size()", 0, returnNames.size());
+            assertNull(ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
+            assertEquals(0, returnNames.size(), "(ArrayList) returnNames.size()");
         }
     }
 
@@ -290,8 +296,8 @@ public class BSHMethodTest {
             bSHMethod.initInterpreter(arguments);
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 1, arguments.size());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(1, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -306,14 +312,12 @@ public class BSHMethodTest {
             fail("Expected EvalError to be thrown");
         } catch (EvalError ex) {
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod Str;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
+                    ex.getMessage(), "ex.getMessage()");
             assertEquals(
-                    "ex.getMessage()",
                     "Sourced file: inline evaluation of: ``testBSHMethod Str;'' : Typed variable declaration : Class: testBSHMethod not found in namespace",
-                    ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+                    ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -325,8 +329,8 @@ public class BSHMethodTest {
             bSHMethod.initInterpreter(arguments);
             fail("Expected FileNotFoundException to be thrown");
         } catch (FileNotFoundException ex) {
-            assertEquals("ex.getClass()", FileNotFoundException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 1, arguments.size());
+            assertEquals(FileNotFoundException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(1, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -337,8 +341,8 @@ public class BSHMethodTest {
             bSHMethod.initInterpreter(arguments);
             fail("Expected FileNotFoundException to be thrown");
         } catch (FileNotFoundException ex) {
-            assertEquals("ex.getClass()", FileNotFoundException.class, ex.getClass());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+            assertEquals(FileNotFoundException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -349,8 +353,12 @@ public class BSHMethodTest {
             bSHMethod.initInterpreter(arguments);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("(HashMap) arguments.size()", 0, arguments.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.endsWith(String)\" because \"statements\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, arguments.size(), "(HashMap) arguments.size()");
         }
     }
 
@@ -361,7 +369,11 @@ public class BSHMethodTest {
             bSHMethod.initInterpreter(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.util.Map.entrySet()\" because \"arguments\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,15 +18,18 @@
 
 package org.jpos.iso.packager;
 
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.String;
 import java.util.EmptyStackException;
 import java.util.List;
 
@@ -39,12 +42,11 @@ import org.jpos.iso.ISOMsg;
 import org.jpos.iso.ISOUtil;
 import org.jpos.util.Logger;
 import org.jpos.util.SimpleLogListener;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.ext.Attributes2Impl;
-import org.xml.sax.helpers.AttributesImpl;
 
 public class XMLPackagerTest {
     private Attributes atts;
@@ -56,7 +58,7 @@ public class XMLPackagerTest {
         return ISOUtil.hex2byte(hexString.replaceAll(" ", ""));
     }
 
-    @Before
+    @BeforeEach
     public void onSetup() throws ISOException, NoSuchFieldException {
         // PrintStream p = new PrintStream(new ByteArrayOutputStream())
         xMLPackager = new XMLPackager();
@@ -75,7 +77,7 @@ public class XMLPackagerTest {
             new XMLPackager().characters(ch, 100, 1000);
             fail("Expected EmptyStackException to be thrown");
         } catch (EmptyStackException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -88,7 +90,7 @@ public class XMLPackagerTest {
     @Test
     public void testCreateISOMsg() throws Throwable {
         ISOMsg result = new XMLPackager().createISOMsg();
-        assertEquals("result.getDirection()", 0, result.getDirection());
+        assertEquals(0, result.getDirection(), "result.getDirection()");
     }
 
     @Test
@@ -97,7 +99,7 @@ public class XMLPackagerTest {
             xMLPackager.endElement("testXMLPackagerNs", "header", "testXMLPackagerQname");
             fail("Expected EmptyStackException to be thrown");
         } catch (EmptyStackException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -107,7 +109,7 @@ public class XMLPackagerTest {
             xMLPackager.endElement("testXMLPackagerNs", "isomsg", "testXMLPackagerQname");
             fail("Expected EmptyStackException to be thrown");
         } catch (EmptyStackException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -117,7 +119,11 @@ public class XMLPackagerTest {
             xMLPackager.endElement("testXMLPackagerNs", null, "testXMLPackagerQname");
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.equals(Object)\" because \"name\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -125,7 +131,11 @@ public class XMLPackagerTest {
     public void testGetFieldDescription() throws Throwable {
         ISOComponent m = new ISOMsg(100);
         String result = xMLPackager.getFieldDescription(m, 100);
-        assertEquals("result", "<notavailable/>", result);
+        // old version
+        // assertEquals("<notavailable/>", result, "result");
+
+        // new version, inspired in XML2003Packager
+        assertEquals("Data element "+100, result, "result");
     }
 
     @Test
@@ -133,20 +143,20 @@ public class XMLPackagerTest {
         Logger logger = Logger.getLogger("testXMLPackagerName");
         xMLPackager.setLogger(logger, "testXMLPackagerRealm");
         Logger result = xMLPackager.getLogger();
-        assertSame("result", logger, result);
+        assertSame(logger, result, "result");
     }
 
     @Test
     public void testGetRealm() throws Throwable {
         String result = new XMLPackager().getRealm();
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
     public void testGetRealm1() throws Throwable {
         xMLPackager.setLogger(Logger.getLogger("testXMLPackagerName"), "testXMLPackagerRealm");
         String result = xMLPackager.getRealm();
-        assertEquals("result", "testXMLPackagerRealm", result);
+        assertEquals("testXMLPackagerRealm", result, "result");
     }
 
     @Test
@@ -176,7 +186,7 @@ public class XMLPackagerTest {
         // XMLAssert.assertXMLEqual(expected, new String(data));
         DetailedDiff myDiff = new DetailedDiff(XMLUnit.compareXML(expected, new String(data)));
         List allDifferences = myDiff.getAllDifferences();
-        assertEquals(myDiff.toString(), 0, allDifferences.size());
+        assertEquals(0, allDifferences.size(), myDiff.toString());
     }
 
     @Test
@@ -199,6 +209,19 @@ public class XMLPackagerTest {
         assertThat(result.getString(11), is("12345678"));
         assertThat(result.getString(12), is("20110224112759"));
         assertThat(result.getString(24), is("831"));
+    }
+
+    @Test
+    public void testUnpackLargeXmlBytes() throws IOException, ISOException {
+        String veryLongXml = "<large-xml><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element><element><nested-element>Some very very long text</nested-element></element></large-xml>";
+        String input = "<isomsg>  <!-- org.jpos.iso.packager.XMLPackager -->" +
+                "<field id=\"0\" value=\"0800\"/>" +
+                "<field id=\"1\"><![CDATA[" + veryLongXml + "]]></field>" +
+                "</isomsg>";
+        isoMsg.setHeader("header".getBytes());
+        ISOMsg result = xMLPackager.createISOMsg();
+        int consumedBytes = xMLPackager.unpack(result, input.getBytes());
+        assertThat(result.getString(1), is(veryLongXml));
     }
 
     @Test
@@ -226,14 +249,14 @@ public class XMLPackagerTest {
     public void testSetLogger() throws Throwable {
         Logger logger = Logger.getLogger("testXMLPackagerName");
         xMLPackager.setLogger(logger, "testXMLPackagerRealm");
-        assertSame("xMLPackager.logger", logger, xMLPackager.logger);
-        assertEquals("xMLPackager.realm", "testXMLPackagerRealm", xMLPackager.realm);
+        assertSame(logger, xMLPackager.logger, "xMLPackager.logger");
+        assertEquals("testXMLPackagerRealm", xMLPackager.realm, "xMLPackager.realm");
     }
 
     @Test
     public void testStartElement1() throws Throwable {
         xMLPackager.startElement("testXMLPackagerNs", "testXMLPackagerName", "testXMLPackagerQName", atts);
-        assertEquals("(AttributesImpl) atts.getLength()", 0, ((AttributesImpl) atts).getLength());
+        assertEquals(0, atts.getLength(), "(AttributesImpl) atts.getLength()");
     }
 
     @Test
@@ -247,7 +270,7 @@ public class XMLPackagerTest {
             xMLPackager.startElement("testXMLPackagerNs", "field", "testXMLPackagerQName", atts);
             fail("Expected EmptyStackException to be thrown");
         } catch (EmptyStackException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            assertNull(ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -258,7 +281,11 @@ public class XMLPackagerTest {
             xMLPackager.startElement("testXMLPackagerNs", null, "testXMLPackagerQName", atts);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.equals(Object)\" because \"name\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -268,7 +295,11 @@ public class XMLPackagerTest {
             xMLPackager.startElement("testXMLPackagerNs", "testXMLPackagerName", "testXMLPackagerQName", null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.xml.sax.Attributes.getValue(String)\" because \"atts\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

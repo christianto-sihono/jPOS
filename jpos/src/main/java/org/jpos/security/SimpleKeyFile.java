@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,7 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -69,25 +69,28 @@ public class SimpleKeyFile
         }
     }
 
+    @Override
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm = realm;
     }
 
+    @Override
     public Logger getLogger () {
         return  logger;
     }
 
+    @Override
     public String getRealm () {
         return  realm;
     }
-
 
     /**
      *
      * @param cfg configuration object
      * @throws ConfigurationException
      */
+    @Override
     public void setConfiguration (Configuration cfg) throws ConfigurationException {
         try {
             init(cfg.get("key-file"));
@@ -97,11 +100,12 @@ public class SimpleKeyFile
         }
     }
 
-
+    @Override
     public synchronized SecureKey getKey (String alias) throws SecureKeyStoreException {
         SecureKey secureKey = null;
-        LogEvent evt = new LogEvent(this, "get-key");
-        evt.addMessage("alias", alias);
+        LogEvent evt = logger != null ? new LogEvent(this, "get-key") : null;
+        if (evt != null)
+            evt.addMessage("alias", alias);
         try {
             load();
             String keyClassName = getProperty(alias, "class");
@@ -115,16 +119,21 @@ public class SimpleKeyFile
             String keyType = getProperty(alias, "type");
             byte[] KeyCheckValue = ISOUtil.hex2byte(getProperty(alias, "checkvalue"));
             secureKey = new SecureDESKey(keyLength, keyType, keyBytes, KeyCheckValue);
-            evt.addMessage(secureKey);
+            if (evt != null)
+                evt.addMessage(secureKey);
         } catch (Exception e) {
+            if (evt == null) // this is an exception, we want to log it, even if we don't have an assigned logger
+                evt = new LogEvent(this, "get-key-error", alias);
             evt.addMessage(e);
             throw  e instanceof SecureKeyStoreException ? (SecureKeyStoreException) e : new SecureKeyStoreException(e);
         } finally {
-            Logger.log(evt);
+            if (evt != null)
+                Logger.log(evt);
         }
         return  secureKey;
     }
 
+    @Override
     public synchronized void setKey (String alias, SecureKey secureKey) throws SecureKeyStoreException {
         LogEvent evt = new LogEvent(this, "set-key");
         evt.addMessage("alias", alias);
@@ -194,17 +203,16 @@ public class SimpleKeyFile
         props.setProperty(key, value);
     }
 
-    public Map<String,SecureKey> getKeys() throws SecureKeyStoreException {
-      Map keys    = new Hashtable();
-      for ( Object k :props.keySet() ){
-        String alias = ((String)k).split("\\.")[0];
-        if ( !keys.containsKey(alias) ){
-          keys.put(alias,getKey(alias));
+    @Override
+    public Map<String, SecureKey> getKeys() throws SecureKeyStoreException {
+        Map<String, SecureKey> keys = new HashMap<>();
+        for (Object k : props.keySet()) {
+            String keyStr = (String) k;
+            String alias = keyStr.substring(0, keyStr.lastIndexOf('.'));
+            if (!keys.containsKey(alias)) {
+                keys.put(alias, getKey(alias));
+            }
         }
-      }
-      return keys;
+        return keys;
     }
 }
-
-
-

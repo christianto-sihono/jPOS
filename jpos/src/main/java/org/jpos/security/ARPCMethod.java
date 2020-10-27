@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -38,7 +38,7 @@ public enum ARPCMethod {
    /**
     * Method For the generation of a 4-byte ARPC consists of applying
     * the MAC algorithm:
-    * <li>the 8-byte ARQC
+    * <li>the 4-byte ARQC
     * <li>the 4-byte binary Card Status Update (CSU)
     * <li>the 0-8 byte binary Proprietary Authentication Data
     */

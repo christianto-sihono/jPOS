@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,31 +18,36 @@
 
 package org.jpos.q2.iso;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.ConfigurationException;
+import org.jpos.core.Environment;
+import org.jpos.core.handlers.exception.ExceptionHandlerAware;
+import org.jpos.core.handlers.exception.ExceptionHandlerConfigAware;
 import org.jpos.iso.*;
 import org.jpos.q2.QBeanSupport;
 import org.jpos.q2.QFactory;
 import org.jpos.space.Space;
 import org.jpos.space.SpaceFactory;
+import org.jpos.space.SpaceUtil;
 import org.jpos.util.LogSource;
 import org.jpos.util.Loggeable;
 import org.jpos.util.NameRegistrar;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.SocketTimeoutException;
 import java.util.Date;
-import java.util.Iterator;
 
 /**
  * @author Alejandro Revilla
  */
-public class ChannelAdaptor 
+@SuppressWarnings("unchecked")
+public class ChannelAdaptor
     extends QBeanSupport
-    implements ChannelAdaptorMBean, Channel, Loggeable
+    implements ChannelAdaptorMBean, Channel, Loggeable, ExceptionHandlerConfigAware
 {
-    Space sp;
+    protected Space sp;
     private ISOChannel channel;
     String in, out, ready, reconnect;
     long delay;
@@ -55,7 +60,7 @@ public class ChannelAdaptor
     boolean waitForWorkersOnStop;
     private Thread receiver;
     private Thread sender;
-    private final Object disconnectLock = new Object();
+    private final Object disconnectLock = Boolean.TRUE;
 
     public ChannelAdaptor () {
         super ();
@@ -81,13 +86,13 @@ public class ChannelAdaptor
     }
     public void stopService () {
         try {
-            sp.out (in, new Object());
+            sp.out (in, Boolean.TRUE);
             if (channel != null)
                 disconnect();
             if (waitForWorkersOnStop) {
                 waitForSenderToExit();
                 if (!writeOnly) {
-                    sp.out(ready, new Object());
+                    sp.out(ready, new Date());
                     waitForReceiverToExit();
                 }
             }
@@ -102,15 +107,13 @@ public class ChannelAdaptor
     }
     private void waitForReceiverToExit() {
         join(receiver);
-        while (sp.inp (ready) != null)
-            ;
+        SpaceUtil.wipe(sp, ready);
     }
     private void join(Thread thread) {
         try {
             if (thread != null)
                 thread.join();
-        } catch (InterruptedException ignored) {
-        }
+        } catch (InterruptedException ignored) { }
     }
     public void destroyService () {
         NameRegistrar.unregister (getName ());
@@ -130,7 +133,7 @@ public class ChannelAdaptor
         String old = this.in;
         this.in = in;
         if (old != null)
-            sp.out (old, new Object());
+            sp.out (old, Boolean.TRUE);
 
         getPersist().getChild("in").setText (in);
         setModified (true);
@@ -154,7 +157,7 @@ public class ChannelAdaptor
     /**
      * Queue a message to be transmitted by this adaptor
      * @param m message to send
-     * @param timeout 
+     * @param timeout timeout in millis
      */
     public void send (ISOMsg m, long timeout) {
         sp.out (in, m, timeout);
@@ -188,23 +191,28 @@ public class ChannelAdaptor
     public ISOChannel newChannel (Element e, QFactory f) 
         throws ConfigurationException
     {
-        String channelName  = e.getAttributeValue ("class");
-        String packagerName = e.getAttributeValue ("packager");
+        String channelName  = QFactory.getAttributeValue (e, "class");
+        String packagerName = QFactory.getAttributeValue (e, "packager");
 
         ISOChannel channel   = (ISOChannel) f.newInstance (channelName);
-        ISOPackager packager = null;
+        ISOPackager packager;
         if (packagerName != null) {
             packager = (ISOPackager) f.newInstance (packagerName);
             channel.setPackager (packager);
             f.setConfiguration (packager, e);
         }
-        QFactory.invoke (channel, "setHeader", e.getAttributeValue ("header"));
+        QFactory.invoke (channel, "setHeader", QFactory.getAttributeValue (e, "header"));
         f.setLogger        (channel, e);
         f.setConfiguration (channel, e);
 
         if (channel instanceof FilteredChannel) {
             addFilters ((FilteredChannel) channel, e, f);
         }
+
+        if (channel instanceof ExceptionHandlerAware) {
+            addExceptionHandlers((ExceptionHandlerAware) channel, e, f);
+        }
+
         if (getName () != null)
             channel.setName (getName ());
         return channel;
@@ -213,26 +221,28 @@ public class ChannelAdaptor
     protected void addFilters (FilteredChannel channel, Element e, QFactory fact)
         throws ConfigurationException
     {
-        Iterator iter = e.getChildren ("filter").iterator();
-        while (iter.hasNext()) {
-            Element f = (Element) iter.next();
-            String clazz = f.getAttributeValue ("class");
-            ISOFilter filter = (ISOFilter) fact.newInstance (clazz);
-            fact.setLogger        (filter, f);
-            fact.setConfiguration (filter, f);
-            String direction = f.getAttributeValue ("direction");
+        for (Object o : e.getChildren("filter")) {
+            Element f = (Element) o;
+            String clazz = QFactory.getAttributeValue(f, "class");
+            ISOFilter filter = (ISOFilter) fact.newInstance(clazz);
+            fact.setLogger(filter, f);
+            fact.setConfiguration(filter, f);
+            String direction = QFactory.getAttributeValue(f, "direction");
             if (direction == null)
-                channel.addFilter (filter);
-            else if ("incoming".equalsIgnoreCase (direction))
-                channel.addIncomingFilter (filter);
-            else if ("outgoing".equalsIgnoreCase (direction))
-                channel.addOutgoingFilter (filter);
-            else if ("both".equalsIgnoreCase (direction)) {
-                channel.addIncomingFilter (filter);
-                channel.addOutgoingFilter (filter);
+                channel.addFilter(filter);
+            else if ("incoming".equalsIgnoreCase(direction))
+                channel.addIncomingFilter(filter);
+            else if ("outgoing".equalsIgnoreCase(direction))
+                channel.addOutgoingFilter(filter);
+            else if ("both".equalsIgnoreCase(direction)) {
+                channel.addIncomingFilter(filter);
+                channel.addOutgoingFilter(filter);
             }
         }
     }
+
+
+
     protected ISOChannel initChannel () throws ConfigurationException {
         Element persist = getPersist ();
         Element e = persist.getChild ("channel");
@@ -254,20 +264,24 @@ public class ChannelAdaptor
     protected void initSpaceAndQueues () throws ConfigurationException {
         Element persist = getPersist ();
         sp = grabSpace (persist.getChild ("space"));
-        in      = persist.getChildTextTrim ("in");
-        out     = persist.getChildTextTrim ("out");
-        String s = persist.getChildTextTrim ("reconnect-delay");
-        delay    = s != null ? Long.parseLong (s) : 10000; // reasonable default
-        keepAlive = "yes".equalsIgnoreCase (persist.getChildTextTrim ("keep-alive"));
-        ignoreISOExceptions = "yes".equalsIgnoreCase (persist.getChildTextTrim ("ignore-iso-exceptions"));
+        in      = Environment.get(persist.getChildTextTrim ("in"));
+        out     = Environment.get(persist.getChildTextTrim ("out"));
         writeOnly = "yes".equalsIgnoreCase (getPersist().getChildTextTrim ("write-only"));
-        String t = persist.getChildTextTrim("timeout");
+        if (in == null || (out == null && !writeOnly)) {
+            throw new ConfigurationException ("Misconfigured channel. Please verify in/out queues");
+        }
+        String s = Environment.get(persist.getChildTextTrim ("reconnect-delay"));
+        delay    = s != null ? Long.parseLong (s) : 10000; // reasonable default
+        keepAlive = "yes".equalsIgnoreCase (Environment.get(persist.getChildTextTrim ("keep-alive")));
+        ignoreISOExceptions = "yes".equalsIgnoreCase (Environment.get(persist.getChildTextTrim ("ignore-iso-exceptions")));
+        String t = Environment.get(persist.getChildTextTrim("timeout"));
         timeout = t != null && t.length() > 0 ? Long.parseLong(t) : 0l;
         ready   = getName() + ".ready";
         reconnect = getName() + ".reconnect";
-        waitForWorkersOnStop = "yes".equalsIgnoreCase(persist.getChildTextTrim ("wait-for-workers-on-stop"));
+        waitForWorkersOnStop = "yes".equalsIgnoreCase(Environment.get(persist.getChildTextTrim ("wait-for-workers-on-stop")));
     }
 
+    @SuppressWarnings("unchecked")
     public class Sender implements Runnable {
         public Sender () {
             super ();
@@ -284,10 +298,8 @@ public class ChannelAdaptor
                         channel.send ((ISOMsg) o);
                         tx++;
                     }
-                    else if (keepAlive && channel.isConnected()) {
-                        if (channel instanceof BaseChannel) {
-                            ((BaseChannel)channel).sendKeepAlive();
-                        }
+                    else if (keepAlive && channel.isConnected() && channel instanceof BaseChannel) {
+                        ((BaseChannel)channel).sendKeepAlive();
                     }
                 } catch (ISOFilter.VetoException e) { 
                     getLog().warn ("channel-sender-"+in, e.getMessage ());
@@ -305,6 +317,7 @@ public class ChannelAdaptor
             }
         }
     }
+    @SuppressWarnings("unchecked")
     public class Receiver implements Runnable {
         public Receiver () {
             super ();
@@ -323,30 +336,32 @@ public class ChannelAdaptor
                         sp.out (out, m, timeout);
                     else
                         sp.out (out, m);
+                } catch (ISOFilter.VetoException e) {
+                    getLog().warn ("channel-receiver-"+out+"-veto-exception", e.getMessage());
                 } catch (ISOException e) {
                     if (running()) {
                         getLog().warn ("channel-receiver-"+out, e);
                         if (!ignoreISOExceptions) {
-                            sp.out (reconnect, new Object(), delay);
+                            sp.out (reconnect, Boolean.TRUE, delay);
                             disconnect ();
-                            sp.out (in, new Object()); // wake-up Sender
+                            sp.out (in, Boolean.TRUE); // wake-up Sender
                         }
                         ISOUtil.sleep(1000);
                     }
-                } catch (SocketTimeoutException e) {
+                } catch (SocketTimeoutException | EOFException e) {
                     if (running()) {
-                        getLog().warn ("channel-receiver-"+out, "Read timeout");
-                        sp.out (reconnect, new Object(), delay);
+                        getLog().warn ("channel-receiver-"+out, "Read timeout / EOF - reconnecting");
+                        sp.out (reconnect, Boolean.TRUE, delay);
                         disconnect ();
-                        sp.out (in, new Object()); // wake-up Sender
+                        sp.out (in, Boolean.TRUE); // wake-up Sender
                         ISOUtil.sleep(1000);
                     }
                 } catch (Exception e) { 
                     if (running()) {
                         getLog().warn ("channel-receiver-"+out, e);
-                        sp.out (reconnect, new Object(), delay);
+                        sp.out (reconnect, Boolean.TRUE, delay);
                         disconnect ();
-                        sp.out (in, new Object()); // wake-up Sender
+                        sp.out (in, Boolean.TRUE); // wake-up Sender
                         ISOUtil.sleep(1000);
                     }
                 }
@@ -360,29 +375,27 @@ public class ChannelAdaptor
             ISOUtil.sleep(1000);
         }
         while (running() && !channel.isConnected ()) {
-            while (sp.inp (ready) != null)
-                ;
+            SpaceUtil.wipe(sp, ready);
             try {
                 channel.connect ();
-            } catch (IOException e) {
-                getLog().warn ("check-connection", e.getMessage ());
+            } catch (IOException ignored) {
+                // channel.connect already logs - no need for more warnings
             }
             if (!channel.isConnected ())
                 ISOUtil.sleep (delay);
             else
                 connects++;
         }
-        if (running() && (sp.rdp (ready) == null))
+        if (running() && sp.rdp (ready) == null)
             sp.out (ready, new Date());
     }
     protected void disconnect () {
         // do not synchronize on this as both Sender and Receiver can deadlock against a thread calling stop()
         synchronized (disconnectLock) {
             try {
-                while (sp.inp(ready) != null)
-                    ;
+                SpaceUtil.wipe(sp, ready);
                 channel.disconnect();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 getLog().warn("disconnect", e);
             }
         }
@@ -406,7 +419,9 @@ public class ChannelAdaptor
             port = Integer.parseInt (
                 getProperty (getProperties ("channel"), "port")
             );
-        } catch (NumberFormatException e) { }
+        } catch (NumberFormatException e) {
+            getLog().error(e);
+        }
         return port;
     }
     public synchronized void setSocketFactory (String sFac) {

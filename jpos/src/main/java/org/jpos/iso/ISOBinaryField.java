@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -84,6 +84,12 @@ public class ISOBinaryField
     public void setFieldNumber (int fieldNumber) {
         this.fieldNumber = fieldNumber;
     }
+
+    @Override
+    public int getFieldNumber () {
+        return fieldNumber;
+    }
+
     /**
      * not available on Leaf - always throw ISOException
      * @exception ISOException
@@ -123,7 +129,7 @@ public class ISOBinaryField
      */
     public void setValue (Object obj) throws ISOException {
         if (obj instanceof String)
-            value = ((String) obj).getBytes();
+            value = ((String) obj).getBytes(ISOUtil.CHARSET);
         else
             value = (byte[]) obj;
     }

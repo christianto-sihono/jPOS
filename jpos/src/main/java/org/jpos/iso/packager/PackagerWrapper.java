@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -61,10 +61,12 @@ public abstract class PackagerWrapper
     {
         return standardPackager;
     }
+
     public void setLogger (Logger logger, String realm) {
         this.logger = logger;
         this.realm  = realm;
-        standardPackager.setLogger (logger, realm);
+        if (standardPackager instanceof LogSource)
+            ((LogSource) standardPackager).setLogger (logger, realm);
     }
     public String getRealm () {
         return realm;

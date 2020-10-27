@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -49,8 +49,7 @@ public class LeftPadder implements Padder
     }
 
     /**
-	 * @see org.jpos.iso.Padder#pad(java.lang.String, int, char)
-	 */
+     */
     public String pad(String data, int maxLength) throws ISOException
     {
         StringBuilder padded = new StringBuilder(maxLength);
@@ -71,9 +70,8 @@ public class LeftPadder implements Padder
 
     /**
 	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Padder#unpad(java.lang.String, char)
-	 */
+	 *
+     */
     public String unpad(String paddedData)
     {
         int i = 0;

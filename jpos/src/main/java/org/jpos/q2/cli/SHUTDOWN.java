@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,26 +20,39 @@ package org.jpos.q2.cli;
 
 import org.jpos.q2.CLICommand;
 import org.jpos.q2.CLIContext;
-
 import java.io.IOException;
 
-public class SHUTDOWN implements CLICommand
-{
-    public void exec(CLIContext cli, String[] args) throws IOException
-    {
-        boolean shutdown = false;
-        if (args.length == 2 && "--force".equals(args[1]))
-        { shutdown = true; }
-        else
-        { shutdown = cli.confirm("Confirm shutdown (Yes/No) ? "); }
+@SuppressWarnings("unused")
+public class SHUTDOWN implements CLICommand {
+    public void exec(CLIContext cli, String[] args) throws IOException {
+        boolean shutdown;
 
-        if (shutdown)
-        {
-            cli.println("Shutting down.");
-            cli.getQ2().shutdown();
+        if (cli.isInteractive() && cli.getOutputStream() != System.out) {
+            cli.println ("Can't shutdown remotely");
+            return;
         }
-        else
-        { cli.println("Q2 will continue running."); }
+
+        if (hasOption(args, "-f", "--force", "-fq")) {
+            shutdown = true;
+        } else {
+            shutdown = cli.confirm("Confirm shutdown (Yes/No) ? ");
+        }
+        if (shutdown) {
+            if (!hasOption (args, "-q", "--quiet", "-fq"))
+                cli.println("Shutting down.");
+            cli.getCLI().getQ2().shutdown();
+        } else {
+            cli.println("Q2 will continue running.");
+        }
+    }
+
+    private boolean hasOption (String[] args, String... opts) {
+        for (String s : args) {
+            for (String o : opts) {
+                if (s.equals(o))
+                    return true;
+            }
+        }
+        return false;
     }
 }
-

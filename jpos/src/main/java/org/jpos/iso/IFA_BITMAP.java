@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -47,8 +47,11 @@ public class IFA_BITMAP extends ISOBitMapPackager {
      * @exception ISOException
      */
     public byte[] pack (ISOComponent c) throws ISOException {
-        byte[] b = ISOUtil.bitSet2byte ((BitSet) c.getValue());
-        return ISOUtil.hexString(b).getBytes();
+        BitSet b = (BitSet) c.getValue();
+        int len =
+            getLength() >= 8 ?
+                    b.length()+62 >>6 <<3 : getLength();
+        return ISOUtil.hexString(ISOUtil.bitSet2byte (b, len)).getBytes();
     }
 
     public int getMaxPackedLength() {
@@ -67,10 +70,12 @@ public class IFA_BITMAP extends ISOBitMapPackager {
         int len;
         BitSet bmap = ISOUtil.hex2BitSet (b, offset, getLength() << 3);
         c.setValue(bmap);
-        len = (bmap.get(1)) ? 128 : 64; /* changed by Hani */
-        if (getLength() > 16 && bmap.get(65))
+        len = bmap.get(1) ? 128 : 64; /* changed by Hani */
+        if (getLength() > 16 && bmap.get(65)) {
             len = 192;
-        return (len >> 2);
+            bmap.clear(65);
+        }
+        return Math.min (getLength() << 1, len >> 2);
     }
     public void unpack (ISOComponent c, InputStream in) 
         throws IOException, ISOException

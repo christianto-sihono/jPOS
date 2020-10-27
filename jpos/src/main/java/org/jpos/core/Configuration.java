@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,8 @@
 package org.jpos.core;
 
 
+import java.util.Set;
+
 /**
  * @author apr@cs.com.uy
  * @version $Id$
@@ -28,30 +30,29 @@ package org.jpos.core;
  * runtime configuration parameters such as merchant number, etc.
  */
 public interface Configuration {
-    public String get       (String propertyName);
+    String get(String propertyName);
     /**
      * @param propertyName  ditto
-     * @param propertyValue ditto
-     * @return all properties with a given name (or a zero length string)
+     * @return all properties with a given name (or a zero-length array)
      */
-    public String[] getAll  (String propertyName);
-    public int[] getInts  (String propertyName);
-    public long[] getLongs (String propertyName);
-    public double[] getDoubles (String propertyName);
-    public boolean[] getBooleans (String propertyName);
-    public String get       (String propertyName, String defaultValue);
-    public int getInt       (String propertyName);
-    public int getInt       (String propertyName, int defaultValue);
-    public long getLong     (String propertyName);
-    public long getLong     (String propertyName, long defaultValue);
-    public double getDouble (String propertyName);
-    public double getDouble (String propertyName, double defaultValue);
-    public boolean getBoolean (String propertyName);
-    public boolean getBoolean (String propertyName, boolean defaultValue);
+    String[] getAll(String propertyName);
+    int[] getInts(String propertyName);
+    long[] getLongs(String propertyName);
+    double[] getDoubles(String propertyName);
+    boolean[] getBooleans(String propertyName);
+    String get(String propertyName, String defaultValue);
+    int getInt(String propertyName);
+    int getInt(String propertyName, int defaultValue);
+    long getLong(String propertyName);
+    long getLong(String propertyName, long defaultValue);
+    double getDouble(String propertyName);
+    double getDouble(String propertyName, double defaultValue);
+    boolean getBoolean(String propertyName);
+    boolean getBoolean(String propertyName, boolean defaultValue);
     /**
      * @param name the Property name
      * @param value typically a String, but could be a String[] too
      */
-    public void put (String name, Object value);
+    void put(String name, Object value);
+    Set<String> keySet();
 }
-

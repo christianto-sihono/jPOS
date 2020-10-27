@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -67,7 +67,7 @@ public class Base1_BITMAP126 extends ISOBitMapPackager
     {
         int len;
         // 
-        // For a this type of Bitmap bit0 does not mean
+        // For this type of Bitmap bit0 does not mean
         // that there is a secondary bitmap to follow
         // It simply means that field 1 is present
         // The standard IFB_BITMAP class assumes that
@@ -76,8 +76,8 @@ public class Base1_BITMAP126 extends ISOBitMapPackager
         BitSet bmap = ISOUtil.byte2BitSet (b, offset, false); // False => no extended bitmap
 
         c.setValue(bmap);
-        len = ((len=bmap.size()) > 128) ? 128 : len;
-        return (len >> 3);
+        len = (len=bmap.size()) > 128 ? 128 : len;            // BBB I think we want bmap.length(), but nobody is complaining...
+        return len >> 3;
     }
     public int getMaxPackedLength() 
     {

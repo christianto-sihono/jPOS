@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,10 +22,9 @@ import org.jpos.iso.ISOUtil;
 import org.jpos.q2.CLICommand;
 import org.jpos.q2.CLIContext;
 
-public class UPTIME implements CLICommand
-{
-    public void exec(CLIContext cli, String[] args) throws Exception
-    {
-        cli.println(ISOUtil.millisToString(cli.getQ2().getUptime()));
+@SuppressWarnings("unused")
+public class UPTIME implements CLICommand {
+    public void exec(CLIContext ctx, String[] args) throws Exception {
+        ctx.println(ISOUtil.millisToString(ctx.getCLI().getQ2().getUptime()));
     }
 }

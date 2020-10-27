@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,8 +29,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /** This is a log listener that reads its actions from Bean Shell scripts.
  * You can define many scripts, and the order in wich they are called, also you
@@ -91,11 +92,12 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
     /**Holds the configuration for this object*/
     protected Configuration cfg;
     protected static final String[] patterns = {"tag", "realm"};
-    protected Map<String,ScriptInfo> scripts = new Hashtable<String,ScriptInfo>();
+    protected Map<String, ScriptInfo> scripts = new HashMap<>();
     /** Creates a new instance of BSHLogListener */
     public BSHLogListener() {
     }
-    
+
+    @Override
     public void setConfiguration(org.jpos.core.Configuration cfg) {
         this.cfg = cfg;
     }
@@ -109,7 +111,7 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
                 buff.append(src[i].substring(end, begin));
                 boolean patternFound = false;
                 for(int k=0; k<patterns.length && !patternFound ; k++){
-                    if(patternFound = (src[i].indexOf(patterns[k], begin) == begin+1)){
+                    if(patternFound = src[i].indexOf(patterns[k], begin) == begin+1){
                         buff.append(to[k]);
                         end = begin + patterns[k].length() + 1;
                     }
@@ -122,7 +124,9 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
         }
         return ret;
     }
-    public LogEvent log(org.jpos.util.LogEvent ev) {
+
+    @Override
+    public LogEvent log(LogEvent ev) {
         LogEvent ret = ev;
         boolean processed = false;
         try{
@@ -131,7 +135,7 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
                 try{
                     Interpreter bsh = new Interpreter();
                     BSHLogListener.ScriptInfo info = getScriptInfo(sources[i]);
-                    NameSpace ns = (info!=null)?info.getNameSpace():null;
+                    NameSpace ns = info!=null ?info.getNameSpace():null;
                     if(ns!=null) bsh.setNameSpace(ns);
                     bsh.set("event", ret);
                     bsh.set("cfg", cfg);
@@ -163,7 +167,7 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
                     ret = (LogEvent)bsh.get("event");
                     Object saveNS = bsh.get("saveNameSpace");
                     boolean saveNameSpace = 
-                        (saveNS instanceof Boolean)? (Boolean) saveNS :cfg.getBoolean("save-name-space");
+                        saveNS instanceof Boolean ? (Boolean) saveNS :cfg.getBoolean("save-name-space");
                     if(saveNameSpace) {
                         if(info!=null) info.setNameSpace(bsh.getNameSpace());
                         else scripts.put(sources[i], new ScriptInfo(bsh.getNameSpace()));
@@ -172,9 +176,11 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
                     ret.addMessage(e);
                 }
             }
-            return (!processed && cfg.getBoolean("filter-by-default"))?null:ret;
+            return !processed && cfg.getBoolean("filter-by-default") ? null : ret;
         }catch(Exception e){
-            ret.addMessage(e);
+            if (ret != null) {
+                ret.addMessage(e);
+            }
             return ret;
         }
     }
@@ -190,11 +196,14 @@ public class BSHLogListener implements org.jpos.util.LogListener, org.jpos.core.
         }
         return buf.toString();
     }
-    
+
     protected ScriptInfo getScriptInfo(String filename){
+        Objects.requireNonNull(filename, "The script file name cannot be null");
         return scripts.get(filename);
     }
+
     protected void addScriptInfo(String filename, String code, long lastModified){
+        Objects.requireNonNull(filename, "The script file name cannot be null");
         scripts.put(filename, new ScriptInfo(code, lastModified));
     }
     protected static class ScriptInfo{

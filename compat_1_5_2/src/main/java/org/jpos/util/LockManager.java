@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,12 +40,12 @@ package org.jpos.util;
  * @version $Id$
  */
 public interface LockManager {
-    public interface Ticket {
-        public boolean renew (long duration);
-        public long getExpiration();
-        public boolean isExpired();
-        public void cancel();
+    interface Ticket {
+        boolean renew(long duration);
+        long getExpiration();
+        boolean isExpired();
+        void cancel();
     }
-    public Ticket lock (String resourceName, long duration, long wait);
+    Ticket lock(String resourceName, long duration, long wait);
 }
     

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,10 +18,14 @@
 
 package org.jpos.bsh;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import static org.apache.commons.lang3.JavaVersion.JAVA_10;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,7 +35,7 @@ import org.jpos.core.Configuration;
 import org.jpos.core.SimpleConfiguration;
 import org.jpos.iso.channel.LogChannel;
 import org.jpos.util.LogEvent;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import bsh.NameSpace;
 
@@ -41,7 +45,7 @@ public class BSHLogListenerTest {
     public void testAddScriptInfo() throws Throwable {
         BSHLogListener bSHLogListener = new BSHLogListener();
         bSHLogListener.addScriptInfo("testBSHLogListenerFilename", "testBSHLogListenerCode", 100L);
-        assertEquals("bSHLogListener.scripts.size()", 1, bSHLogListener.scripts.size());
+        assertEquals(1, bSHLogListener.scripts.size(), "bSHLogListener.scripts.size()");
     }
 
     @Test
@@ -51,23 +55,23 @@ public class BSHLogListenerTest {
             bSHLogListener.addScriptInfo(null, "testBSHLogListenerCode", 100L);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("bSHLogListener.scripts.size()", 0, bSHLogListener.scripts.size());
+            assertEquals("The script file name cannot be null", ex.getMessage());
+            assertEquals(0, bSHLogListener.scripts.size());
         }
     }
 
     @Test
     public void testConstructor() throws Throwable {
         BSHLogListener bSHLogListener = new BSHLogListener();
-        assertEquals("bSHLogListener.scripts.size()", 0, bSHLogListener.scripts.size());
+        assertEquals(0, bSHLogListener.scripts.size(), "bSHLogListener.scripts.size()");
     }
 
     @Test
     public void testGetScriptInfo() throws Throwable {
         BSHLogListener bSHLogListener = new BSHLogListener();
         BSHLogListener.ScriptInfo result = bSHLogListener.getScriptInfo("testBSHLogListenerFilename");
-        assertNull("result", result);
-        assertEquals("bSHLogListener.scripts.size()", 0, bSHLogListener.scripts.size());
+        assertNull(result, "result");
+        assertEquals(0, bSHLogListener.scripts.size(), "bSHLogListener.scripts.size()");
     }
 
     @Test
@@ -75,8 +79,8 @@ public class BSHLogListenerTest {
         BSHLogListener bSHLogListener = new BSHLogListener();
         bSHLogListener.addScriptInfo("Itag", "testBSHLogListenerCode", 100L);
         BSHLogListener.ScriptInfo result = bSHLogListener.getScriptInfo("Itag");
-        assertEquals("result.getCode()", "testBSHLogListenerCode", result.getCode());
-        assertEquals("bSHLogListener.scripts.size()", 1, bSHLogListener.scripts.size());
+        assertEquals("testBSHLogListenerCode", result.getCode(), "result.getCode()");
+        assertEquals(1, bSHLogListener.scripts.size(), "bSHLogListener.scripts.size()");
     }
 
     @Test
@@ -86,8 +90,8 @@ public class BSHLogListenerTest {
             bSHLogListener.getScriptInfo(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("bSHLogListener.scripts.size()", 0, bSHLogListener.scripts.size());
+            assertEquals("The script file name cannot be null", ex.getMessage());
+            assertEquals(0, bSHLogListener.scripts.size());
         }
     }
 
@@ -99,8 +103,8 @@ public class BSHLogListenerTest {
             bSHLogListener.loadCode(f);
             fail("Expected FileNotFoundException to be thrown");
         } catch (FileNotFoundException ex) {
-            assertEquals("ex.getClass()", FileNotFoundException.class, ex.getClass());
-            assertEquals("f.getName()", "testBSHLogListenerParam1", f.getName());
+            assertEquals(FileNotFoundException.class, ex.getClass(), "ex.getClass()");
+            assertEquals("testBSHLogListenerParam1", f.getName(), "f.getName()");
         }
     }
 
@@ -123,21 +127,8 @@ public class BSHLogListenerTest {
         LogEvent ev = new LogEvent("testBSHLogListenerTag");
         ev.setSource(new LogChannel());
         LogEvent result = bSHLogListener.log(ev);
-        assertSame("result", ev, result);
-        assertSame("bSHLogListener.cfg", cfg, bSHLogListener.cfg);
-    }
-
-    @Test
-    public void testLogThrowsNullPointerException() throws Throwable {
-        BSHLogListener bSHLogListener = new BSHLogListener();
-        try {
-            bSHLogListener.log(null);
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("bSHLogListener.cfg", bSHLogListener.cfg);
-            assertEquals("bSHLogListener.scripts.size()", 0, bSHLogListener.scripts.size());
-        }
+        assertSame(ev, result, "result");
+        assertSame(cfg, bSHLogListener.cfg, "bSHLogListener.cfg");
     }
 
     @Test
@@ -235,8 +226,8 @@ public class BSHLogListenerTest {
         patterns[1] = "v";
         String[] to = new String[3];
         String[] result = BSHLogListener.replace(src, patterns, to);
-        assertEquals("result.length", 87, result.length);
-        assertEquals("result[0]", "x9", result[0]);
+        assertEquals(87, result.length, "result.length");
+        assertEquals("x9", result[0], "result[0]");
     }
 
     @Test
@@ -247,8 +238,8 @@ public class BSHLogListenerTest {
         String[] patterns = new String[0];
         String[] to = new String[1];
         String[] result = BSHLogListener.replace(src, patterns, to);
-        assertEquals("result.length", 2, result.length);
-        assertEquals("result[0]", "\u9C99", result[0]);
+        assertEquals(2, result.length, "result.length");
+        assertEquals("\u9C99", result[0], "result[0]");
     }
 
     @Test
@@ -266,8 +257,8 @@ public class BSHLogListenerTest {
         patterns[0] = "testString";
         String[] to = new String[1];
         String[] result = BSHLogListener.replace(src, patterns, to);
-        assertEquals("result.length", 8, result.length);
-        assertEquals("result[0]", "testString", result[0]);
+        assertEquals(8, result.length, "result.length");
+        assertEquals("testString", result[0], "result[0]");
     }
 
     @Test
@@ -277,8 +268,8 @@ public class BSHLogListenerTest {
         String[] patterns = new String[3];
         String[] to = new String[2];
         String[] result = BSHLogListener.replace(src, patterns, to);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", "testString", result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals("testString", result[0], "result[0]");
     }
 
     @Test
@@ -287,7 +278,7 @@ public class BSHLogListenerTest {
         String[] patterns = new String[2];
         String[] to = new String[2];
         String[] result = BSHLogListener.replace(src, patterns, to);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
@@ -304,7 +295,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("0", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 0 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -328,7 +323,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"src[i]\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -360,7 +359,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"src[i]\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -381,7 +384,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"src[i]\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -401,7 +408,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read field \"value\" because \"tgtStr\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -416,7 +427,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read field \"value\" because \"tgtStr\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -431,7 +446,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read field \"value\" because \"tgtStr\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -445,7 +464,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read field \"value\" because \"tgtStr\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -459,7 +482,11 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"src[i]\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -468,10 +495,14 @@ public class BSHLogListenerTest {
         String[] patterns = new String[3];
         String[] to = new String[2];
         try {
-            BSHLogListener.replace((String[]) null, patterns, to);
+            BSHLogListener.replace(null, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"src\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -484,46 +515,50 @@ public class BSHLogListenerTest {
             BSHLogListener.replace(src, patterns, to);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.length()\" because \"src[i]\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testScriptInfoConstructor() throws Throwable {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo("testScriptInfoCode", 100L);
-        assertEquals("scriptInfo.lastModified", 100L, scriptInfo.lastModified);
-        assertEquals("scriptInfo.code", "testScriptInfoCode", scriptInfo.code);
+        assertEquals(100L, scriptInfo.lastModified, "scriptInfo.lastModified");
+        assertEquals("testScriptInfoCode", scriptInfo.code, "scriptInfo.code");
     }
 
     @Test
     public void testScriptInfoConstructor1() throws Throwable {
         NameSpace ns = NameSpace.JAVACODE;
         BSHLogListener.ScriptInfo scriptInfo =  new BSHLogListener.ScriptInfo(ns);
-        assertSame("scriptInfo.nameSpace", ns, scriptInfo.nameSpace);
+        assertSame(ns, scriptInfo.nameSpace, "scriptInfo.nameSpace");
     }
 
     @Test
     public void testScriptInfoConstructor2() throws Throwable {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo();
-        assertNull("scriptInfo.getCode()", scriptInfo.getCode());
+        assertNull(scriptInfo.getCode(), "scriptInfo.getCode()");
     }
 
     @Test
     public void testScriptInfoGetCode() throws Throwable {
         String result = new BSHLogListener.ScriptInfo("testScriptInfoCode", 100L).getCode();
-        assertEquals("result", "testScriptInfoCode", result);
+        assertEquals("testScriptInfoCode", result, "result");
     }
 
     @Test
     public void testScriptInfoGetCode1() throws Throwable {
         String result = new BSHLogListener.ScriptInfo().getCode();
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
     public void testScriptInfoGetLastCheck() throws Throwable {
         long result = new BSHLogListener.ScriptInfo("testScriptInfoCode", 100L).getLastCheck();
-        assertEquals("result", 0L, result);
+        assertEquals(0L, result, "result");
     }
 
     @Test
@@ -531,13 +566,13 @@ public class BSHLogListenerTest {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo("testScriptInfoCode", 100L);
         scriptInfo.setLastCheck(100L);
         long result = scriptInfo.getLastCheck();
-        assertEquals("result", 100L, result);
+        assertEquals(100L, result, "result");
     }
 
     @Test
     public void testScriptInfoGetLastModified() throws Throwable {
         long result = new BSHLogListener.ScriptInfo(NameSpace.JAVACODE).getLastModified();
-        assertEquals("result", 0L, result);
+        assertEquals(0L, result, "result");
     }
 
     @Test
@@ -545,35 +580,35 @@ public class BSHLogListenerTest {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo();
         scriptInfo.setLastModified(100L);
         long result = scriptInfo.getLastModified();
-        assertEquals("result", 100L, result);
+        assertEquals(100L, result, "result");
     }
 
     @Test
     public void testScriptInfoGetNameSpace() throws Throwable {
         NameSpace ns = NameSpace.JAVACODE;
         NameSpace result = new BSHLogListener.ScriptInfo(ns).getNameSpace();
-        assertSame("result", ns, result);
+        assertSame(ns, result, "result");
     }
 
     @Test
     public void testScriptInfoSetCode() throws Throwable {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo();
         scriptInfo.setCode("testScriptInfoCode");
-        assertEquals("scriptInfo.code", "testScriptInfoCode", scriptInfo.code);
+        assertEquals("testScriptInfoCode", scriptInfo.code, "scriptInfo.code");
     }
 
     @Test
     public void testScriptInfoSetLastCheck() throws Throwable {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo("testScriptInfoCode", 100L);
         scriptInfo.setLastCheck(100L);
-        assertEquals("scriptInfo.lastCheck", 100L, scriptInfo.lastCheck);
+        assertEquals(100L, scriptInfo.lastCheck, "scriptInfo.lastCheck");
     }
 
     @Test
     public void testScriptInfoSetLastModified() throws Throwable {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo(NameSpace.JAVACODE);
         scriptInfo.setLastModified(100L);
-        assertEquals("scriptInfo.lastModified", 100L, scriptInfo.lastModified);
+        assertEquals(100L, scriptInfo.lastModified, "scriptInfo.lastModified");
     }
 
     @Test
@@ -582,7 +617,7 @@ public class BSHLogListenerTest {
         BSHLogListener.ScriptInfo scriptInfo = new BSHLogListener.ScriptInfo(ns);
         scriptInfo.getNameSpace();
         scriptInfo.setNameSpace(ns);
-        assertSame("scriptInfo.nameSpace", ns, scriptInfo.nameSpace);
+        assertSame(ns, scriptInfo.nameSpace, "scriptInfo.nameSpace");
     }
 
     @Test
@@ -590,6 +625,6 @@ public class BSHLogListenerTest {
         BSHLogListener bSHLogListener = new BSHLogListener();
         Configuration cfg = new SimpleConfiguration(new Properties());
         bSHLogListener.setConfiguration(cfg);
-        assertSame("bSHLogListener.cfg", cfg, bSHLogListener.cfg);
+        assertSame(cfg, bSHLogListener.cfg, "bSHLogListener.cfg");
     }
 }

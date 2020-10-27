@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,8 +31,6 @@ import java.util.Set;
  *
  * @author Alwyn Schoeman
  * @version $Revision$ $Date$
- * @jmx:mbean description="SpaceProxy QBean"
- *                  extends="org.jpos.q2.QBeanSupportMBean"
  */
 
 public class SpaceProxyAdaptor 
@@ -59,25 +57,16 @@ public class SpaceProxyAdaptor
         sp.shutdown ();
     }
 
-    /**
-     * @jmx:managed-attribute description="Space Name"
-     */
     public synchronized void setSpaceName (String spaceName) {
         this.spaceName = spaceName;
         setAttr (getAttrs (), "spaceName", spaceName);
         setModified (true);
     }
 
-    /**
-     * @jmx:managed-attribute description="Space Name"
-     */
     public String getSpaceName () {
         return spaceName;
     }
     
-    /**
-     * @jmx:managed-attribute description="Space Keys"
-     */
     public Set getKeys () {
         return sp.getKeySet ();
     }

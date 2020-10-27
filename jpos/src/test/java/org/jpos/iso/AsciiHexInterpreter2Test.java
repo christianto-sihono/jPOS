@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,31 +18,35 @@
 
 package org.jpos.iso;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import static org.apache.commons.lang3.JavaVersion.JAVA_10;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+
+import org.junit.jupiter.api.Test;
 
 public class AsciiHexInterpreter2Test {
 
     @Test
     public void testConstructor() throws Throwable {
         new AsciiHexInterpreter();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testGetPackedLength() throws Throwable {
         int result = AsciiHexInterpreter.INSTANCE.getPackedLength(0);
-        assertEquals("result", 0, result);
+        assertEquals(0, result, "result");
     }
 
     @Test
     public void testGetPackedLength1() throws Throwable {
         int result = new AsciiHexInterpreter().getPackedLength(100);
-        assertEquals("result", 200, result);
+        assertEquals(200, result, "result");
     }
 
     @Test
@@ -50,7 +54,7 @@ public class AsciiHexInterpreter2Test {
         byte[] b = new byte[1];
         byte[] data = new byte[0];
         new AsciiHexInterpreter().interpret(data, b, 100);
-        assertEquals("b.length", 1, b.length);
+        assertEquals(1, b.length, "b.length");
     }
 
     @Test
@@ -58,7 +62,7 @@ public class AsciiHexInterpreter2Test {
         byte[] data = new byte[1];
         byte[] b = new byte[5];
         AsciiHexInterpreter.INSTANCE.interpret(data, b, 0);
-        assertEquals("b[0]", (byte) 48, b[0]);
+        assertEquals((byte) 48, b[0], "b[0]");
     }
 
     @Test
@@ -69,9 +73,13 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.interpret(data, b, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("b[0]", (byte) 48, b[0]);
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
-            assertEquals("b.length", 1, b.length);
+            assertEquals((byte) 48, b[0], "b[0]");
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(1, b.length, "b.length");
         }
     }
 
@@ -83,8 +91,12 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.interpret(data, b, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
-            assertEquals("b.length", 0, b.length);
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, b.length, "b.length");
         }
     }
 
@@ -96,9 +108,13 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.interpret(data, b, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("b[0]", (byte) 48, b[0]);
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
-            assertEquals("b.length", 3, b.length);
+            assertEquals((byte) 48, b[0], "b[0]");
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(3, b.length, "b.length");
         }
     }
 
@@ -106,95 +122,16 @@ public class AsciiHexInterpreter2Test {
     public void testInterpretThrowsNullPointerException() throws Throwable {
         byte[] b = new byte[5];
         try {
-            new AsciiHexInterpreter().interpret((byte[]) null, b, 100);
+            new AsciiHexInterpreter().interpret(null, b, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("b.length", 5, b.length);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"data\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(5, b.length, "b.length");
         }
-    }
-
-    @Test
-    public void testUninterpret() throws Throwable {
-        byte[] rawData = new byte[70];
-        rawData[65] = (byte) 65;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 63, 3);
-        assertEquals("result.length", 3, result.length);
-        assertEquals("result[0]", (byte) -48, result[0]);
-    }
-
-    @Test
-    public void testUninterpret1() throws Throwable {
-        byte[] rawData = new byte[5];
-        rawData[3] = (byte) 64;
-        rawData[4] = (byte) 64;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 3, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 16, result[0]);
-    }
-
-    @Test
-    public void testUninterpret2() throws Throwable {
-        byte[] rawData = new byte[67];
-        rawData[66] = (byte) 65;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 65, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 10, result[0]);
-    }
-
-    @Test
-    public void testUninterpret3() throws Throwable {
-        byte[] rawData = new byte[74];
-        rawData[66] = (byte) 65;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 65, 3);
-        assertEquals("result.length", 3, result.length);
-        assertEquals("result[0]", (byte) 10, result[0]);
-    }
-
-    @Test
-    public void testUninterpret4() throws Throwable {
-        byte[] rawData = new byte[67];
-        rawData[65] = (byte) 65;
-        rawData[66] = (byte) 65;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 65, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) -86, result[0]);
-    }
-
-    @Test
-    public void testUninterpret5() throws Throwable {
-        byte[] rawData = new byte[9];
-        rawData[3] = (byte) 65;
-        rawData[4] = (byte) 64;
-        rawData[6] = (byte) 65;
-        byte[] result = new AsciiHexInterpreter().uninterpret(rawData, 1, 3);
-        assertEquals("result.length", 3, result.length);
-        assertEquals("result[0]", (byte) -48, result[0]);
-    }
-
-    @Test
-    public void testUninterpret6() throws Throwable {
-        byte[] rawData = new byte[6];
-        rawData[1] = (byte) 65;
-        byte[] result = new AsciiHexInterpreter().uninterpret(rawData, 1, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) -16, result[0]);
-    }
-
-    @Test
-    public void testUninterpret7() throws Throwable {
-        byte[] rawData = new byte[3];
-        rawData[1] = (byte) 63;
-        byte[] result = AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 15, result[0]);
-    }
-
-    @Test
-    public void testUninterpret8() throws Throwable {
-        byte[] rawData = new byte[1];
-        byte[] result = new AsciiHexInterpreter().uninterpret(rawData, 100, 0);
-        assertEquals("result.length", 0, result.length);
     }
 
     @Test
@@ -209,7 +146,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "68", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("68", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 68 out of bounds for length 68", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -224,7 +165,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "68", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("68", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 68 out of bounds for length 68", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -239,7 +184,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "68", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("68", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 68 out of bounds for length 68", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -252,7 +201,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 65, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "67", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("67", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 67 out of bounds for length 67", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -265,7 +218,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -278,7 +235,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 1, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "5", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("5", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 5 out of bounds for length 5", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -289,7 +250,11 @@ public class AsciiHexInterpreter2Test {
             AsciiHexInterpreter.INSTANCE.uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -301,7 +266,11 @@ public class AsciiHexInterpreter2Test {
             new AsciiHexInterpreter().uninterpret(rawData, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -312,17 +281,25 @@ public class AsciiHexInterpreter2Test {
             new AsciiHexInterpreter().uninterpret(rawData, 100, -1);
             fail("Expected NegativeArraySizeException to be thrown");
         } catch (NegativeArraySizeException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("-1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testUninterpretThrowsNullPointerException() throws Throwable {
         try {
-            AsciiHexInterpreter.INSTANCE.uninterpret((byte[]) null, 100, 1000);
+            AsciiHexInterpreter.INSTANCE.uninterpret(null, 100, 1000);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot load from byte/boolean array because \"rawData\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

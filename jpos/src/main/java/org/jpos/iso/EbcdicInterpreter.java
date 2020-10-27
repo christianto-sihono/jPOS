@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -32,9 +32,8 @@ public class EbcdicInterpreter implements Interpreter
 
     /**
 	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Interpreter#interpret(java.lang.String)
-	 */
+	 *
+     */
     public void interpret(String data, byte[] b, int offset)
     {
         ISOUtil.asciiToEbcdic(data, b, offset);
@@ -42,9 +41,8 @@ public class EbcdicInterpreter implements Interpreter
 
     /**
 	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Interpreter#uninterpret(byte[])
-	 */
+	 *
+     */
     public String uninterpret(byte[] rawData, int offset, int length)
     {
         return ISOUtil.ebcdicToAscii(rawData, offset, length);
@@ -52,9 +50,8 @@ public class EbcdicInterpreter implements Interpreter
 
     /**
 	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Interpreter#getPackedLength(int)
-	 */
+	 *
+     */
     public int getPackedLength(int nDataUnits)
     {
         return nDataUnits;

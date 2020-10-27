@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -49,6 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TPS implements Loggeable {
     AtomicInteger count;
     AtomicLong start;
+    AtomicLong readings;
     int peak;
     long peakWhen;
     static final long FROM_NANOS = 1000000L;
@@ -58,6 +59,7 @@ public class TPS implements Loggeable {
     Timer timer;
     boolean autoupdate;
     final ReentrantLock lock = new ReentrantLock();
+    protected long simulatedNanoTime = 0L;
 
     public TPS() {
         this(1000L, false);
@@ -79,6 +81,7 @@ public class TPS implements Loggeable {
         super();
         count = new AtomicInteger(0);
         start = new AtomicLong(0L);
+        readings = new AtomicLong(0L);
         this.period = period;
         this.autoupdate = autoupdate;
         start.set(System.nanoTime() / FROM_NANOS);
@@ -126,6 +129,7 @@ public class TPS implements Loggeable {
             avg = 0f;
             peak = 0;
             peakWhen = 0L;
+            readings.set(0L);
         } finally {
             lock.unlock();
         }
@@ -136,7 +140,7 @@ public class TPS implements Loggeable {
     }
 
     public long getElapsed() {
-        return System.nanoTime() - start.get();
+        return (System.nanoTime() / FROM_NANOS) - start.get();
     }
 
     public String toString() {
@@ -172,7 +176,8 @@ public class TPS implements Loggeable {
             if (period != 1000L) {
                 tps = tps*1000L/period;
             }
-            avg = avg == 0 ? tps : (avg + tps) / 2;
+            long r = readings.getAndIncrement();
+            avg = (r * avg + tps) / ++r;
             if (tps > peak) {
                 peak = Math.round(tps);
                 peakWhen = System.currentTimeMillis();
@@ -187,7 +192,7 @@ public class TPS implements Loggeable {
     private float calcTPS() {
         lock.lock();
         try {
-            long now = System.nanoTime() / FROM_NANOS;
+            long now = getNanoTime() / FROM_NANOS;
             long interval = now - start.get();
             if (interval >= period) {
                 calcTPS(interval);
@@ -197,5 +202,16 @@ public class TPS implements Loggeable {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void setSimulatedNanoTime(long simulatedNanoTime) {
+        if (this.simulatedNanoTime == 0L)
+            start.set(simulatedNanoTime / FROM_NANOS);
+
+        this.simulatedNanoTime = simulatedNanoTime;
+    }
+
+    protected long getNanoTime() {
+        return simulatedNanoTime > 0L ? simulatedNanoTime : System.nanoTime();
     }
 }

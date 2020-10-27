@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,8 +34,8 @@ public interface ISOValidator {
 
     /**
      * Validate an ISOComponent.
-     * @throws ISOVException if break-on-error is assummed and there are
+     * @throws ISOException if break-on-error is assummed and there are
      * some errors.
      */
-    public ISOComponent validate( ISOComponent m ) throws ISOException;
+    ISOComponent validate(ISOComponent m) throws ISOException;
 }

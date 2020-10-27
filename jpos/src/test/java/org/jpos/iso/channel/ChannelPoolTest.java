@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +18,14 @@
 
 package org.jpos.iso.channel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
@@ -37,7 +39,7 @@ import org.jpos.iso.packager.Base1SubFieldPackager;
 import org.jpos.iso.packager.ISOBaseValidatingPackager;
 import org.jpos.util.Logger;
 import org.jpos.util.NameRegistrar;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ChannelPoolTest {
 
@@ -46,8 +48,8 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         ISOChannel channel = new ASCIIChannel();
         channelPool.addChannel(channel);
-        assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-        assertSame("channelPool.pool.get(0)", channel, channelPool.pool.get(0));
+        assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+        assertSame(channel, channelPool.pool.get(0), "channelPool.pool.get(0)");
     }
 
     @Test
@@ -57,8 +59,8 @@ public class ChannelPoolTest {
             channelPool.addChannel("testChannelPoolName1");
             fail("Expected NotFoundException to be thrown");
         } catch (NameRegistrar.NotFoundException ex) {
-            assertEquals("ex.getMessage()", "channel.testChannelPoolName1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
+            assertEquals("channel.testChannelPoolName1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
         }
     }
 
@@ -71,10 +73,10 @@ public class ChannelPoolTest {
             channelPool.connect();
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "port out of range:-1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals("port out of range:-1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -85,27 +87,10 @@ public class ChannelPoolTest {
             channelPool.connect();
             fail("Expected IOException to be thrown");
         } catch (IOException ex) {
-            assertEquals("ex.getClass()", IOException.class, ex.getClass());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertTrue("channelPool.usable", channelPool.usable);
-        }
-    }
-
-    @Test
-    public void testConnectThrowsNullPointerException() throws Throwable {
-        Logger logger = new Logger();
-        logger.addListener(null);
-        ChannelPool channelPool = new ChannelPool();
-        channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.connect();
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals(IOException.class, ex.getClass(), "ex.getClass()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -117,20 +102,24 @@ public class ChannelPoolTest {
             channelPool.connect();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOChannel.connect()\" because \"c\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
     @Test
     public void testConstructor() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
-        assertEquals("channelPool.name", "", channelPool.name);
-        assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-        assertNull("channelPool.cfg", channelPool.cfg);
-        assertTrue("channelPool.usable", channelPool.usable);
+        assertEquals("", channelPool.name, "channelPool.name");
+        assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+        assertNull(channelPool.cfg, "channelPool.cfg");
+        assertTrue(channelPool.usable, "channelPool.usable");
     }
 
     @Test
@@ -138,15 +127,15 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         channelPool.addChannel(new BASE24TCPChannel());
         channelPool.disconnect();
-        assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-        assertNull("channelPool.current", channelPool.current);
+        assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+        assertNull(channelPool.current, "channelPool.current");
     }
 
     @Test
     public void testDisconnect1() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         channelPool.disconnect();
-        assertNull("channelPool.current", channelPool.current);
+        assertNull(channelPool.current, "channelPool.current");
     }
 
     @Test
@@ -157,42 +146,13 @@ public class ChannelPoolTest {
             channelPool.disconnect();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-        }
-    }
-
-    @Test
-    public void testDisconnectThrowsNullPointerException2() throws Throwable {
-        Logger logger = new Logger();
-        ChannelPool channelPool = new ChannelPool();
-        channelPool.addChannel(new ASCIIChannel());
-        logger.addListener(null);
-        channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.disconnect();
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-        }
-    }
-
-    @Test
-    public void testDisconnectThrowsNullPointerException3() throws Throwable {
-        Logger logger = new Logger();
-        logger.addListener(null);
-        ChannelPool channelPool = new ChannelPool();
-        channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.disconnect();
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOChannel.disconnect()\" because \"c\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
         }
     }
 
@@ -205,10 +165,10 @@ public class ChannelPoolTest {
             channelPool.getCurrent();
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "port out of range:-1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals("port out of range:-1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -219,10 +179,10 @@ public class ChannelPoolTest {
             channelPool.getCurrent();
             fail("Expected IOException to be thrown");
         } catch (IOException ex) {
-            assertEquals("ex.getClass()", IOException.class, ex.getClass());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals(IOException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -232,25 +192,25 @@ public class ChannelPoolTest {
         Logger logger = new Logger();
         channelPool.setLogger(logger, "testChannelPoolRealm");
         Logger result = channelPool.getLogger();
-        assertSame("result", logger, result);
+        assertSame(logger, result, "result");
     }
 
     @Test
     public void testGetName() throws Throwable {
         String result = new ChannelPool().getName();
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testGetPackager() throws Throwable {
         ISOPackager result = new ChannelPool().getPackager();
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
     public void testGetRealm() throws Throwable {
         String result = new ChannelPool().getRealm();
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
@@ -258,16 +218,16 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         channelPool.setLogger(new Logger(), "testChannelPoolRealm");
         String result = channelPool.getRealm();
-        assertEquals("result", "testChannelPoolRealm", result);
+        assertEquals("testChannelPoolRealm", result, "result");
     }
 
     @Test
     public void testIsConnected() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         boolean result = channelPool.isConnected();
-        assertFalse("result", result);
-        assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-        assertNull("channelPool.current", channelPool.current);
+        assertFalse(result, "result");
+        assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+        assertNull(channelPool.current, "channelPool.current");
     }
 
     @Test
@@ -278,28 +238,23 @@ public class ChannelPoolTest {
             channelPool.isConnected();
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "port out of range:-1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals("port out of range:-1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
     @Test
-    public void testIsConnectedThrowsNullPointerException() throws Throwable {
+    public void testIsConnectedDoNotThrowNullPointerExceptionWithNullLogListener() throws Throwable {
         Logger logger = new Logger();
         logger.addListener(null);
         ChannelPool channelPool = new ChannelPool();
         channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.isConnected();
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertTrue("channelPool.usable", channelPool.usable);
-        }
+        assertEquals(false, channelPool.isConnected(), "connected.isFalse");
+        assertNull(channelPool.current, "channelPool.current");
+        assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+        assertTrue(channelPool.usable, "channelPool.usable");
     }
 
     @Test
@@ -309,27 +264,10 @@ public class ChannelPoolTest {
             channelPool.receive();
             fail("Expected IOException to be thrown");
         } catch (IOException ex) {
-            assertEquals("ex.getClass()", IOException.class, ex.getClass());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
-        }
-    }
-
-    @Test
-    public void testReceiveThrowsNullPointerException() throws Throwable {
-        Logger logger = new Logger();
-        logger.addListener(null);
-        ChannelPool channelPool = new ChannelPool();
-        channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.receive();
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals(IOException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -342,10 +280,10 @@ public class ChannelPoolTest {
             channelPool.reconnect();
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "port out of range:-1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals("port out of range:-1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -356,10 +294,10 @@ public class ChannelPoolTest {
             channelPool.reconnect();
             fail("Expected IOException to be thrown");
         } catch (IOException ex) {
-            assertEquals("ex.getClass()", IOException.class, ex.getClass());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals(IOException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -367,7 +305,7 @@ public class ChannelPoolTest {
     public void testRemoveChannel() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         channelPool.removeChannel(new BASE24TCPChannel());
-        assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
+        assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
     }
 
     @Test
@@ -377,8 +315,8 @@ public class ChannelPoolTest {
             channelPool.removeChannel("testChannelPoolName1");
             fail("Expected NotFoundException to be thrown");
         } catch (NameRegistrar.NotFoundException ex) {
-            assertEquals("ex.getMessage()", "channel.testChannelPoolName1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
+            assertEquals("channel.testChannelPoolName1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
         }
     }
 
@@ -390,10 +328,10 @@ public class ChannelPoolTest {
             channelPool.send((ISOMsg) new ISOMsg().clone());
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "port out of range:-1", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 1, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals("port out of range:-1", ex.getMessage(), "ex.getMessage()");
+            assertEquals(1, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -404,27 +342,10 @@ public class ChannelPoolTest {
             channelPool.send(new ISOMsg());
             fail("Expected IOException to be thrown");
         } catch (IOException ex) {
-            assertEquals("ex.getClass()", IOException.class, ex.getClass());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertNull("channelPool.current", channelPool.current);
-            assertTrue("channelPool.usable", channelPool.usable);
-        }
-    }
-
-    @Test
-    public void testSendThrowsNullPointerException() throws Throwable {
-        Logger logger = new Logger();
-        logger.addListener(null);
-        ChannelPool channelPool = new ChannelPool();
-        channelPool.setLogger(logger, "testChannelPoolRealm");
-        try {
-            channelPool.send(new ISOMsg("testChannelPoolMti"));
-            fail("Expected NullPointerException to be thrown");
-        } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("channelPool.current", channelPool.current);
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
-            assertTrue("channelPool.usable", channelPool.usable);
+            assertEquals(IOException.class, ex.getClass(), "ex.getClass()");
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
+            assertNull(channelPool.current, "channelPool.current");
+            assertTrue(channelPool.usable, "channelPool.usable");
         }
     }
 
@@ -433,7 +354,7 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         Configuration cfg = new SimpleConfiguration();
         channelPool.setConfiguration(cfg);
-        assertSame("channelPool.cfg", cfg, channelPool.cfg);
+        assertSame(cfg, channelPool.cfg, "channelPool.cfg");
     }
 
     @Test
@@ -444,9 +365,13 @@ public class ChannelPoolTest {
             channelPool.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertSame("channelPool.cfg", cfg, channelPool.cfg);
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("channelPool.pool.size()", 0, channelPool.pool.size());
+            assertSame(cfg, channelPool.cfg, "channelPool.cfg");
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.getAll(String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(0, channelPool.pool.size(), "channelPool.pool.size()");
         }
     }
 
@@ -455,35 +380,35 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         Logger logger = new Logger();
         channelPool.setLogger(logger, "testChannelPoolRealm");
-        assertSame("channelPool.logger", logger, channelPool.logger);
-        assertEquals("channelPool.realm", "testChannelPoolRealm", channelPool.realm);
+        assertSame(logger, channelPool.logger, "channelPool.logger");
+        assertEquals("testChannelPoolRealm", channelPool.realm, "channelPool.realm");
     }
 
     @Test
     public void testSetName() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         channelPool.setName("testChannelPoolName");
-        assertEquals("channelPool.name", "testChannelPoolName", channelPool.name);
+        assertEquals("testChannelPoolName", channelPool.name, "channelPool.name");
     }
 
     @Test
     public void testSetPackager() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         channelPool.setPackager(new Base1SubFieldPackager());
-        assertEquals("channelPool.getName()", "", channelPool.getName());
+        assertEquals("", channelPool.getName(), "channelPool.getName()");
     }
 
     @Test
     public void testSetUsable() throws Throwable {
         ChannelPool channelPool = new ChannelPool();
         channelPool.setUsable(false);
-        assertFalse("channelPool.usable", channelPool.usable);
+        assertFalse(channelPool.usable, "channelPool.usable");
     }
 
     @Test
     public void testSize() throws Throwable {
         int result = new ChannelPool().size();
-        assertEquals("result", 0, result);
+        assertEquals(0, result, "result");
     }
 
     @Test
@@ -491,6 +416,6 @@ public class ChannelPoolTest {
         ChannelPool channelPool = new ChannelPool();
         channelPool.addChannel((ISOChannel) null);
         int result = channelPool.size();
-        assertEquals("result", 1, result);
+        assertEquals(1, result, "result");
     }
 }

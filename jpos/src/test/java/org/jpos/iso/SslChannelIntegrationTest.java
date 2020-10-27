@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,7 @@ package org.jpos.iso;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -30,7 +30,6 @@ import java.util.Properties;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.hamcrest.core.Is;
 import org.jpos.core.Configuration;
 import org.jpos.core.SimpleConfiguration;
 import org.jpos.iso.channel.XMLChannel;
@@ -38,9 +37,9 @@ import org.jpos.iso.packager.XMLPackager;
 import org.jpos.util.Logger;
 import org.jpos.util.SimpleLogListener;
 import org.jpos.util.ThreadPool;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * $Revision$
@@ -53,7 +52,7 @@ public class SslChannelIntegrationTest {
 
     private Logger logger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         logger = new Logger();
         logger.addListener(new SimpleLogListener());
@@ -83,7 +82,7 @@ public class SslChannelIntegrationTest {
 
     private XMLChannel newClientChannel() throws IOException, ISOException {
         XMLChannel clientChannel = new XMLChannel(new XMLPackager());
-        clientChannel.setSocketFactory(new SunJSSESocketFactory());
+        clientChannel.setSocketFactory(new GenericSSLSocketFactory());
         clientChannel.setConfiguration(clientConfiguration());
         clientChannel.setLogger(logger, "client.channel");
         clientChannel.setHost("localhost", PORT);
@@ -95,7 +94,7 @@ public class SslChannelIntegrationTest {
         clientSide.setLogger(logger, "server.channel");
 
         ISOServer isoServer = new ISOServer(PORT, clientSide, new ThreadPool());
-        isoServer.setSocketFactory(new SunJSSESocketFactory());
+        isoServer.setSocketFactory(new GenericSSLSocketFactory());
         isoServer.setConfiguration(serverConfiguration());
         isoServer.setLogger(logger, "server");
         isoServer.addISORequestListener(new TestListener());
@@ -128,7 +127,7 @@ public class SslChannelIntegrationTest {
         props.put("keystore", "src/test/resources/keystore.jks");
         props.put("storepassword", "password");
         props.put("keypassword", "password");
-        props.put("addEnabledCipherSuite", "SSL_RSA_WITH_3DES_EDE_CBC_SHA");
+        // props.put("addEnabledCipherSuite", "SSL_RSA_WITH_3DES_EDE_CBC_SHA");
         return new SimpleConfiguration(props);
     }
 
@@ -138,7 +137,7 @@ public class SslChannelIntegrationTest {
         props.put("serverauth", "false");
         props.put("storepassword", "password");
         props.put("keypassword", "password");
-        props.put("addEnabledCipherSuite", "SSL_RSA_WITH_3DES_EDE_CBC_SHA");
+        // props.put("addEnabledCipherSuite", "SSL_RSA_WITH_3DES_EDE_CBC_SHA");
         props.put("timeout", "1000");
         props.put("connect-timeout", "1000");
         return new SimpleConfiguration(props);
@@ -167,15 +166,6 @@ public class SslChannelIntegrationTest {
                 description.appendText("ISOMsg with mti ").appendValue(mti);
             }
         };
-    }
-
-    @BeforeClass
-    public static void avoidNeedingToMoveTheMouseToMakeTheTestRunRepeatablyOnLinux() {
-        // See http://bugs.sun.com/view_bug.do?bug_id=6202721 for why this is not just /dev/urandom
-        // Without setting this property running tests repeatedly without moving the mouse will result in SSL sockets
-        // not being created until the mouse is moved (at least on Linux creating SecureRandom does a blocking read
-        // from /dev/random by default).
-        System.setProperty("java.security.egd", "file:/dev/./urandom");
     }
 
 }

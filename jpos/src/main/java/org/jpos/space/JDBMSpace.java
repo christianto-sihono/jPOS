@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,6 +40,7 @@ import java.util.*;
  * @version $Revision$ $Date$
  * @since 1.4.7
  */
+@SuppressWarnings("unchecked")
 public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
     protected HTree htree;
     protected RecordManager recman;
@@ -48,12 +49,12 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
     protected boolean autoCommit = true;
     protected String name;
     public static final long GCDELAY = 5*60*1000;
+    private static final long NRD_RESOLUTION = 500L;
 
     /**
      * protected constructor.
      * @param name Space Name
      * @param filename underlying JDBM filename
-     * @see SpaceFactory().getSpace()
      */
     protected JDBMSpace (String name, String filename) {
         super();
@@ -188,7 +189,7 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
                 long recid = recman.insert (value);
 
                 long expiration = timeout == -1 ? Long.MAX_VALUE :
-                    (System.currentTimeMillis() + timeout);
+                        System.currentTimeMillis() + timeout;
                 Ref dataRef = new Ref (recid, expiration);
                 long dataRefRecId = recman.insert (dataRef, refSerializer);
 
@@ -234,7 +235,7 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
             synchronized (this) {
                 long recid = recman.insert (value);
                 long expiration = timeout == -1 ? Long.MAX_VALUE :
-                    (System.currentTimeMillis() + timeout);
+                        System.currentTimeMillis() + timeout;
                 Ref dataRef = new Ref (recid, expiration);
 
                 Head head = (Head) htree.get (key);
@@ -321,8 +322,8 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = inp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -357,8 +358,8 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = rdp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -366,6 +367,27 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
         }
         return (V) obj;
     }
+    public synchronized void nrd  (Object key) {
+        while (rdp (key) != null) {
+            try {
+                this.wait (NRD_RESOLUTION);
+            } catch (InterruptedException ignored) { }
+        }
+    }
+    public synchronized V nrd  (Object key, long timeout) {
+        Object obj;
+        long now = System.currentTimeMillis();
+        long end = now + timeout;
+        while ((obj = rdp (key)) != null &&
+                (now = System.currentTimeMillis()) < end)
+        {
+            try {
+                this.wait (Math.min(NRD_RESOLUTION, end - now));
+            } catch (InterruptedException ignored) { }
+        }
+        return (V) obj;
+    }
+
     /**
      * @param key the Key
      * @return aproximately queue size
@@ -373,7 +395,7 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
     public long size (Object key) {
         try {
             Head head = (Head) htree.get (key);
-            return (head != null) ? head.count : 0;
+            return head != null ? head.count : 0;
         } catch (IOException e) {
             throw new SpaceError (e);
         }
@@ -388,7 +410,7 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
     public boolean existAny (Object[] keys, long timeout) {
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while (((now = System.currentTimeMillis()) < end)) {
+        while ((now = System.currentTimeMillis()) < end) {
             if (existAny (keys))
                 return true;
             synchronized (this) {
@@ -401,12 +423,12 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
     }
     public synchronized void put (K key, V value, long timeout) {
         while (inp (key) != null)
-            ;
+            ; // NOPMD
         out (key, value, timeout);
     }
     public synchronized void put (K key, V value) {
         while (inp (key) != null)
-            ;
+            ; // NOPMD
         out (key, value);
     }
     private void purge (Object key) throws IOException {
@@ -566,17 +588,15 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
                     unlinkCount++;
                 } else  {
                     Object o = recman.fetch (r.recid);
-                    if (o != null) {
-                        if (tmpl.equals (o)) {
-                            obj = o;
-                            if (remove) {
-                                unlinkRef (
-                                    recid, head, r, previousRef, previousRecId
-                                );
-                                unlinkCount++;
-                            }
-                            break;
+                    if (o != null && tmpl.equals(o)) {
+                        obj = o;
+                        if (remove) {
+                            unlinkRef (
+                                recid, head, r, previousRef, previousRecId
+                            );
+                            unlinkCount++;
                         }
+                        break;
                     }
                     previousRef = r;
                     previousRecId = recid;
@@ -672,7 +692,7 @@ public class JDBMSpace<K,V> extends TimerTask implements Space<K,V> {
         }
     }
     static void putLong (byte[] b, int off, long val) {
-        b[off+7] = (byte) (val);
+        b[off+7] = (byte) val;
         b[off+6] = (byte) (val >>>  8);
         b[off+5] = (byte) (val >>> 16);
         b[off+4] = (byte) (val >>> 24);

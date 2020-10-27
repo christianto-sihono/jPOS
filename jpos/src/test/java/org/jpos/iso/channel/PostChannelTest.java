@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,74 +18,76 @@
 
 package org.jpos.iso.channel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.iso.ISOPackager;
 import org.jpos.iso.packager.ISO93APackager;
 import org.jpos.iso.packager.ISOBaseValidatingPackager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PostChannelTest {
 
     @Test
     public void testConstructor() throws Throwable {
         PostChannel postChannel = new PostChannel();
-        assertEquals("postChannel.getIncomingFilters().size()", 0, postChannel.getIncomingFilters().size());
-        assertEquals("postChannel.getMaxPacketLength()", 100000, postChannel.getMaxPacketLength());
-        assertEquals("postChannel.getPort()", 0, postChannel.getPort());
-        assertEquals("postChannel.getName()", "", postChannel.getName());
-        assertEquals("postChannel.getCounters().length", 3, postChannel.getCounters().length);
-        assertNull("postChannel.getLogger()", postChannel.getLogger());
-        assertNull("postChannel.getSocketFactory()", postChannel.getSocketFactory());
-        assertNull("postChannel.getHeader()", postChannel.getHeader());
-        assertEquals("postChannel.getOutgoingFilters().size()", 0, postChannel.getOutgoingFilters().size());
-        assertNull("postChannel.getServerSocket()", postChannel.getServerSocket());
-        assertEquals("postChannel.getOriginalRealm()", "org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm());
-        assertNull("postChannel.getRealm()", postChannel.getRealm());
-        assertNull("postChannel.getHost()", postChannel.getHost());
+        assertEquals(0, postChannel.getIncomingFilters().size(), "postChannel.getIncomingFilters().size()");
+        assertEquals(100000, postChannel.getMaxPacketLength(), "postChannel.getMaxPacketLength()");
+        assertEquals(0, postChannel.getPort(), "postChannel.getPort()");
+        assertEquals("", postChannel.getName(), "postChannel.getName()");
+        assertEquals(3, postChannel.getCounters().length, "postChannel.getCounters().length");
+        assertNull(postChannel.getLogger(), "postChannel.getLogger()");
+        assertNull(postChannel.getSocketFactory(), "postChannel.getSocketFactory()");
+        assertNull(postChannel.getHeader(), "postChannel.getHeader()");
+        assertEquals(0, postChannel.getOutgoingFilters().size(), "postChannel.getOutgoingFilters().size()");
+        assertNull(postChannel.getServerSocket(), "postChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm(), "postChannel.getOriginalRealm()");
+        assertNull(postChannel.getRealm(), "postChannel.getRealm()");
+        assertNull(postChannel.getHost(), "postChannel.getHost()");
     }
 
     @Test
     public void testConstructor1() throws Throwable {
         ISOPackager p = new ISO93APackager();
         PostChannel postChannel = new PostChannel("testPostChannelHost", 100, p);
-        assertEquals("postChannel.getIncomingFilters().size()", 0, postChannel.getIncomingFilters().size());
-        assertEquals("postChannel.getMaxPacketLength()", 100000, postChannel.getMaxPacketLength());
-        assertSame("postChannel.getPackager()", p, postChannel.getPackager());
-        assertEquals("postChannel.getPort()", 100, postChannel.getPort());
-        assertEquals("postChannel.getName()", "", postChannel.getName());
-        assertEquals("postChannel.getCounters().length", 3, postChannel.getCounters().length);
-        assertNull("postChannel.getLogger()", postChannel.getLogger());
-        assertNull("postChannel.getSocketFactory()", postChannel.getSocketFactory());
-        assertNull("postChannel.getHeader()", postChannel.getHeader());
-        assertEquals("postChannel.getOutgoingFilters().size()", 0, postChannel.getOutgoingFilters().size());
-        assertNull("postChannel.getServerSocket()", postChannel.getServerSocket());
-        assertEquals("postChannel.getOriginalRealm()", "org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm());
-        assertNull("postChannel.getRealm()", postChannel.getRealm());
-        assertEquals("postChannel.getHost()", "testPostChannelHost", postChannel.getHost());
+        assertEquals(0, postChannel.getIncomingFilters().size(), "postChannel.getIncomingFilters().size()");
+        assertEquals(100000, postChannel.getMaxPacketLength(), "postChannel.getMaxPacketLength()");
+        assertSame(p, postChannel.getPackager(), "postChannel.getPackager()");
+        assertEquals(100, postChannel.getPort(), "postChannel.getPort()");
+        assertEquals("", postChannel.getName(), "postChannel.getName()");
+        assertEquals(3, postChannel.getCounters().length, "postChannel.getCounters().length");
+        assertNull(postChannel.getLogger(), "postChannel.getLogger()");
+        assertNull(postChannel.getSocketFactory(), "postChannel.getSocketFactory()");
+        assertNull(postChannel.getHeader(), "postChannel.getHeader()");
+        assertEquals(0, postChannel.getOutgoingFilters().size(), "postChannel.getOutgoingFilters().size()");
+        assertNull(postChannel.getServerSocket(), "postChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm(), "postChannel.getOriginalRealm()");
+        assertNull(postChannel.getRealm(), "postChannel.getRealm()");
+        assertEquals("testPostChannelHost", postChannel.getHost(), "postChannel.getHost()");
     }
 
     @Test
     public void testConstructor2() throws Throwable {
         ISOPackager p = new ISOBaseValidatingPackager();
         PostChannel postChannel = new PostChannel(p);
-        assertEquals("postChannel.getIncomingFilters().size()", 0, postChannel.getIncomingFilters().size());
-        assertEquals("postChannel.getMaxPacketLength()", 100000, postChannel.getMaxPacketLength());
-        assertSame("postChannel.getPackager()", p, postChannel.getPackager());
-        assertEquals("postChannel.getPort()", 0, postChannel.getPort());
-        assertEquals("postChannel.getName()", "", postChannel.getName());
-        assertEquals("postChannel.getCounters().length", 3, postChannel.getCounters().length);
-        assertNull("postChannel.getLogger()", postChannel.getLogger());
-        assertNull("postChannel.getSocketFactory()", postChannel.getSocketFactory());
-        assertNull("postChannel.getHeader()", postChannel.getHeader());
-        assertEquals("postChannel.getOutgoingFilters().size()", 0, postChannel.getOutgoingFilters().size());
-        assertNull("postChannel.getServerSocket()", postChannel.getServerSocket());
-        assertEquals("postChannel.getOriginalRealm()", "org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm());
-        assertNull("postChannel.getRealm()", postChannel.getRealm());
-        assertNull("postChannel.getHost()", postChannel.getHost());
+        assertEquals(0, postChannel.getIncomingFilters().size(), "postChannel.getIncomingFilters().size()");
+        assertEquals(100000, postChannel.getMaxPacketLength(), "postChannel.getMaxPacketLength()");
+        assertSame(p, postChannel.getPackager(), "postChannel.getPackager()");
+        assertEquals(0, postChannel.getPort(), "postChannel.getPort()");
+        assertEquals("", postChannel.getName(), "postChannel.getName()");
+        assertEquals(3, postChannel.getCounters().length, "postChannel.getCounters().length");
+        assertNull(postChannel.getLogger(), "postChannel.getLogger()");
+        assertNull(postChannel.getSocketFactory(), "postChannel.getSocketFactory()");
+        assertNull(postChannel.getHeader(), "postChannel.getHeader()");
+        assertEquals(0, postChannel.getOutgoingFilters().size(), "postChannel.getOutgoingFilters().size()");
+        assertNull(postChannel.getServerSocket(), "postChannel.getServerSocket()");
+        assertEquals("org.jpos.iso.channel.PostChannel", postChannel.getOriginalRealm(), "postChannel.getOriginalRealm()");
+        assertNull(postChannel.getRealm(), "postChannel.getRealm()");
+        assertNull(postChannel.getHost(), "postChannel.getHost()");
     }
 
     @Test
@@ -95,7 +97,11 @@ public class PostChannelTest {
             postChannel.getMessageLength();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataInputStream.readFully(byte[], int, int)\" because \"this.serverIn\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -106,7 +112,11 @@ public class PostChannelTest {
             postChannel.sendMessageLength(100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.io.DataOutputStream.write(int)\" because \"this.serverOut\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -114,7 +124,7 @@ public class PostChannelTest {
     public void testSetHeader() throws Throwable {
         PostChannel postChannel = new PostChannel();
         postChannel.setHeader("testPostChannelHeader");
-        assertEquals("postChannel.getHeader().length", 10, postChannel.getHeader().length);
+        assertEquals(10, postChannel.getHeader().length, "postChannel.getHeader().length");
     }
 
     @Test
@@ -124,8 +134,12 @@ public class PostChannelTest {
             postChannel.setHeader((String) null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertNull("postChannel.getHeader()", postChannel.getHeader());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"String.getBytes()\" because \"header\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertNull(postChannel.getHeader(), "postChannel.getHeader()");
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.transaction.participant;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.ConfigurationException;
 import org.jpos.core.XmlConfigurable;
 import org.jpos.transaction.AbortParticipant;
@@ -31,7 +31,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Join 
+@SuppressWarnings("unchecked")
+public class Join
        implements TransactionConstants, AbortParticipant, 
                   XmlConfigurable
 {

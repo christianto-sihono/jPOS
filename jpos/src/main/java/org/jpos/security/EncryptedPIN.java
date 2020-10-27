@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -175,7 +175,7 @@ public class EncryptedPIN
 
     /**
      * Sets the 12 right-most digits of the account number excluding the check digit
-     * @param extractedAccountNumber)  12 right-most digits of the account number, excluding the check digit.
+     * @param extractedAccountNumber  12 right-most digits of the account number, excluding the check digit.
      */
     public void setAccountNumber (String extractedAccountNumber) {
         if(extractedAccountNumber.length() != 12)
@@ -207,7 +207,9 @@ public class EncryptedPIN
         try {
             accountNumberPart = ISOUtil.takeLastN(accountNumber, 13);
             accountNumberPart = ISOUtil.takeFirstN(accountNumberPart, 12);
-        } catch(ISOException ex) {}
+        } catch(ISOException ignored) {
+            // NOPMD return original accountNumber
+        }
         return  accountNumberPart;
     }
 

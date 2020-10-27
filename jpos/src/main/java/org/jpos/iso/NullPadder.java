@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,8 +31,7 @@ public class NullPadder implements Padder
     public static final NullPadder INSTANCE = new NullPadder();
 
     /**
-	 * @see org.jpos.iso.Padder#pad(java.lang.String, int, char)
-	 */
+     */
     public String pad(String data, int maxLength)
     {
         return data;
@@ -40,9 +39,8 @@ public class NullPadder implements Padder
 
     /**
 	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Padder#unpad(java.lang.String, char)
-	 */
+	 *
+     */
     public String unpad(String paddedData)
     {
         return paddedData;

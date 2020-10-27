@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -87,9 +87,6 @@ public class ISOBinaryFieldPackager extends ISOFieldPackager
         this.prefixer = prefixer;
     }
 
-    /**
-	 * @see org.jpos.iso.ISOFieldPackager#getMaxPackedLength()
-	 */
     public int getMaxPackedLength()
     {
         return prefixer.getPackedLength() + interpreter.getPackedLength(getLength());
@@ -104,27 +101,18 @@ public class ISOBinaryFieldPackager extends ISOFieldPackager
         {
             byte[] data = c.getBytes();
             int packedLength = prefixer.getPackedLength();
-            if (packedLength == 0)
-            {
-                if (data.length != getLength())
-                {
-                    throw new ISOException("Binary data length not the same as the packager length (" + data.length + "/" + getLength() + ")");
-                }
+            if (packedLength == 0 && data.length != getLength()) {
+                throw new ISOException("Binary data length not the same as the packager length (" + data.length + "/" + getLength() + ")");
             }
             byte[] ret = new byte[interpreter.getPackedLength(data.length) + packedLength];
             prefixer.encodeLength(data.length, ret);
             interpreter.interpret(data, ret, packedLength);
             return ret;
-        } catch(Exception e)
-        {
+        } catch(Exception e) {
             throw new ISOException(makeExceptionMessage(c, "packing"), e);
         }
     }
 
-    /**
-	 * @see org.jpos.iso.ISOFieldPackager#unpack(org.jpos.iso.ISOComponent,
-	 *      byte[], int)
-	 */
     public int unpack(ISOComponent c, byte[] b, int offset) throws ISOException
     {
         try

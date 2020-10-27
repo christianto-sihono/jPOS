@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +18,12 @@
 
 package org.jpos.q2.iso;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOMsg;
@@ -33,61 +33,70 @@ import org.jpos.q2.Q2;
 import org.jpos.space.Space;
 import org.jpos.space.SpaceFactory;
 import org.jpos.util.NameRegistrar;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 
+import java.lang.reflect.Field;
+
+@SuppressWarnings("unchecked")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QMUXTestCase implements ISOResponseListener {
-    Q2 q2;
-    Space sp;
-    MUX mux;
+    static Q2 q2;
+    static Space sp;
+    static MUX mux;
     boolean expiredCalled;
     ISOMsg responseMsg;
-    Object receivedHandback;
+    static Object receivedHandback;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeAll
+    public static void setUp() throws Exception {
         sp = SpaceFactory.getSpace();
         q2 = new Q2("build/resources/test/org/jpos/q2/iso");
-        expiredCalled = false;
         q2.start();
         Thread.sleep(2000L);
         try {
-            mux = (MUX) NameRegistrar.get("mux.mux");
+            mux = NameRegistrar.get("mux.mux");
         } catch (NameRegistrar.NotFoundException e) {
             fail("MUX not found");
         }
         receivedHandback = null;
     }
 
+    @BeforeEach
+    public void initExpired() {
+        expiredCalled = false;
+    }
+
     @Test
+    @SuppressWarnings("unchecked")
     public void testExpiredMessage() throws Exception {
         mux.request(createMsg("000001"), 500L, this, "Handback One");
-        assertFalse("expired called too fast", expiredCalled);
-        assertNotNull("Space doesn't contain message key", sp.rdp("send.0800000000029110001000001.req"));
+        assertFalse(expiredCalled, "expired called too fast");
+        assertNotNull(getInternalSpace(mux).rdp("send.0800000000029110001000001.req"), "Space doesn't contain message key");
         Thread.sleep(1000L);
-        assertTrue("expired has not been called after 1 second", expiredCalled);
-        assertNull("Cleanup failed, Space still contains message key", sp.rdp("send.0800000000029110001000001.req"));
-        assertEquals("Handback One not received", "Handback One", receivedHandback);
+        assertTrue(expiredCalled, "expired has not been called after 1 second");
+        assertNull(getInternalSpace(mux).rdp("send.0800000000029110001000001.req"), "Cleanup failed, Space still contains message key");
+        assertEquals("Handback One", receivedHandback, "Handback One not received");
     }
 
     @Test
     public void testAnsweredMessage() throws Exception {
         mux.request(createMsg("000002"), 500L, this, "Handback Two");
-        assertFalse("expired called too fast", expiredCalled);
+        assertFalse(expiredCalled, "expired called too fast");
         ISOMsg m = (ISOMsg) sp.in("send", 500L);
-        assertNotNull("Message not received by pseudo-channel", m);
-        assertNotNull("Space doesn't contain message key", sp.rdp("send.0800000000029110001000002.req"));
+        assertNotNull(m, "Message not received by pseudo-channel");
+        assertNotNull(getInternalSpace(mux).rdp("send.0800000000029110001000002.req"), "Space doesn't contain message key");
         m.setResponseMTI();
         sp.out("receive", m);
         Thread.sleep(100L);
-        assertNotNull("Response not received", responseMsg);
+        assertNotNull(responseMsg, "Response not received");
         Thread.sleep(1000L);
-        assertFalse("Response received but expired was called", expiredCalled);
-        assertNull("Cleanup failed, Space still contains message key", sp.rdp("send.0800000000029110001000002.req"));
-        assertEquals("Handback Two not received", "Handback Two", receivedHandback);
+        assertFalse(expiredCalled, "Response received but expired was called");
+        assertNull(getInternalSpace(mux).rdp("send.0800000000029110001000002.req"), "Cleanup failed, Space still contains message key");
+        assertEquals("Handback Two", receivedHandback, "Handback Two not received");
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterAll
+    public static void tearDown() throws Exception {
         Thread.sleep(2000L); // let the thing run
         q2.shutdown(true);
         Thread.sleep(2000L);
@@ -116,7 +125,7 @@ public class QMUXTestCase implements ISOResponseListener {
                 "1200", "1220", "1240" };
         String[] responses = new String[] { "0110", "0110", "0410", "0410", "0430", "0810", "1110", "1810", "1814", "1824", "1830",
                 "1210", "1230", "1250" };
-        assertEquals("Request/Response string arrays must hold same number of entries", requests.length, responses.length);
+        assertEquals(requests.length, responses.length, "Request/Response string arrays must hold same number of entries");
         ISOMsg request = new ISOMsg();
         ISOMsg response = new ISOMsg();
         for (int i = 0; i < requests.length; i++) {
@@ -126,5 +135,11 @@ public class QMUXTestCase implements ISOResponseListener {
             response.set (11, Integer.toString(i));
             assertEquals(((QMUX) mux).getKey(request), ((QMUX) mux).getKey(response));
         }
+    }
+
+    private Space getInternalSpace (MUX mux) throws NoSuchFieldException, IllegalAccessException {
+        Field field = mux.getClass().getDeclaredField("isp");
+        field.setAccessible(true);
+        return (Space) field.get(mux);
     }
 }

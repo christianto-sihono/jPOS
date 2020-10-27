@@ -1,24 +1,40 @@
+/*
+ * jPOS Project [http://jpos.org]
+ * Copyright (C) 2000-2020 jPOS Software SRL
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.jpos.q2.qbean;
+
+import org.jdom2.Attribute;
+import org.jdom2.Element;
+import org.jpos.core.ConfigurationException;
+import org.jpos.q2.QBeanSupport;
+import org.jpos.util.NameRegistrar;
+import org.jpos.util.NameRegistrar.NotFoundException;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.jdom.Attribute;
-import org.jdom.Element;
-import org.jpos.core.ConfigurationException;
-import org.jpos.q2.QBeanSupport;
-import org.jpos.util.NameRegistrar;
-import org.jpos.util.NameRegistrar.NotFoundException;
-
 /**
  * A qbean dedicated to thread pool executor creation and registration by Q2
  * NameRegistrar registry<br>
  * 
  * @author dgrandemange
- * @jmx:mbean description="ThreadPoolExecutor QBean"
- *            extends="org.jpos.q2.QBeanSupportMBean"
  */
 public class QThreadPoolExecutor extends QBeanSupport implements
         QThreadPoolExecutorMBean {
@@ -117,7 +133,7 @@ public class QThreadPoolExecutor extends QBeanSupport implements
                 try {
                     execSrv.shutdownNow();
                 } catch (Exception ee) {
-                    // Ignore
+                    getLog().warn(ee);
                 }
             }
             throw e;
@@ -160,14 +176,13 @@ public class QThreadPoolExecutor extends QBeanSupport implements
      * @param attrName
      * @param mandatory
      * @param errDesc
-     * @return
      * @throws ConfigurationException
      */
     protected Attribute getAttribute(Element elt, String attrName,
             boolean mandatory, String errDesc) throws ConfigurationException {
         Attribute attr = elt.getAttribute(attrName);
 
-        if ((null == attr) || ("".equals(attr.getValue().trim()))) {
+        if (null == attr || "".equals(attr.getValue().trim())) {
             if (mandatory) {
                 throw new ConfigurationException(String.format(
                         "'%s' attribute has not been found or is empty %s",
@@ -184,7 +199,6 @@ public class QThreadPoolExecutor extends QBeanSupport implements
      * Retrieves a thread pool executor from NameRegistrar given its name
      * 
      * @param name
-     * @return
      * @throws NotFoundException
      */
     public static ThreadPoolExecutor getThreadPoolExecutor(java.lang.String name)
@@ -207,7 +221,6 @@ public class QThreadPoolExecutor extends QBeanSupport implements
      * 
      * @param name
      * @param clazz
-     * @return
      * @throws NotFoundException
      */
     @SuppressWarnings("unchecked")

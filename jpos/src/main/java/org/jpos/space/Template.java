@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,7 @@ package org.jpos.space;
  * Used by JDBMSpace to match entries based on its value
  */
 public interface Template {
-    public Object getKey ();
-    public boolean equals (Object obj);
+    Object getKey();
+    boolean equals(Object obj);
 }
 

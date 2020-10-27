@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,12 +21,7 @@ package org.jpos.iso.packager;
 import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
-import org.jpos.iso.IF_TBASE;
-import org.jpos.iso.ISOBasePackager;
-import org.jpos.iso.ISOException;
-import org.jpos.iso.ISOFieldPackager;
-import org.jpos.iso.ISOMsgFieldPackager;
-import org.jpos.iso.ISOPackager;
+import org.jpos.iso.*;
 import org.jpos.util.LogSource;
 import org.jpos.util.Logger;
 import org.xml.sax.Attributes;
@@ -42,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -54,12 +50,12 @@ import java.util.TreeMap;
  * GenericPackager uses an XML config file to describe the layout of an ISOMessage
  * The general format is as follows
  * &lt;isopackager&gt;
- *     &lt;isofield 
+ *     &lt;isofield
  *         id="[field id]"
  *         name="[field name]"
  *         length="[max field length]"
  *         class="[org.jpos.iso.IF_*]"
- *         pad="true|false"&gt;  
+ *         pad="true|false"&gt;
  *     &lt;/isofield&gt;
  *     ...
  * &lt;/isopackager&gt;
@@ -71,8 +67,8 @@ import java.util.TreeMap;
  *     length="[field length]"
  *     class="[org.jpos.iso.IF_*]"
  *     packager="[org.jpos.iso.packager.*]"&gt;
- *      
- *     &lt;isofield 
+ *
+ *     &lt;isofield
  *         id="[subfield id]"
  *         name="[subfield name]"
  *         length="[max subfield length]"
@@ -82,7 +78,7 @@ import java.util.TreeMap;
  *         ...
  * &lt;/isofieldpackager&gt;
  *
- * The optional attributes maxValidField, bitmapField and emitBitmap
+ * The optional attributes maxValidField, bitmapField, thirdBitmapField, and emitBitmap
  * are allowed on the isopackager node.
  *
  * </pre>
@@ -93,11 +89,11 @@ import java.util.TreeMap;
  */
 
 @SuppressWarnings("unchecked")
-public class GenericPackager 
+public class GenericPackager
     extends ISOBasePackager implements Configurable
 {
    /* Values copied from ISOBasePackager
-      These can be changes using attributes on the isopackager node */ 
+      These can be changes using attributes on the isopackager node */
     private int maxValidField=128;
     private boolean emitBitmap=true;
     private int bitmapField=1;
@@ -109,8 +105,8 @@ public class GenericPackager
         super();
     }
 
-    /** 
-     * Create a GenericPackager with the field descriptions 
+    /**
+     * Create a GenericPackager with the field descriptions
      * from an XML File
      * @param filename The XML field description file
      */
@@ -120,8 +116,8 @@ public class GenericPackager
         readFile(filename);
     }
 
-    /** 
-     * Create a GenericPackager with the field descriptions 
+    /**
+     * Create a GenericPackager with the field descriptions
      * from an XML InputStream
      * @param input The XML field description InputStream
      */
@@ -136,12 +132,13 @@ public class GenericPackager
      * <ul>
      *  <li>packager-config
      *  <li>packager-logger
+     *  <li>packager-log-fieldname
      *  <li>packager-realm
      * </ul>
      *
      * @param cfg Configuration
      */
-    public void setConfiguration (Configuration cfg) 
+    public void setConfiguration (Configuration cfg)
         throws ConfigurationException
     {
         filename = cfg.get("packager-config", null);
@@ -152,8 +149,12 @@ public class GenericPackager
         {
             String loggerName = cfg.get("packager-logger");
             if (loggerName != null)
-                setLogger(Logger.getLogger (loggerName), 
+                setLogger(Logger.getLogger (loggerName),
                            cfg.get ("packager-realm"));
+
+            // inherited protected logFieldName
+            logFieldName= cfg.getBoolean("packager-log-fieldname", logFieldName);
+
             readFile(filename);
         } catch (ISOException e)
         {
@@ -199,7 +200,7 @@ public class GenericPackager
             } else {
                 createXMLReader().parse(filename);
             }
-        } 
+        }
         catch (Exception e) {
             throw new ISOException("Error reading " + filename, e);
         }
@@ -218,7 +219,7 @@ public class GenericPackager
     {
         try {
             createXMLReader().parse(new InputSource(input));
-        } 
+        }
         catch (Exception e) {
             throw new ISOException(e);
         }
@@ -233,7 +234,7 @@ public class GenericPackager
                     if (o instanceof LogSource) {
                         ((LogSource)o).setLogger (logger, realm + "-fld-" + i);
                     }
-                } 
+                }
             }
         }
     }
@@ -243,8 +244,8 @@ public class GenericPackager
             reader = XMLReaderFactory.createXMLReader();
         } catch (SAXException e) {
             reader = XMLReaderFactory.createXMLReader (
-                System.getProperty( 
-                    "org.xml.sax.driver", 
+                System.getProperty(
+                    "org.xml.sax.driver",
                     "org.apache.crimson.parser.XMLReaderImpl"
                 )
             );
@@ -273,11 +274,12 @@ public class GenericPackager
         String maxField  = atts.getValue("maxValidField");
         String emitBmap  = atts.getValue("emitBitmap");
         String bmapfield = atts.getValue("bitmapField");
+        String thirdbmf  = atts.getValue("thirdBitmapField");
         firstField = atts.getValue("firstField");
         String headerLenStr = atts.getValue("headerLength");
 
         if (maxField != null)
-            maxValidField = Integer.parseInt(maxField); 
+            maxValidField = Integer.parseInt(maxField);
 
         if (emitBmap != null)
             emitBitmap = Boolean.valueOf(emitBmap);
@@ -285,13 +287,21 @@ public class GenericPackager
         if (bmapfield != null)
             bitmapField = Integer.parseInt(bmapfield);
 
+        // BBB TODO IDEA: should we check somewhere that fld[thirdBitmapField] instanceof ISOBitMapPackager?
+        if (thirdbmf != null)
+            try { setThirdBitmapField(Integer.parseInt(thirdbmf)); }
+            catch (ISOException e)
+            {   // BBB throwing unchecked exception in order not to change the method's contract
+                // BBB (the parseInt's and valueOf's above are doing it anyway...)
+                throw new IllegalArgumentException(e.getMessage());
+            }
+
         if (firstField != null)
             Integer.parseInt (firstField);  // attempt to parse just to
                                             // force an exception if the
                                             // data is not correct.
-        
         if (headerLenStr != null)
-        	setHeaderLength(Integer.parseInt(headerLenStr));
+            setHeaderLength(Integer.parseInt(headerLenStr));
     }
 
     public static class GenericEntityResolver implements EntityResolver
@@ -303,7 +313,7 @@ public class GenericPackager
          * We first check whether the DTD points to a well defined URI,
          * and resolve to our internal DTDs.<p>
          *
-         * If the systemId points to a file, then we attempt to read the 
+         * If the systemId points to a file, then we attempt to read the
          * DTD from the filesystem, in case they've been modified by the user.
          * Otherwise, we fallback to the built-in DTDs inside jPOS.<p>
          *
@@ -393,8 +403,10 @@ public class GenericPackager
                 String name = atts.getValue("name");
                 String size = atts.getValue("length");
                 String pad  = atts.getValue("pad");
-                // Modified for using IF_TBASE
+                // Modified for using TaggedFieldPackager
                 String token = atts.getValue("token");
+                String trim = atts.getValue("trim");
+                String params = atts.getValue("params");
 
                 if (localName.equals("isopackager"))
                 {
@@ -407,7 +419,7 @@ public class GenericPackager
                 if (localName.equals("isofieldpackager"))
                 {
                     /*
-                    For a isofield packager node push the following fields
+                    For an isofield packager node push the following fields
                     onto the stack.
                     1) an Integer indicating the field ID
                     2) an instance of the specified ISOFieldPackager class
@@ -419,18 +431,18 @@ public class GenericPackager
                     fieldStack.push(new Integer(id));
 
                     ISOFieldPackager f;
-                    f = (ISOFieldPackager) Class.forName(type).newInstance();   
+                    f = (ISOFieldPackager) Class.forName(type).newInstance();
                     f.setDescription(name);
                     f.setLength(Integer.parseInt(size));
                     f.setPad(Boolean.parseBoolean(pad));
-                    // Modified for using IF_TBASE
-                    if( f instanceof IF_TBASE){
-                      ((IF_TBASE)f).setToken( token );
+
+                    // Modified for using TaggedFieldPackager
+                    if( f instanceof TaggedFieldPackager){
+                      ((TaggedFieldPackager)f).setToken( token );
                     }
                     fieldStack.push(f);
 
-                    ISOBasePackager p;
-                    p = (ISOBasePackager) Class.forName(packager).newInstance();
+                    ISOBasePackager p = (ISOBasePackager) instantiate(packager, params);
                     if (p instanceof GenericPackager)
                     {
                         GenericPackager gp = (GenericPackager) p;
@@ -440,18 +452,18 @@ public class GenericPackager
 
                     fieldStack.push(new TreeMap());
                 }
-
-                if (localName.equals("isofield"))
+                else if (localName.equals("isofield"))
                 {
                     Class c = Class.forName(type);
                     ISOFieldPackager f;
-                    f = (ISOFieldPackager) c.newInstance();     
+                    f = (ISOFieldPackager) instantiate(type, params);
                     f.setDescription(name);
                     f.setLength(Integer.parseInt(size));
                     f.setPad(Boolean.parseBoolean(pad));
-                    // Modified for using IF_TBASE
-                    if( f instanceof IF_TBASE){
-                      ((IF_TBASE)f).setToken( token );
+                    f.setTrim(Boolean.parseBoolean(trim));
+                    // Modified for using TaggedFieldPackager
+                    if( f instanceof TaggedFieldPackager){
+                      ((TaggedFieldPackager)f).setToken( token );
                     }
                     // Insert this new isofield into the Map
                     // on the top of the stack using the fieldID as the key
@@ -513,7 +525,7 @@ public class GenericPackager
                 msgPackager.setLogger (getLogger(), getRealm() + "-fld-" + fno);
 
                 // Create the ISOMsgField packager with the retrieved msg and field Packagers
-                ISOMsgFieldPackager mfp = 
+                ISOMsgFieldPackager mfp =
                     new ISOMsgFieldPackager(fieldPackager, msgPackager);
 
                 // Add the newly created ISOMsgField packager to the
@@ -543,5 +555,27 @@ public class GenericPackager
             return Integer.parseInt (firstField);
         else return super.getFirstField();
     }
-}
 
+    /**
+     * Helper class used to instantiate packagers
+     *
+     * @param clazz class name
+     * @param params If not null <code>constructor(String)</code> has to exist in packager implementation.
+     *
+     * @return newly created object
+     * @throws ClassNotFoundException
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    private Object instantiate (String clazz, String params)
+      throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
+        Object obj;
+        if (params != null)
+            obj = Class.forName(clazz).getConstructor(String.class).newInstance(params);
+        else
+            obj = Class.forName(clazz).newInstance();
+
+        return obj;
+    }
+}

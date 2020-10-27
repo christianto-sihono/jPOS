@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,15 @@
 
 package org.jpos.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UtilTest {
 
@@ -32,53 +34,61 @@ public class UtilTest {
     public void testAdjustDESParity() throws Throwable {
         byte[] bytes = new byte[1];
         Util.adjustDESParity(bytes);
-        assertEquals("bytes[0]", (byte) 1, bytes[0]);
+        assertEquals((byte) 1, bytes[0], "bytes[0]");
     }
 
     @Test
     public void testAdjustDESParity1() throws Throwable {
         byte[] bytes = new byte[0];
         Util.adjustDESParity(bytes);
-        assertEquals("bytes.length", 0, bytes.length);
+        assertEquals(0, bytes.length, "bytes.length");
     }
 
     @Test
     public void testAdjustDESParityThrowsNullPointerException() throws Throwable {
         try {
-            Util.adjustDESParity((byte[]) null);
+            Util.adjustDESParity(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"bytes\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
     @Test
     public void testConstructor() throws Throwable {
         new Util();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testIsDESParityAdjusted() throws Throwable {
         byte[] bytes = new byte[2];
         boolean result = Util.isDESParityAdjusted(bytes);
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsDESParityAdjusted1() throws Throwable {
         byte[] bytes = new byte[0];
         boolean result = Util.isDESParityAdjusted(bytes);
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testIsDESParityAdjustedThrowsNullPointerException() throws Throwable {
         try {
-            Util.isDESParityAdjusted((byte[]) null);
+            Util.isDESParityAdjusted(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"[B.clone()\" because \"bytes\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

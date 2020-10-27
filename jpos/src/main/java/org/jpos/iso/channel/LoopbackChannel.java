@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,6 @@ package org.jpos.iso.channel;
 
 import org.jpos.iso.FilteredBase;
 import org.jpos.iso.ISOException;
-import org.jpos.iso.ISOFilter.VetoException;
 import org.jpos.iso.ISOMsg;
 import org.jpos.iso.ISOPackager;
 import org.jpos.util.*;
@@ -82,8 +81,7 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
     }
 
     public void send (ISOMsg m)
-        throws IOException,ISOException, VetoException
-    {
+        throws IOException,ISOException {
         if (!isConnected())
             throw new ISOException ("unconnected ISOChannel");
         LogEvent evt = new LogEvent (this, "loopback-send", m);
@@ -95,8 +93,7 @@ public class LoopbackChannel extends FilteredBase implements LogSource {
     }
     
     public void send (byte[] b)
-    throws IOException,ISOException, VetoException
-{
+    throws IOException,ISOException {
     if (!isConnected())
         throw new ISOException ("unconnected ISOChannel");
     LogEvent evt = new LogEvent (this, "loopback-send", b);

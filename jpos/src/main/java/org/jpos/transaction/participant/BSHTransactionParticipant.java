@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,16 +19,16 @@
 package org.jpos.transaction.participant;
 
 import bsh.EvalError;
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.ConfigurationException;
 import org.jpos.core.XmlConfigurable;
+import org.jpos.q2.QFactory;
 import org.jpos.transaction.AbortParticipant;
 import org.jpos.transaction.TransactionParticipant;
 import org.jpos.util.LogEvent;
 import org.jpos.util.Logger;
 import org.jpos.util.SimpleLogSource;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -51,7 +51,8 @@ import java.util.Map;
  * @see BSHMethod
  * @author  AMarques
  */
-public class BSHTransactionParticipant extends SimpleLogSource 
+@SuppressWarnings("unchecked")
+public class BSHTransactionParticipant extends SimpleLogSource
     implements TransactionParticipant, AbortParticipant, XmlConfigurable 
 {
     
@@ -145,14 +146,14 @@ public class BSHTransactionParticipant extends SimpleLogSource
             prepareForAbortMethod = BSHMethod.createBshMethod(e.getChild("prepare-for-abort"));
             commitMethod = BSHMethod.createBshMethod(e.getChild("commit"));
             abortMethod = BSHMethod.createBshMethod(e.getChild("abort"));
-            trace = "yes".equals (e.getAttributeValue ("trace"));
+            trace = "yes".equals (QFactory.getAttributeValue (e, "trace"));
         } catch (Exception ex) {
             throw new ConfigurationException(ex.getMessage(), ex);
         }
     }
     
     protected Object executeMethod(BSHMethod m, long id, Serializable context, LogEvent evt, String resultName) 
-    throws EvalError, FileNotFoundException, IOException {
+    throws EvalError, IOException {
         Map params = new HashMap();
         params.put("context", context);
         params.put("id", id);

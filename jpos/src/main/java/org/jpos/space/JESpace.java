@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -39,8 +39,10 @@ import com.sleepycat.persist.model.Relationship;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
+import org.jpos.iso.ISOUtil;
 import org.jpos.util.Log;
 import org.jpos.util.Loggeable;
+import org.jpos.util.Profiler;
 
 /**
  * BerkeleyDB Jave Edition based persistent space implementation
@@ -48,6 +50,7 @@ import org.jpos.util.Loggeable;
  * @author Alejandro Revilla
  * @since 1.6.5
  */
+@SuppressWarnings("unchecked")
 public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Runnable {
     Environment dbe = null;
     EntityStore store = null;
@@ -57,22 +60,26 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
     SecondaryIndex<Long,Long,GCRef> gcsIndex = null;
     Semaphore gcSem = new Semaphore(1);
     LocalSpace<Object,SpaceListener> sl;
-    public static final long GC_DELAY = 60*1000L;
+    private static final long NRD_RESOLUTION = 500L;
+    public static final long GC_DELAY = 15*1000L;
+    public static final long DEFAULT_TXN_TIMEOUT = 30*1000L;
+    public static final long DEFAULT_LOCK_TIMEOUT = 120*1000L;
     private Future gcTask;
 
     static final Map<String,Space> spaceRegistrar = 
         new HashMap<String,Space> ();
 
-    public JESpace(String name, String path) throws SpaceError {
+    public JESpace(String name, String params) throws SpaceError {
         super();
         try {
             EnvironmentConfig envConfig = new EnvironmentConfig();
             StoreConfig storeConfig = new StoreConfig();
-
+            String[] p = ISOUtil.commaDecode(params);
+            String path = p[0];
             envConfig.setAllowCreate (true);
             envConfig.setTransactional(true);
-            // envConfig.setTxnTimeout(5L, TimeUnit.MINUTES);
-            envConfig.setLockTimeout(5, TimeUnit.SECONDS);
+            envConfig.setLockTimeout(getParam("lock.timeout", p, DEFAULT_LOCK_TIMEOUT), TimeUnit.MILLISECONDS);
+            envConfig.setTxnTimeout(getParam("txn.timeout", p, DEFAULT_TXN_TIMEOUT), TimeUnit.MILLISECONDS);
             storeConfig.setAllowCreate (true);
             storeConfig.setTransactional (true);
 
@@ -168,8 +175,8 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = inp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -193,8 +200,8 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = rdp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -202,7 +209,26 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
         }
         return (V) obj;
     }
-
+    public synchronized void nrd  (Object key) {
+        while (rdp (key) != null) {
+            try {
+                this.wait (NRD_RESOLUTION);
+            } catch (InterruptedException ignored) { }
+        }
+    }
+    public synchronized V nrd  (Object key, long timeout) {
+        Object obj;
+        long now = System.currentTimeMillis();
+        long end = now + timeout;
+        while ((obj = rdp (key)) != null &&
+                (now = System.currentTimeMillis()) < end)
+        {
+            try {
+                this.wait (Math.min(NRD_RESOLUTION, end - now));
+            } catch (InterruptedException ignored) { }
+        }
+        return (V) obj;
+    }
     @SuppressWarnings("unchecked")
     public V inp (Object key) {
         try {
@@ -223,7 +249,7 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
     public boolean existAny (Object[] keys, long timeout) {
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while (((now = System.currentTimeMillis()) < end)) {
+        while ((now = System.currentTimeMillis()) < end) {
             if (existAny (keys))
                 return true;
             synchronized (this) {
@@ -236,12 +262,12 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
     }
     public synchronized void put (K key, V value, long timeout) {
         while (inp (key) != null)
-            ;
+            ; // NOPMD
         out (key, value, timeout);
     }
     public synchronized void put (K key, V value) {
         while (inp (key) != null)
-            ;
+            ; // NOPMD
         out (key, value);
     }
     public void gc () throws DatabaseException {
@@ -279,7 +305,7 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
     public void run() {
         try {
             gc();
-        } catch (DatabaseException e) {
+        } catch (Exception e) {
             warn(e);
         }
     }
@@ -404,7 +430,8 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
             cursor = null;
             txn.commit();
             txn = null;
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException ex) {
+            warn (ex);
         } finally {
             if (cursor != null)
                 cursor.close ();
@@ -565,6 +592,17 @@ public class JESpace<K,V> extends Log implements LocalSpace<K,V>, Loggeable, Run
             p.printf ("%s<key size='%d'>%s</key>\n", indent, count, key);
         else
             p.printf ("%s<key>%s</key>\n", indent, key);
+    }
+
+    private long getParam (String name, String[] params, long defaultValue) {
+        for (String s : params) {
+            if (s.contains(name)) {
+                int pos = s.indexOf('=');
+                if (pos >=0 && s.length() > pos)
+                    return Long.valueOf(s.substring(pos+1).trim());
+            }
+        }
+        return defaultValue;
     }
 
     @Entity

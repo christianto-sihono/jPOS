@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -41,6 +41,7 @@ import java.util.Vector;
  *  @author Rajal Shah
  *  @version $Revision$ $Date$
  */
+@SuppressWarnings("unchecked")
 public class ConnectionPool implements Runnable, LogSource, Configurable {
     Configuration cfg;
     Logger logger;
@@ -140,10 +141,10 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
             // connection because maxConnection limit was reached.
             if (existingConnection.isClosed()) {
                 notifyAll(); // Freed up a spot for anybody waiting
-                return(getConnection());
+                return getConnection();
             } else {
                 busyConnections.addElement(existingConnection);
-                return(existingConnection);
+                return existingConnection;
             }
         } else {
             // Three possible cases:
@@ -158,7 +159,7 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
             //    flag is true. Then do the same thing as in second
             //    part of step 1: wait for next available connection.
 
-            if ((totalConnections() < maxConnections) && !connectionPending) {
+            if (totalConnections() < maxConnections && !connectionPending) {
                 makeBackgroundConnection();
             } else if (!waitIfBusy && !connectionPending) {
                 throw new SQLException("Connection limit reached");
@@ -170,7 +171,7 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
                 wait();
             } catch (InterruptedException ie) {}
             // Someone freed up a connection, so try again.
-            return(getConnection());
+            return getConnection();
         }
     }
 
@@ -227,7 +228,7 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
             // Establish network connection to database
             Connection connection =
                 DriverManager.getConnection(url, username, password);
-            return(connection);
+            return connection;
         } catch(ClassNotFoundException cnfe) {
             // Simplify try/catch blocks of people using this by
             // throwing only one exception type.
@@ -245,11 +246,11 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
     }
 
     public synchronized int totalConnections() {
-        return(availableConnections.size() + busyConnections.size());
+        return availableConnections.size() + busyConnections.size();
     }
 
     public synchronized int getTotalConnections(){
-        return (availableConnections.size() + busyConnections.size());
+        return availableConnections.size() + busyConnections.size();
     }
 
     /** Close all the connections. Use with caution:
@@ -287,7 +288,7 @@ public class ConnectionPool implements Runnable, LogSource, Configurable {
             ", available=" + availableConnections.size() +
             ", busy=" + busyConnections.size() +
             ", max=" + maxConnections;
-        return(info);
+        return info;
     }
 
     public void setLogger (Logger logger, String realm) {

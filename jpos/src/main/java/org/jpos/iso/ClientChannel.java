@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,16 +36,16 @@ public interface ClientChannel extends ISOChannel {
      * @param host  server TCP Address
      * @param port  server port number
      */
-    public void setHost(String host, int port);
+    void setHost(String host, int port);
 
     /**
      * @return hostname (may be null)
      */
-    public String getHost();
+    String getHost();
 
     /**
      * @return port number (may be 0)
      */
-    public int getPort();
+    int getPort();
 }
 

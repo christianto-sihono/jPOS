@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,9 +25,9 @@ import java.sql.SQLException;
  * @version $Id$
  */
 public interface PersistentPeer {
-    public void setPersistentEngine (PersistentEngine engine);
-    public void create (Object obj) throws SQLException;
-    public void load   (Object obj) throws SQLException, NotFoundException;
-    public void update (Object obj) throws SQLException, NotFoundException;
-    public void remove (Object obj) throws SQLException, NotFoundException;
+    void setPersistentEngine(PersistentEngine engine);
+    void create(Object obj) throws SQLException;
+    void load(Object obj) throws SQLException, NotFoundException;
+    void update(Object obj) throws SQLException, NotFoundException;
+    void remove(Object obj) throws SQLException, NotFoundException;
 }

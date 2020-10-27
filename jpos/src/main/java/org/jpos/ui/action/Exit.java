@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.ui.action;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.ui.UI;
 import org.jpos.ui.UIAware;
 
@@ -39,7 +39,7 @@ public class Exit implements ActionListener, UIAware {
         ui.dispose ();
         try {
             exitCode = Integer.parseInt(ev.getActionCommand());
-        } catch (Exception e) { }
+        } catch (Exception ignored) { /* NOPMD*/ }
         new Thread() {
             public void run() {
                 System.exit (exitCode);

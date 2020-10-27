@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -42,14 +42,14 @@ public interface RemoteQMUX extends Remote  {
      * @return received message or null
      * @throws ISOException
      */
-    public ISOMsg request (ISOMsg m, long timeout) throws ISOException, RemoteException;
+    ISOMsg request(ISOMsg m, long timeout) throws ISOException, RemoteException;
 
-    public void request (ISOMsg m, long timeout, ISOResponseListener r, Object handBack)
+    void request(ISOMsg m, long timeout, ISOResponseListener r, Object handBack)
         throws ISOException, RemoteException;
 
     /**
      * @return true if connected
      */
-    public boolean isConnected() throws RemoteException;
+    boolean isConnected() throws RemoteException;
 }
 

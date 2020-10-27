@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,17 +27,18 @@ import java.util.concurrent.TimeUnit;
 import org.jpos.iso.ISOUtil;
 
 import org.jpos.util.TPS;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
  * @author Robert Demski
  */
+@SuppressWarnings("unchecked")
 public class TSpacePerformanceTest  {
 
     LocalSpace<String,Object> sp1;
@@ -85,7 +86,8 @@ public class TSpacePerformanceTest  {
         }  
     }
 
-    class WriteSpaceWithNotifyTask implements Runnable, SpaceListener {
+    @SuppressWarnings("unchecked")
+    class WriteSpaceWithNotifyTask implements Runnable, SpaceListener<String,Object> {
         String key;
         LocalSpace sp1;
         LocalSpace sp2;
@@ -106,14 +108,14 @@ public class TSpacePerformanceTest  {
           System.err.println("Perform. "+key+" out: "+(stamp2-stamp)/1000000);
         }
 
-        public void notify(Object key, Object value) {
-          if ( (++count % 100) == 0) {
-            sp2.out((String)key, value);
+        public void notify(String key, Object value) {
+          if ( ++count % 100 == 0) {
+            sp2.out(key, value);
           }
         }
     }
 
-    class WriteSpaceWithNotifyReadTask implements Runnable, SpaceListener {
+    class WriteSpaceWithNotifyReadTask implements Runnable, SpaceListener<String,Object> {
         String key;
        
         WriteSpaceWithNotifyReadTask(String key){
@@ -124,14 +126,13 @@ public class TSpacePerformanceTest  {
           for (int i=0; i<COUNT; i++)
              sp1.out(key, Boolean.TRUE);
         }
-
-        public void notify(Object key, Object value) {
+        public void notify(String key, Object value) {
           if ( sp1.rdp(key) == null)
             sp2.out("lost-entry", value);
         }
     }
 
-    @Before
+    @BeforeEach
     public void setUp () {
         sp1 = new TSpace<String,Object>();
         sp2 = new TSpace<String,Object>();
@@ -165,9 +166,8 @@ public class TSpacePerformanceTest  {
         for (int i=0; i<size; i++)
           es.execute(new ReadSpaceTask("PerformTask-"+i));
         ISOUtil.sleep(500);
-        printAvg(t2, "Avg. read : ");
-
         es.shutdown();
+        printAvg(t2, "Avg. read : ");
     }
 
     @Test
@@ -200,7 +200,7 @@ public class TSpacePerformanceTest  {
         es.awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    @Ignore("Remove it when TSpace can pass it")
+    @Disabled("Remove it when TSpace can pass it")
     @Test
     public void testStolenEntryAtNotify() throws Throwable {
         int size = 10;
@@ -215,7 +215,7 @@ public class TSpacePerformanceTest  {
         for (int i=0; i<size; i++)
           es.execute(new ReadSpaceTask("WriteTask-"+i));
 
-        assertNull("Detected stolen entry at notify",sp2.in("lost-entry", 200));
+        assertNull(sp2.in("lost-entry", 200), "Detected stolen entry at notify");
 
         es.shutdownNow();
 //        es.awaitTermination(5, TimeUnit.SECONDS);

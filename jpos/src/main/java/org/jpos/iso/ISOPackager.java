@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,6 @@
 
 package org.jpos.iso;
 
-import org.jpos.util.LogSource;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -28,13 +26,13 @@ import java.io.InputStream;
  * @version $Id$
  * @see ISOComponent
  */
-public interface ISOPackager extends LogSource {
+public interface ISOPackager {
     /**
      * @param   m   the Component to pack
      * @return      Message image
      * @exception ISOException on error
      */
-    public byte[] pack (ISOComponent m) throws ISOException;
+    byte[] pack(ISOComponent m) throws ISOException;
 
     /**
      * @param   m   the Container of this message
@@ -42,25 +40,25 @@ public interface ISOPackager extends LogSource {
      * @return      consumed bytes
      * @exception ISOException on error
      */
-    public int unpack (ISOComponent m, byte[] b) throws ISOException;
+    int unpack(ISOComponent m, byte[] b) throws ISOException;
 
-    public void unpack (ISOComponent m, InputStream in) throws IOException, ISOException;
+    void unpack(ISOComponent m, InputStream in) throws IOException, ISOException;
 
     /**
      * @return  Packager's Description
      */
-    public String getDescription();
+    String getDescription();
     
     /**
      * @param   m   the Container (i.e. an ISOMsg)
      * @param   fldNumber the Field Number
      * @return  Field Description
      */
-    public String getFieldDescription(ISOComponent m, int fldNumber);
+    String getFieldDescription(ISOComponent m, int fldNumber);
 
     /**
      * @return an ISOMsg
      */
-    public ISOMsg createISOMsg ();
+    ISOMsg createISOMsg();
 }
 

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,22 +18,24 @@
 
 package org.jpos.q2.qbean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class BSHTest {
 
     @Test
     public void testConstructor() throws Throwable {
         BSH bSH = new BSH();
-        assertEquals("bSH.getLog().getRealm()", "org.jpos.q2.qbean.BSH", bSH.getLog().getRealm());
-        assertEquals("bSH.getState()", -1, bSH.getState());
-        assertTrue("bSH.isModified()", bSH.isModified());
+        assertEquals("org.jpos.q2.qbean.BSH", bSH.getLog().getRealm(), "bSH.getLog().getRealm()");
+        assertEquals(-1, bSH.getState(), "bSH.getState()");
+        assertTrue(bSH.isModified(), "bSH.isModified()");
     }
 
     @Test
@@ -43,7 +45,11 @@ public class BSHTest {
             bSH.initService();
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getLoader()\" because the return value of \"org.jpos.q2.qbean.BSH.getServer()\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -51,14 +57,14 @@ public class BSHTest {
     public void testRun() throws Throwable {
         BSH bSH = new BSH();
         bSH.run();
-        assertNull("bSH.bsh", bSH.bsh);
-        assertFalse("bSH.isModified()", bSH.isModified());
+        assertNull(bSH.bsh, "bSH.bsh");
+        assertFalse(bSH.isModified(), "bSH.isModified()");
     }
 
     @Test
     public void testStartService() throws Throwable {
         BSH bSH = new BSH();
         bSH.startService();
-        assertNull("bSH.getName()", bSH.getName());
+        assertNull(bSH.getName(), "bSH.getName()");
     }
 }

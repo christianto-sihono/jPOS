@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,11 @@
 
 package org.jpos.iso.packager;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.iso.IFA_BINARY;
 import org.jpos.iso.IFB_AMOUNT;
@@ -28,7 +30,7 @@ import org.jpos.iso.IFB_LLLCHAR;
 import org.jpos.iso.ISOField;
 import org.jpos.iso.ISOMsg;
 import org.jpos.iso.ISOPackager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ISOMsgFieldValidatingPackagerTest {
 
@@ -37,9 +39,9 @@ public class ISOMsgFieldValidatingPackagerTest {
         ISOPackager msgPackager = new ISOBaseValidatingPackager();
         ISOMsgFieldValidatingPackager iSOMsgFieldValidatingPackager = new ISOMsgFieldValidatingPackager(new IFB_LLLCHAR(),
                 msgPackager);
-        assertNull("iSOMsgFieldValidatingPackager.getDescription()", iSOMsgFieldValidatingPackager.getDescription());
-        assertEquals("iSOMsgFieldValidatingPackager.getMaxPackedLength()", -1, iSOMsgFieldValidatingPackager.getMaxPackedLength());
-        assertEquals("iSOMsgFieldValidatingPackager.getLength()", -1, iSOMsgFieldValidatingPackager.getLength());
+        assertNull(iSOMsgFieldValidatingPackager.getDescription(), "iSOMsgFieldValidatingPackager.getDescription()");
+        assertEquals(-1, iSOMsgFieldValidatingPackager.getMaxPackedLength(), "iSOMsgFieldValidatingPackager.getMaxPackedLength()");
+        assertEquals(-1, iSOMsgFieldValidatingPackager.getLength(), "iSOMsgFieldValidatingPackager.getLength()");
     }
 
     @Test
@@ -48,7 +50,11 @@ public class ISOMsgFieldValidatingPackagerTest {
             new ISOMsgFieldValidatingPackager(null, new ISOBaseValidatingPackager());
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOFieldPackager.getLength()\" because \"fieldPackager\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -59,7 +65,7 @@ public class ISOMsgFieldValidatingPackagerTest {
                     new ISOBaseValidatingPackager()).validate(new ISOField(100));
             fail("Expected ClassCastException to be thrown");
         } catch (NullPointerException ex) {
-            assertEquals("ex.getClass()", NullPointerException.class, ex.getClass());
+            assertEquals(NullPointerException.class, ex.getClass(), "ex.getClass()");
         }
     }
 
@@ -70,7 +76,11 @@ public class ISOMsgFieldValidatingPackagerTest {
                     new ISOBaseValidatingPackager()).validate(new ISOMsg("testISOMsgFieldValidatingPackagerMti"));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"<local6>\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

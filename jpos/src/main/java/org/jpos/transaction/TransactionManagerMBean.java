@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,16 +23,21 @@ import java.util.Date;
 
 @SuppressWarnings("unused")
 public interface TransactionManagerMBean extends QBeanSupportMBean {
-    public long getHead ();
-    public long getTail ();
-    public void setDebug (boolean debug);
-    public boolean getDebug();
-    public int getOutstandingTransactions();
-    public int getActiveSessions();
-    public String getTPSAsString();
-    public float getTPSAvg();
-    public int getTPSPeak();
-    public Date getTPSPeakWhen();
-    public long getTPSElapsed();
-    public void resetTPS();
+    long getHead();
+    long getTail();
+    void setDebug(boolean debug);
+    boolean getDebug();
+    void setDebugContext(boolean debugContext);
+    boolean getDebugContext();
+    int getOutstandingTransactions();
+    int getActiveSessions();
+    int getPausedCounter();
+    int getActiveTransactions();
+    int getMaxSessions();
+    String getTPSAsString();
+    float getTPSAvg();
+    int getTPSPeak();
+    Date getTPSPeakWhen();
+    long getTPSElapsed();
+    void resetTPS();
 }

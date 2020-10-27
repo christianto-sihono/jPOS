@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,25 +19,27 @@
 package org.jpos.util;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 
-public class FrozenLogEvent extends LogEvent {
-    String frozen;
-    String realm;
+public class FrozenLogEvent extends LogEvent implements Serializable {
+    private String frozen;
+
+    public FrozenLogEvent(String frozen) {
+        this.frozen = frozen;
+    }
     public FrozenLogEvent (LogEvent evt) {
-        super();
+        super(evt.getSource(), evt.getTag(), evt.getRealm());
         frozen = evt.toString();
-        realm = evt.getRealm();
     }
     @Override
     public void dump (PrintStream ps, String indent) {
         ps.print (frozen);
     }
-    @Override
-    public String getRealm () {
-        return realm;
-    }
+
     @Override
     public String toString () {
         return frozen;
     }
+
+    private static final long serialVersionUID = -8672445411081885024L;
 }

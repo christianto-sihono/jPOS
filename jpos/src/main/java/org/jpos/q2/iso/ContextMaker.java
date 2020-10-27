@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,19 +18,18 @@
 
 package org.jpos.q2.iso;
 
-import java.io.PrintStream;
-import java.util.List;
-
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
 import org.jpos.q2.QBeanSupport;
 import org.jpos.space.Space;
 import org.jpos.space.SpaceFactory;
+import org.jpos.transaction.Context;
 import org.jpos.util.Loggeable;
 import org.jpos.util.NameRegistrar;
 
-import org.jpos.transaction.Context;
+import java.io.PrintStream;
+import java.util.List;
 
 /**
  * A utility QBean to provide the ability to monitor an 'in' queue for items that will be placed in
@@ -39,8 +38,8 @@ import org.jpos.transaction.Context;
 
  * @author Mark Salter
  * @version $Revision: 2854 $ $Date: 2010-01-02 10:34:31 +0000 (Sat, 02 Jan 2010) $
- * @jmx:mbean description="ContextMaker" extends="org.jpos.q2.QBeanSupportMBean"
  */
+@SuppressWarnings("unchecked")
 public class ContextMaker extends QBeanSupport implements Runnable,
 		Loggeable {
 

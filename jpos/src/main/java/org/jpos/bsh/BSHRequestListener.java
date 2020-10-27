@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,11 +35,11 @@ import java.util.HashSet;
  * @author <a href="mailto:apr@cs.com.uy">Alejandro P. Revilla</a>
  * @version $Revision$ $Date$
  */
-public class BSHRequestListener extends Log 
+public class BSHRequestListener extends Log
     implements ISORequestListener, Configurable
 {
     protected static final String MTI_MACRO = "$mti";
-    protected HashSet whitelist;
+    protected HashSet<String> whitelist;
     protected String[] bshSource;
     Configuration cfg;
     public BSHRequestListener () {
@@ -58,7 +58,7 @@ public class BSHRequestListener extends Log
         this.cfg = cfg;
         bshSource = cfg.getAll ("source");
         String[] mti = cfg.get ("whitelist", "*").split(",");
-        whitelist = new HashSet( Arrays.asList(mti) );
+        whitelist = new HashSet<>( Arrays.asList(mti) );
     }
 
     public boolean process (ISOSource source, ISOMsg m) {
@@ -86,7 +86,14 @@ public class BSHRequestListener extends Log
                         script = aBshSource;
                     }
 
-                    bsh.source(script);
+                    Object ret= bsh.source(script);
+
+                    // any non-null and non-boolean value is considered "true-ish"
+                    // a null return is considered false
+                    if (ret != null && (!(ret instanceof Boolean) || (Boolean)ret)) {
+                        return true;
+                    }
+
                 } catch (Exception e) {
                     warn(e);
                 }
@@ -95,7 +102,8 @@ public class BSHRequestListener extends Log
             warn(e);
             return false;
         }
-        return true;
+        //if we reached this far none of the sources handled the request.
+        return false;
     }
 }
 

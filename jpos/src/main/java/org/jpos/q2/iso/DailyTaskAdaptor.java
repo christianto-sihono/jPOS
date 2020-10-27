@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package org.jpos.q2.iso;
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.Configurable;
 import org.jpos.iso.ISOUtil;
 import org.jpos.q2.QBeanSupport;
@@ -74,7 +74,7 @@ public class DailyTaskAdaptor extends QBeanSupport implements Runnable {
         }
     }
     public Date getWhen() {
-        String s = cfg.get ("start")+":00:00";
+        String s = cfg.get ("start")+":00:00"; // NOPMD
         int hh = Integer.parseInt(s.substring (0, 2));
         int mm = Integer.parseInt(s.substring (3, 5));
         int ss = Integer.parseInt(s.substring (6, 8));
@@ -104,7 +104,7 @@ public class DailyTaskAdaptor extends QBeanSupport implements Runnable {
                     continue;
                 }
                 getLog().info ("sleeping",
-                    (sleepTime/1000) + " secs until " + when.toString()
+                    sleepTime/1000 + " secs until " + when.toString()
                 );
                 try {
                     Thread.sleep (sleepTime);

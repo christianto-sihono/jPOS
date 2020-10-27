@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,27 +18,28 @@
 
 package org.jpos.iso;
 
-
 /**
  * MUX interface
  * @author Alejandro Revilla
- * @version $Revision$ $Date$
  */
-public interface MUX {
+public interface MUX extends ISOSource {
     /**
+     * Sends a message to remote host and wait for response
      * @param m message to send
      * @param timeout time to wait for a message
      * @return received message or null
      * @throws ISOException
      */
-    public ISOMsg request (ISOMsg m, long timeout) throws ISOException;
-
-    public void request (ISOMsg m, long timeout, ISOResponseListener r, Object handBack)
-        throws ISOException;
+    ISOMsg request(ISOMsg m, long timeout) throws ISOException;
 
     /**
-     * @return true if connected
+     * Sends a message to remote host in async way
+     * @param m message to send
+     * @param timeout time to wait for the response
+     * @param r reference to response listener
+     * @param handBack optional handback to be given to reponse listener
+     * @throws ISOException
      */
-    public boolean isConnected();
+    void request(ISOMsg m, long timeout, ISOResponseListener r, Object handBack)
+        throws ISOException;
 }
-

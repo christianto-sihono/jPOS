@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,7 @@ package org.jpos.space;
  * @version $Revision$ $Date$
  * @since 1.4.7
  */
+@SuppressWarnings("deprecation")
 public class Request extends TinySpace {
     public static String REQUEST  = "$REQ";
     public static String RESPONSE = "$RESP";
@@ -59,7 +60,7 @@ public class Request extends TinySpace {
         out (ERROR, o);
     }
     public Object[] getErrors () {
-        return (Object[]) SpaceUtil.inpAll(this, ERROR);
+        return SpaceUtil.inpAll(this, ERROR);
     }
     public Object getError () {
         return inp (ERROR);

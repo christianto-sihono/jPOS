@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +20,9 @@ package org.jpos.iso;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * ISO Currency Conversion package
@@ -33,8 +35,7 @@ import java.util.*;
  */
 public class ISOCurrency
 {
-    private static Map<String, Currency> currencies;
-    private static final Object mutex = new Object();
+    private static final Map<String, Currency> currencies = new HashMap<String, Currency>();
 
     // Avoid creation of instances.
     private ISOCurrency()
@@ -43,12 +44,29 @@ public class ISOCurrency
 
     static
     {
-        synchronized (mutex)
-        {
-            currencies = new HashMap<String, Currency>();
-        }
-        addBundle(ISOCurrency.class.getName());
+        addJavaCurrencies();
+        loadPropertiesFromClasspath("org/jpos/iso/ISOCurrency.properties");
         loadPropertiesFromClasspath("META-INF/org/jpos/config/ISOCurrency.properties");
+    }
+
+    private static void addJavaCurrencies()
+    {
+        List<java.util.Currency> currencies = java.util.Currency.getAvailableCurrencies()
+                .stream()
+                .sorted(Comparator.comparing(java.util.Currency::getCurrencyCode))
+                .collect(Collectors.toList());
+        for (java.util.Currency sc : currencies)
+        {
+            try
+            {
+                addCurrency(sc.getCurrencyCode().toUpperCase(),
+                            ISOUtil.zeropad(Integer.toString(sc.getNumericCode()), 3),
+                            sc.getDefaultFractionDigits());
+            }
+            catch (ISOException ignored)
+            {
+            }
+        }
     }
 
     @SuppressWarnings({"EmptyCatchBlock"})
@@ -88,27 +106,26 @@ public class ISOCurrency
      * @param currency  - The ISO currency to be converted (eg. ISOField 49)
      * @return result - A double representing the converted field
      * @throws IllegalArgumentException if we fail to convert the amount
+     * @deprecated You should never use doubles
      */
     public static double convertFromIsoMsg(String isoamount, String currency) throws IllegalArgumentException
     {
         Currency c = findCurrency(currency);
         return c.parseAmountFromISOMsg(isoamount);
     }
-
-    public static void addBundle(ResourceBundle r)
+    public static String toISO87String (BigDecimal amount, String currency)
     {
-        synchronized (mutex)
-        {
-            Enumeration en = r.getKeys();
-            while (en.hasMoreElements())
-            {
-                String alphaCode = (String) en.nextElement();
-                String[] tmp = r.getString(alphaCode).split(" ");
-                String isoCode = tmp[0];
-                int numDecimals = Integer.parseInt(tmp[1]);
-                addCurrency(alphaCode, isoCode, numDecimals);
-            }
+        try {
+            Currency c = findCurrency(currency);
+            return ISOUtil.zeropad(amount.movePointRight(c.getDecimals()).setScale(0).toPlainString(), 12);
         }
+        catch (ISOException e) {
+            throw new IllegalArgumentException("Failed to convert amount",e);
+        }
+    }
+    public static BigDecimal parseFromISO87String (String isoamount, String currency) {
+        int decimals = findCurrency(currency).getDecimals();
+        return new BigDecimal(isoamount).movePointLeft(decimals);
     }
 
     public static void addBundle(String bundleName)
@@ -212,5 +229,18 @@ public class ISOCurrency
             throw new IllegalArgumentException("Currency with key '" + currency + "' was not found");
         }
         return c;
+    }
+
+    private static void addBundle(ResourceBundle r)
+    {
+        Enumeration en = r.getKeys();
+        while (en.hasMoreElements())
+        {
+            String alphaCode = (String) en.nextElement();
+            String[] tmp = r.getString(alphaCode).split(" ");
+            String isoCode = tmp[0];
+            int numDecimals = Integer.parseInt(tmp[1]);
+            addCurrency(alphaCode, isoCode, numDecimals);
+        }
     }
 }

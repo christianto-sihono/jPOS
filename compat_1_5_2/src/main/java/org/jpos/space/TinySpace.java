@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ import java.util.Map;
  * @since 1.4.7
  * @deprecated org.jpos.space.TSpace is the new default lightweight space
  */
+@SuppressWarnings("unchecked")
 public class TinySpace implements Space, Serializable {
     protected Map map = new HashMap ();
     private static final long serialVersionUID = -5216796586015661708L;
@@ -66,6 +67,12 @@ public class TinySpace implements Space, Serializable {
         }
         return obj;
     }
+    public void nrd(Object key) {
+        throw new SpaceError("Not implemented");
+    }
+    public Object nrd(Object key, long timeout) {
+        throw new SpaceError("Not implemented");
+    }
     public synchronized Object inp (Object key) {
         Object obj = map.get (key);
         if (obj instanceof Data) {
@@ -95,8 +102,8 @@ public class TinySpace implements Space, Serializable {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = inp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -117,8 +124,8 @@ public class TinySpace implements Space, Serializable {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = rdp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -136,7 +143,7 @@ public class TinySpace implements Space, Serializable {
     public boolean existAny (Object[] keys, long timeout) {
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while (((now = System.currentTimeMillis()) < end)) {
+        while ((now = System.currentTimeMillis()) < end) {
             if (existAny (keys))
                 return true;
             synchronized (this) {
@@ -159,6 +166,7 @@ public class TinySpace implements Space, Serializable {
     public void put (Object key, Object value, long timeout) {
         throw new SpaceError ("Unsupported operation");
     }
+    @SuppressWarnings("unchecked")
     protected static final class Data {
         LinkedList data;
 

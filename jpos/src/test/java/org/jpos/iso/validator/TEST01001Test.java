@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,35 +18,37 @@
 
 package org.jpos.iso.validator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.jpos.core.Configuration;
 import org.jpos.core.SubConfiguration;
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOField;
 import org.jpos.iso.ISOMsg;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TEST01001Test {
 
     @Test
     public void testConstructor() throws Throwable {
         TEST0100 tEST0100 = new TEST0100(true);
-        assertNull("tEST0100.getRealm()", tEST0100.getRealm());
-        assertTrue("tEST0100.breakOnError()", tEST0100.breakOnError());
-        assertNull("tEST0100.getLogger()", tEST0100.getLogger());
+        assertNull(tEST0100.getRealm(), "tEST0100.getRealm()");
+        assertTrue(tEST0100.breakOnError(), "tEST0100.breakOnError()");
+        assertNull(tEST0100.getLogger(), "tEST0100.getLogger()");
     }
 
     @Test
     public void testConstructor1() throws Throwable {
         TEST0100 tEST0100 = new TEST0100();
-        assertNull("tEST0100.getRealm()", tEST0100.getRealm());
-        assertFalse("tEST0100.breakOnError()", tEST0100.breakOnError());
-        assertNull("tEST0100.getLogger()", tEST0100.getLogger());
+        assertNull(tEST0100.getRealm(), "tEST0100.getRealm()");
+        assertFalse(tEST0100.breakOnError(), "tEST0100.breakOnError()");
+        assertNull(tEST0100.getLogger(), "tEST0100.getLogger()");
     }
 
     @Test
@@ -57,7 +59,11 @@ public class TEST01001Test {
             tEST0100.setConfiguration(cfg);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.core.Configuration.get(String, String)\" because \"this.cfg\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -68,7 +74,7 @@ public class TEST01001Test {
             tEST0100.validate(new ISOField());
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
         }
     }
 
@@ -79,8 +85,8 @@ public class TEST01001Test {
             tEST0100.validate(new ISOMsg());
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "MTI not available", ex.getMessage());
-            assertNull("ex.getNested()", ex.getNested());
+            assertEquals("MTI not available", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.getNested(), "ex.getNested()");
         }
     }
 
@@ -91,7 +97,11 @@ public class TEST01001Test {
             tEST0100.validate(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.iso.ISOMsg.getMTI()\" because \"m\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

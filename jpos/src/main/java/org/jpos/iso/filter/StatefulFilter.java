@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,6 +35,7 @@ import org.jpos.util.LogEvent;
  * based on a key formed by some fields.
  * @author <a href="mailto:aalcarraz@cabal.com.uy">Andr&eacute;s Alcarraz </a>
  */
+@SuppressWarnings("unchecked")
 public class StatefulFilter implements ISOFilter, Configurable{
     
     /**
@@ -156,7 +157,10 @@ public class StatefulFilter implements ISOFilter, Configurable{
         throws ISOFilter.VetoException 
     {
         int[] key = getKey();
-        StringBuilder b = new StringBuilder(getKeyPrefix());
+        String keyPrefix = getKeyPrefix();
+        if (keyPrefix == null)
+            throw new NullPointerException("key prefix can not be null");
+        StringBuilder b = new StringBuilder(keyPrefix);
         for (int aKey : key) {
             b.append("|");
             b.append(m.getString(aKey));
@@ -165,7 +169,7 @@ public class StatefulFilter implements ISOFilter, Configurable{
         if(m.getDirection() == getMatchDirection()){
             int[] savedFields = getSavedFields();
             ISOMsg saved = (ISOMsg)(
-                (savedFields != null && savedFields.length != 0) ?
+                savedFields != null && savedFields.length != 0 ?
                     m.clone(savedFields) : m.clone());
             int[] ignoredFields = getIgnoredFields();
             if (ignoredFields != null) saved.unset(ignoredFields);

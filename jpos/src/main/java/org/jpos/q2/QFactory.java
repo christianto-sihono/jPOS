@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,24 +19,29 @@
 package org.jpos.q2;
 
 
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.jpos.core.*;
+import org.jpos.q2.qbean.QConfig;
 import org.jpos.util.LogSource;
 import org.jpos.util.Logger;
+import org.jpos.util.NameRegistrar;
 
 import javax.management.*;
-import java.io.File;
-import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+import java.util.StringTokenizer;
 
 /**
  * @author <a href="mailto:taherkordy@dpi2.dpi.net.ir">Alireza Taherkordi</a>
  * @author <a href="mailto:apr@cs.com.uy">Alejandro P. Revilla</a>
  * @version $Revision$ $Date$
  */
+@SuppressWarnings("unchecked")
 public class QFactory {
     ObjectName loaderName;
     Q2 q2;
@@ -47,17 +52,16 @@ public class QFactory {
         super ();
         this.loaderName = loaderName;
         this.q2  = q2;
-        try {
-            classMapping = ResourceBundle.getBundle(this.getClass().getName());
-        } catch (MissingResourceException ignored) { }
+        classMapping = ResourceBundle.getBundle(this.getClass().getName());
     }
 
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public Object instantiate (Q2 server, Element e) 
         throws ReflectionException,
                MBeanException,
                InstanceNotFoundException
     {
-        String clazz  = e.getAttributeValue ("class");
+        String clazz  = getAttributeValue (e, "class");
         if (clazz == null) {
             try {
                 clazz = classMapping.getString (e.getName());
@@ -67,16 +71,13 @@ public class QFactory {
             }
         }
         MBeanServer mserver = server.getMBeanServer();
-        getExtraPath (server.getLoader (), e);
+        if (!q2.isDisableDynamicClassloader())
+            getExtraPath(server.getLoader(), e);
         return mserver.instantiate (clazz, loaderName);
     }
 
     public ObjectInstance createQBean (Q2 server, Element e, Object obj) 
-        throws ClassNotFoundException, 
-               InstantiationException,
-               IllegalAccessException,
-               MalformedObjectNameException,
-               MalformedURLException,
+        throws MalformedObjectNameException,
                InstanceAlreadyExistsException,
                InstanceNotFoundException,
                MBeanException,
@@ -85,7 +86,7 @@ public class QFactory {
                ReflectionException,
                ConfigurationException
     {
-        String name   = e.getAttributeValue ("name");
+        String name   = getAttributeValue (e, "name");
         if (name == null)
             name = e.getName ();
 
@@ -99,10 +100,10 @@ public class QFactory {
         );
         try {
             setAttribute (mserver, objectName, "Name", name);
-            String logger = e.getAttributeValue ("logger");
+            String logger = getAttributeValue (e, "logger");
             if (logger != null)
                 setAttribute (mserver, objectName, "Logger", logger);
-            String realm = e.getAttributeValue ("realm");
+            String realm = getAttributeValue (e, "realm");
             if (realm != null)
                 setAttribute (mserver, objectName, "Realm", realm);
             setAttribute (mserver, objectName, "Server", server);
@@ -113,10 +114,10 @@ public class QFactory {
             if (obj instanceof QBean) 
                 mserver.invoke (objectName, "init",  null, null);
         }
-        catch (ConfigurationException ce) {
+        catch (Throwable t) {
             mserver.unregisterMBean(objectName);
-            ce.fillInStackTrace();
-            throw ce;
+            t.fillInStackTrace();
+            throw t;
         }
 
         return instance;
@@ -124,7 +125,8 @@ public class QFactory {
     public Q2 getQ2() {
         return q2;
     }
-    public void getExtraPath (QClassLoader loader, Element e) {
+
+    private void getExtraPath (QClassLoader loader, Element e) {
         Element classpathElement = e.getChild ("classpath");
         if (classpathElement != null) {
             try {
@@ -132,18 +134,18 @@ public class QFactory {
             } catch (Throwable t) {
                 getQ2().getLog().error(t);
             }
-            Iterator iter = classpathElement.getChildren ("url").iterator();
-            while (iter.hasNext ()) {
-                Element u = (Element) iter.next ();
+            for (Object o : classpathElement.getChildren("url")) {
+                Element u = (Element) o;
                 try {
-                    loader.addURL (u.getTextTrim ());
+                    loader.addURL(u.getTextTrim());
                 } catch (MalformedURLException ex) {
-                    q2.getLog().warn (u.getTextTrim(), ex);
+                    q2.getLog().warn(u.getTextTrim(), ex);
                 }
             }
         }
     }
 
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void setAttribute 
         (MBeanServer server, ObjectName objectName, 
          String attribute, Object value)
@@ -164,17 +166,8 @@ public class QFactory {
     }
 
     public void startQBean (Q2 server, ObjectName objectName)
-        throws ClassNotFoundException, 
-               InstantiationException,
-               IllegalAccessException,
-               MalformedObjectNameException,
-               MalformedURLException,
-               InstanceAlreadyExistsException,
-               MBeanRegistrationException,
-               InstanceNotFoundException,
+        throws InstanceNotFoundException,
                MBeanException,
-               NotCompliantMBeanException,
-               InvalidAttributeValueException,
                ReflectionException
     {
         MBeanServer mserver = server.getMBeanServer();
@@ -182,17 +175,8 @@ public class QFactory {
     }
 
     public void destroyQBean (Q2 server, ObjectName objectName, Object obj)
-        throws ClassNotFoundException, 
-               InstantiationException,
-               IllegalAccessException,
-               MalformedObjectNameException,
-               MalformedURLException,
-               InstanceAlreadyExistsException,
-               MBeanRegistrationException,
-               InstanceNotFoundException,
+        throws InstanceNotFoundException,
                MBeanException,
-               NotCompliantMBeanException,
-               InvalidAttributeValueException,
                ReflectionException
     {
         MBeanServer mserver = server.getMBeanServer();
@@ -209,9 +193,8 @@ public class QFactory {
     {
         try {
             AttributeList attributeList = getAttributeList(e);
-            Iterator attributes = attributeList.iterator();
-            while (attributes.hasNext())
-                server.setAttribute(objectName,(Attribute)attributes.next());
+            for (Object anAttributeList : attributeList)
+                server.setAttribute(objectName, (Attribute) anAttributeList);
         } catch (Exception e1) {
             throw new ConfigurationException(e1);
         }
@@ -222,26 +205,26 @@ public class QFactory {
     {
         AttributeList attributeList = new AttributeList();
         List childs = e.getChildren("attr");
-        Iterator childsIterator = childs.iterator();
-        while (childsIterator.hasNext())
-        {
-            Element  childElement = (Element)childsIterator.next();
+        for (Object child : childs) {
+            Element childElement = (Element) child;
             String name = childElement.getAttributeValue("name");
             name = getAttributeName(name);
-            Attribute attr =  new Attribute(name,getObject(childElement));
+            Attribute attr = new Attribute(name, getObject(childElement));
             attributeList.add(attr);
         }
         return attributeList;
     }
 
-    /** creates an object from a definition element.
+    /**
+     * Creates an object from a definition element.
      * The element may have an attribute called type indicating the type of the object
      * to create, if this attribute is not present java.lang.String is assumed.
      * int, long and boolean are converted to their wrappers.
      * @return The created object.
      * @param childElement Dom Element with the definition of the object.
      * @throws ConfigurationException If an exception is found trying to create the object.
-     */    
+     */
+    @SuppressWarnings("unchecked")
     protected Object getObject(Element childElement) 
         throws ConfigurationException
     {
@@ -252,8 +235,9 @@ public class QFactory {
             type = "java.lang.Long";
         else if ("boolean".equals (type))
             type = "java.lang.Boolean";
-       
+
         String value = childElement.getText();
+        value = Environment.getEnvironment().getProperty(value, value);
         try {
             Class attributeType = Class.forName(type);
             if(Collection.class.isAssignableFrom(attributeType))
@@ -277,18 +261,20 @@ public class QFactory {
      *        ...
      *    </attr>
      * </PRE>
-     * @param type
-     * @param e
+     * @param type class type
+     * @param e the Element
      * @throws ConfigurationException
-     * @return
-     */    
-    protected Collection getCollection(Class type, Element e) 
+     * @return the object collection
+     */
+    @SuppressWarnings("unchecked")
+    protected Collection getCollection(Class type, Element e)
         throws ConfigurationException
     {
         try{
-            Collection col = (Collection)type.newInstance();
-            Iterator childs = e.getChildren("item").iterator();
-            while(childs.hasNext()) col.add(getObject((Element)childs.next()));
+            Collection<Object> col = (Collection<Object>) type.newInstance();
+            for (Object o : e.getChildren("item")) {
+                col.add(getObject((Element) o));
+            }
             return col;
         }catch(Exception e1){
             throw new ConfigurationException(e1);
@@ -296,47 +282,88 @@ public class QFactory {
     }
     /**
      * sets the first character of the string to the upper case
-     * @param name
+     * @param name attribute name
      * @return attribute name
      */
     public String getAttributeName(String name)
     {
+        if (name == null)
+            throw new NullPointerException("attribute name can not be null");
         StringBuilder tmp = new StringBuilder(name);
-        tmp.setCharAt(0,name.toUpperCase().charAt(0)) ;
+        if (tmp.length() > 0)
+            tmp.setCharAt(0,name.toUpperCase().charAt(0)) ;
         return tmp.toString();
     }
 
-    public Object newInstance (String clazz)
+    public <T> T newInstance (String clazz)
         throws ConfigurationException
     {
         try {
             MBeanServer mserver = q2.getMBeanServer();
-            return mserver.instantiate (clazz, loaderName);
+            return (T)mserver.instantiate (clazz, loaderName);
         } catch (Exception e) {
             throw new ConfigurationException (clazz, e);
         }
     }
 
-    public Configuration getConfiguration (Element e) 
+    public <T> T newInstance (Class<T> clazz)
+            throws ConfigurationException
+    {
+        return newInstance(clazz.getName());
+    }
+
+    public Configuration getConfiguration (Element e)
         throws ConfigurationException
     {
-        String configurationFactoryClazz = e.getAttributeValue("configuration-factory");
+        String configurationFactoryClazz = getAttributeValue(e, "configuration-factory");
         ConfigurationFactory cf = configurationFactoryClazz != null ?
             (ConfigurationFactory) newInstance(configurationFactoryClazz) : defaultConfigurationFactory;
-        return cf.getConfiguration(e);
+
+        Configuration cfg = cf.getConfiguration(e);
+        String merge = getAttributeValue(e, "merge-configuration");
+        if (merge != null) {
+            StringTokenizer st = new StringTokenizer(merge, ", ");
+            while (st.hasMoreElements()) {
+                try {
+                    Configuration c = QConfig.getConfiguration(st.nextToken());
+                    for (String k : c.keySet()) {
+                        if (cfg.get(k, null) == null) {
+                            String[] v = c.getAll(k);
+                            switch (v.length) {
+                                case 0:
+                                    break;
+                                case 1:
+                                    cfg.put(k, v[0]);
+                                    break;
+                                default:
+                                    cfg.put(k, v);
+                            }
+                        }
+                    }
+                } catch (NameRegistrar.NotFoundException ex) {
+                    throw new ConfigurationException (ex.getMessage());
+                }
+            }
+        }
+        return cfg;
     }
 
     public void setLogger (Object obj, Element e) {
         if (obj instanceof LogSource) {
-            String loggerName = e.getAttributeValue ("logger");
+            String loggerName = getAttributeValue (e, "logger");
             if (loggerName != null) {
-                String realm = e.getAttributeValue ("realm");
+                String realm = getAttributeValue (e, "realm");
                 if (realm == null)
                     realm = e.getName();
                 Logger logger = Logger.getLogger (loggerName);
                 ((LogSource)obj).setLogger (logger, realm);
             }
         }
+    }
+
+    public static String getAttributeValue (Element e, String name) {
+        String s = e.getAttributeValue(name);
+        return Environment.getEnvironment().getProperty(s, s);
     }
     public void setConfiguration (Object obj, Element e) 
         throws ConfigurationException 
@@ -363,6 +390,7 @@ public class QFactory {
     {
         invoke (obj, m, p, p != null ? p.getClass() : null);
     }
+
    /**
     * Try to invoke a method (usually a setter) on the given object
     * silently ignoring if method does not exist
@@ -372,6 +400,7 @@ public class QFactory {
     * @param pc parameter class
     * @throws ConfigurationException if method happens to throw an exception
     */
+   @SuppressWarnings("PMD.EmptyCatchBlock")
     public static void invoke (Object obj, String m, Object p, Class pc) 
         throws ConfigurationException 
     {
@@ -386,15 +415,25 @@ public class QFactory {
                 Method method = obj.getClass().getMethod(m);
                 method.invoke (obj);
            }
-        } catch (NoSuchMethodException e) { 
-        } catch (NullPointerException e) {
-        } catch (IllegalAccessException e) {
+        } catch (NoSuchMethodException ignored) {
+        } catch (NullPointerException ignored) {
+        } catch (IllegalAccessException ignored) {
         } catch (InvocationTargetException e) {
             throw new ConfigurationException (
-                obj.getClass().getName() + "." + m + "("+p.toString()+")" ,
+                obj.getClass().getName() + "." + m + "(" + p +")" ,
                     e.getTargetException()
             );
         }
     }
-}
 
+    public static boolean isEnabled (Element e) {
+        String enabledAttribute = getEnabledAttribute(e);
+        return "true".equalsIgnoreCase(enabledAttribute) ||
+          "yes".equalsIgnoreCase(enabledAttribute) ||
+          enabledAttribute.contains(Environment.getEnvironment().getName());
+    }
+
+    public static String getEnabledAttribute (Element e) {
+       return Environment.get(e.getAttributeValue("enabled", "true"));
+    }
+}

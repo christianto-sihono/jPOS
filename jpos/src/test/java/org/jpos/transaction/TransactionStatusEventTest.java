@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,20 +20,20 @@ package org.jpos.transaction;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
 import org.jpos.transaction.TransactionStatusEvent.State;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TransactionStatusEventTest {
     TransactionStatusEvent transactionStatusEvent;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         int session = 1;
         State state = State.ABORTING;
@@ -81,8 +81,8 @@ public class TransactionStatusEventTest {
 
     @Test
     public void testStateAsString() {
-        List<String> expected = Arrays.asList(new String[] { "Ready", "Preparing", "Preparing for abort", "Commiting", "Aborting",
-                "Done", "Paused" });
+        List<String> expected = Arrays.asList("Ready", "Preparing", "Preparing for abort", "Commiting", "Aborting",
+          "Done", "Paused");
         State[] values = State.values();
         for (State state : values) {
             assertThat(expected, containsInAnyOrder(state.stateAsString));

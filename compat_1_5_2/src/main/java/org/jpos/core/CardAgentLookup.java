@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,7 @@ import java.util.Iterator;
  * @see CardAgent
  * @see CardTransaction
  */
+@SuppressWarnings("unchecked")
 public class CardAgentLookup {
     private static CardAgentLookup instance = new CardAgentLookup();
     private ArrayList agents;
@@ -85,7 +86,7 @@ public class CardAgentLookup {
     }
     /**
      * locate an agent giving its class Name
-     * @param class name
+     * @param name
      * @return given agent
      * @exception CardAgentNotFoundException
      */
@@ -95,7 +96,7 @@ public class CardAgentLookup {
         Iterator i = instance.agents.iterator();
         while (i.hasNext()) {
             CardAgent a = (CardAgent) i.next();
-            if ( (a.getClass().getName()).endsWith (name) ) 
+            if ( a.getClass().getName().endsWith(name) )
                 return a;
         }
         throw new CardAgentNotFoundException (name);
@@ -138,7 +139,7 @@ public class CardAgentLookup {
 
     /**
      * locate an agent of a given class
-     * @param class 
+     * @param t
      * @return given agent
      * @exception CardAgentNotFoundException
      */

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,9 @@
 
 package org.jpos.transaction;
 
+import org.jpos.util.LogEvent;
 import org.jpos.util.Loggeable;
+import org.jpos.util.Profiler;
 
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -27,31 +29,38 @@ import java.util.TimerTask;
 
 public class PausedTransaction implements Loggeable {
     private long id;
-    private List members;
-    private Iterator iter;
+    private List<TransactionParticipant> members;
+    private Iterator<TransactionParticipant> iter;
     private boolean aborting;
     private TransactionManager txnmgr;
     private boolean resumed;
     private TimerTask expirationMonitor;
+    private Profiler prof;
+    private LogEvent evt;
+    private TransactionParticipant participant;
     public PausedTransaction (
-            TransactionManager txnmgr,
-            long id, List members, Iterator iter, boolean aborting, TimerTask expirationMonitor) 
+            TransactionManager txnmgr, long id, TransactionParticipant participant, List<TransactionParticipant> members
+           ,Iterator<TransactionParticipant> iter, boolean aborting
+           ,TimerTask expirationMonitor, Profiler prof, LogEvent evt)
     {
         super();
         this.txnmgr = txnmgr;
         this.id = id;
+        this.participant = participant;
         this.members = members;
         this.iter = iter;
         this.aborting = aborting;
         this.expirationMonitor = expirationMonitor;
+        this.prof = prof;
+        this.evt = evt;
     }
     public long id() {
         return id;
     }
-    public List members() {
+    public List<TransactionParticipant> members() {
         return members;
     }
-    public Iterator iterator() {
+    public Iterator<TransactionParticipant> iterator() {
         return iter;
     }
     public void dump (PrintStream p, String indent) {
@@ -59,6 +68,11 @@ public class PausedTransaction implements Loggeable {
                 + (isAborting() ? " (aborting)" : ""));
 
     }
+
+    public TransactionParticipant getParticipant() {
+        return participant;
+    }
+
     public boolean isAborting() {
         return aborting;
     }
@@ -74,9 +88,13 @@ public class PausedTransaction implements Loggeable {
     public boolean isResumed() {
         return resumed;
     }
+    public Profiler getProfiler() {
+        return prof;
+    }
+    public LogEvent getLogEvent() { return evt; }
+
     public synchronized void cancelExpirationMonitor() {
         if (expirationMonitor != null)
             expirationMonitor.cancel();
     }
 }
-

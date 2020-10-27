@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -47,40 +47,42 @@ public class IFE_BITMAP extends ISOBitMapPackager {
      */
     public byte[] pack (ISOComponent c) throws ISOException {
     	BitSet bitMapValue = (BitSet) c.getValue();
-    	
     	int maxBytesPossible = getLength();
     	int maxBitsAllowedPhysically = maxBytesPossible<<3;
-    	
-    	int lastBitOn = bitMapValue.length()-1;    
-                            
+    	int lastBitOn = bitMapValue.length()-1;
         int actualLastBit=lastBitOn; // takes into consideration 2nd and 3rd bit map flags
-        if (lastBitOn > 128)
-        	if (bitMapValue.get(65))
+        if (lastBitOn > 128) {
+        	if (bitMapValue.get(65)) {
         		actualLastBit = 192;
-        	else actualLastBit = 128;
-        else if (lastBitOn > 64)
-        	if (bitMapValue.get(1))
-        		actualLastBit = 128;
-        	else actualLastBit = 64;
-        
-                 
-       	if (actualLastBit > maxBitsAllowedPhysically)
-    			{
-    				throw new ISOException ("Bitmap can only hold bits numbered up to " + maxBitsAllowedPhysically + " in the " + 
+            } else {
+                actualLastBit = 128;
+            }
+        } else if (lastBitOn > 64) {
+            actualLastBit = 128;
+        }
+       	if (actualLastBit > maxBitsAllowedPhysically) {
+            throw new ISOException ("Bitmap can only hold bits numbered up to " + maxBitsAllowedPhysically + " in the " +
     						getLength() + " bytes available.");
-    			}
+        }
         
        	int requiredLengthInBytes = (actualLastBit >> 3) + (actualLastBit % 8 > 0 ? 1 : 0);
        	
        	int requiredBitMapLengthInBytes;
-       	if (requiredLengthInBytes>4 && requiredLengthInBytes<=8) requiredBitMapLengthInBytes = 8;
-       	else if (requiredLengthInBytes>8 && requiredLengthInBytes<=16) requiredBitMapLengthInBytes = 16;
-       	else if (requiredLengthInBytes>16 && requiredLengthInBytes<=24) requiredBitMapLengthInBytes = 24;
-       	else requiredBitMapLengthInBytes=maxBytesPossible;
+       	if (requiredLengthInBytes>4 && requiredLengthInBytes<=8) {
+            requiredBitMapLengthInBytes = 8;
+        }
+       	else if (requiredLengthInBytes>8 && requiredLengthInBytes<=16) {
+            requiredBitMapLengthInBytes = 16;
+        }
+       	else if (requiredLengthInBytes>16 && requiredLengthInBytes<=24) {
+            requiredBitMapLengthInBytes = 24;
+        }
+       	else {
+            requiredBitMapLengthInBytes=maxBytesPossible;
+        }
        		     	
         byte[] b = ISOUtil.bitSet2byte (bitMapValue, requiredBitMapLengthInBytes);
         return ISOUtil.asciiToEbcdic(ISOUtil.hexString(b).getBytes());
-        
     }
     public int getMaxPackedLength() {
         return getLength() >> 2;
@@ -102,10 +104,10 @@ public class IFE_BITMAP extends ISOBitMapPackager {
         c.setValue(bmap);
         bytes = b1.length;
         // check for 2nd bit map indicator
-        if ((bytes > 16) && !bmap.get(1)) {
+        if (bytes > 16 && !bmap.get(1)) {
           bytes = 16; 
         // check for 3rd bit map indicator
-        } else if ((bytes > 32) && !bmap.get(65)) {
+        } else if (bytes > 32 && !bmap.get(65)) {
           bytes = 32; 
         } 
         return bytes;

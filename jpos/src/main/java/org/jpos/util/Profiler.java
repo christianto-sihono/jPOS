@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,6 +18,8 @@
 
 package org.jpos.util;
 
+import org.jpos.iso.ISOUtil;
+
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,7 +33,7 @@ import java.util.LinkedHashMap;
  */
 public class Profiler implements Loggeable {
     long start, partial;
-    LinkedHashMap events;
+    LinkedHashMap<String, Entry> events;
     public static final int TO_MILLIS = 1000000;
 
     public Profiler () {
@@ -43,7 +45,7 @@ public class Profiler implements Loggeable {
      */
     public void reset() {
         start = partial = System.nanoTime();
-        events = new LinkedHashMap();
+        events = new LinkedHashMap<>();
     }
     /**
      * mark checkpoint
@@ -53,8 +55,8 @@ public class Profiler implements Loggeable {
     public synchronized void checkPoint (String detail) {
         long now = System.nanoTime();
         Entry e = new Entry();
-        e.setDurationInNanos((now - partial));
-        e.setTotalDurationInNanos((now - start));
+        e.setDurationInNanos(now - partial);
+        e.setTotalDurationInNanos(now - start);
         if (events.containsKey(detail)) {
             for (int i=1; ;i++) {
                 String d = detail + "-" + i;
@@ -74,11 +76,17 @@ public class Profiler implements Loggeable {
     public long getElapsed() {
         return System.nanoTime() - start;
     }
+    public long getElapsedInMillis() {
+        return getElapsed() / TO_MILLIS;
+    }
     /**
      * @return parcial elapsed time since last reset
      */
     public long getPartial() {
         return System.nanoTime() - partial;
+    }
+    public long getPartialInMillis() {
+        return getPartial() / TO_MILLIS;
     }
     public void dump (PrintStream p, String indent) {
         String inner = indent + "  ";
@@ -88,13 +96,18 @@ public class Profiler implements Loggeable {
         Iterator iter = c.iterator();
         p.println (indent + "<profiler>");
         while (iter.hasNext()) 
-            p.println (inner + iter.next().toString());
+            p.println (inner + ISOUtil.normalize(iter.next().toString()));
         p.println (indent + "</profiler>");
     }
-    public Entry getEntry(String eventName) {
-         return (Entry)events.get(eventName);         
+    public LinkedHashMap<String, Entry> getEvents() {
+        return events;
     }
-
+    public Entry getEntry(String eventName) {
+         return events.get(eventName);
+    }
+    public void reenable() {
+        events.remove("end");
+    }
     public static class Entry  {
         String  eventName;
         long    duration;
@@ -133,11 +146,11 @@ public class Profiler implements Loggeable {
             sb.append (" [");
             sb.append (getDuration());
             sb.append ('.');
-            sb.append ((duration % TO_MILLIS) / 100000);
+            sb.append (duration % TO_MILLIS / 100000);
             sb.append ('/');
             sb.append (getTotalDuration ());
             sb.append ('.');
-            sb.append ((totalDuration % TO_MILLIS) / 100000);
+            sb.append (totalDuration % TO_MILLIS / 100000);
             sb.append (']');
             return sb.toString();
         }            

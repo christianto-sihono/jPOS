@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,6 +25,7 @@ import java.util.LinkedList;
  * @see ThreadPool
  * @since 1.1
  */
+@SuppressWarnings("unchecked")
 public class BlockingQueue {
     private LinkedList queue = new LinkedList();
     private boolean closed = false;
@@ -35,7 +36,7 @@ public class BlockingQueue {
         private static final long serialVersionUID = 3404885702116373450L;
 
         public Closed() {
-            super ("queue closed");
+            super ("queue-closed");
         }
     }
 
@@ -94,6 +95,11 @@ public class BlockingQueue {
     public synchronized int consumerCount() {
         return consumers;
     }
+
+    public synchronized int consumerDeficit() {
+        return queue.size() - consumers;
+    }
+    
     public synchronized boolean ready() {
         return !closed;
     }

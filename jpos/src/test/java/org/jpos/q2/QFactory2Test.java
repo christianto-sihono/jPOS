@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,28 +18,27 @@
 
 package org.jpos.q2;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-
-import java.util.Hashtable;
-import java.util.PropertyResourceBundle;
 
 import javax.management.ObjectName;
 
-import org.jdom.Attribute;
-import org.jdom.Element;
+import org.jdom2.Attribute;
+import org.jdom2.Element;
 import org.jpos.core.ConfigurationException;
 import org.jpos.iso.ISOFieldValidator;
 import org.jpos.iso.IVA_ALPHANUM;
 import org.jpos.q2.iso.ChannelAdaptor;
 import org.jpos.transaction.participant.BSHTransactionParticipant;
 import org.jpos.transaction.participant.Join;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class QFactory2Test {
     @Test
@@ -48,10 +47,10 @@ public class QFactory2Test {
         String[] args = new String[0];
         Q2 q2 = mock(Q2.class);
         QFactory qFactory = new QFactory(loaderName, q2);
-        assertTrue("qFactory.classMapping.getKeys().hasMoreElements()", ((PropertyResourceBundle) qFactory.classMapping).getKeys()
-                .hasMoreElements());
-        assertSame("qFactory.loaderName", loaderName, qFactory.loaderName);
-        assertSame("qFactory.q2", q2, qFactory.q2);
+        assertTrue(qFactory.classMapping.getKeys().hasMoreElements(),
+                "qFactory.classMapping.getKeys().hasMoreElements()");
+        assertSame(loaderName, qFactory.loaderName, "qFactory.loaderName");
+        assertSame(q2, qFactory.q2, "qFactory.q2");
     }
 
     @Test
@@ -61,8 +60,12 @@ public class QFactory2Test {
             new QFactory(new ObjectName(""), null).createQBean(null, e, new Join());
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("e.getName()", "testQFactoryName", e.getName());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getMBeanServer()\" because \"server\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals("testQFactoryName", e.getName(), "e.getName()");
         }
     }
 
@@ -73,32 +76,48 @@ public class QFactory2Test {
         args2[0] = "Q2-ShutdownHook";
         args2[1] = "Q2:type=dystem,service=loader";
         args2[2] = ".";
+        Q2 q2 = new Q2(args);
+        Q2 q2_2 = new Q2(args2);
         try {
-            new QFactory(null, new Q2(args)).createQBean(new Q2(args2), null, new Join());
+            new QFactory(null, q2).createQBean(q2_2, null, new Join());
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jdom2.Element.getAttributeValue(String)\" because \"e\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+        } finally {
+            q2.stop();
+            q2_2.stop();
         }
     }
 
     @Test
     public void testDestroyQBeanThrowsNullPointerException1() throws Throwable {
         String[] args = new String[0];
-        Hashtable<String, String> hashtable = new Hashtable<String, String>(100, 100.0F);
-        hashtable.put("testString", "testString");
+        String keyParam = "testString";
+        String valueParam = "testString";
+        Q2 q2 = new Q2(args);
         try {
-            new QFactory(ObjectName.getInstance("testQFactoryParam1", hashtable), null).destroyQBean(new Q2(args), new ObjectName(
+            new QFactory(ObjectName.getInstance("testQFactoryParam1", keyParam, valueParam), null).destroyQBean(q2, new ObjectName(
                     "testQFactoryParam1", "testQFactoryParam2", "testQFactoryParam3"), new ChannelAdaptor());
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"javax.management.MBeanServer.invoke(javax.management.ObjectName, String, Object[], String[])\" because \"mserver\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+        } finally {
+            q2.stop();
         }
     }
 
     @Test
     public void testGetAttributeName() throws Throwable {
         String result = new QFactory(new ObjectName(""), null).getAttributeName("testQFactoryName");
-        assertEquals("result", "TestQFactoryName", result);
+        assertEquals("TestQFactoryName", result, "result");
     }
 
     @Test
@@ -107,19 +126,7 @@ public class QFactory2Test {
             new QFactory(new ObjectName(""), null).getAttributeName(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-        }
-    }
-
-    @Test
-    public void testGetAttributeNameThrowsStringIndexOutOfBoundsException() throws Throwable {
-        String[] args = new String[0];
-        try {
-            new QFactory(new ObjectName("testQFactoryParam1", "testQFactoryParam2", "testQFactoryParam3"), new Q2(args))
-                    .getAttributeName("");
-            fail("Expected StringIndexOutOfBoundsException to be thrown");
-        } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 0", ex.getMessage());
+            assertEquals("attribute name can not be null", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -127,7 +134,7 @@ public class QFactory2Test {
     public void testGetObject() throws Throwable {
         QFactory qFactory = new QFactory(new ObjectName(""), null);
         String result = (String) qFactory.getObject(new Element("testQFactoryName", "testQFactoryPrefix", "testQFactoryUri"));
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
@@ -137,7 +144,11 @@ public class QFactory2Test {
             qFactory.getObject(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jdom2.Element.getAttributeValue(String, String)\" because \"childElement\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -151,11 +162,17 @@ public class QFactory2Test {
             qFactory.instantiate(null, e);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertTrue("qFactory.classMapping.getKeys().hasMoreElements()", ((PropertyResourceBundle) qFactory.classMapping)
-                    .getKeys().hasMoreElements());
-            assertSame("qFactory.q2", q2, qFactory.q2);
-            assertEquals("e.getName()", "testQFactoryName", e.getName());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jpos.q2.Q2.getMBeanServer()\" because \"server\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertTrue(qFactory.classMapping.getKeys().hasMoreElements(),
+                    "qFactory.classMapping.getKeys().hasMoreElements()");
+            assertSame(q2, qFactory.q2, "qFactory.q2");
+            assertEquals("testQFactoryName", e.getName(), "e.getName()");
+        } finally {
+            q2.stop();
         }
     }
 
@@ -176,84 +193,111 @@ public class QFactory2Test {
             qFactory.instantiate(server, e);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertTrue("qFactory.classMapping.getKeys().hasMoreElements()", ((PropertyResourceBundle) qFactory.classMapping)
-                    .getKeys().hasMoreElements());
-            assertSame("qFactory.q2", q2, qFactory.q2);
-            assertEquals("e.getName()", "testQFactoryName", e.getName());
-            assertSame("server.getCommandLineArgs()", args2, server.getCommandLineArgs());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"javax.management.MBeanServer.instantiate(String, javax.management.ObjectName)\" because \"mserver\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertTrue(qFactory.classMapping.getKeys().hasMoreElements(),
+                    "qFactory.classMapping.getKeys().hasMoreElements()");
+            assertSame(q2, qFactory.q2, "qFactory.q2");
+            assertEquals("testQFactoryName", e.getName(), "e.getName()");
+            assertSame(args2, server.getCommandLineArgs(), "server.getCommandLineArgs()");
         }
+        q2.stop();
+        server.stop();
     }
 
     @Test
     public void testInvoke() throws Throwable {
         QFactory.invoke("", "testQFactorym", "testString", Integer.class);
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testInvoke1() throws Throwable {
         QFactory.invoke(null, "testQFactorym", "testString", Integer.class);
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testInvoke2() throws Throwable {
         QFactory.invoke("", "testQFactorym", null);
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testInvoke3() throws Throwable {
         QFactory.invoke("", "testQFactorym", "");
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testSetConfiguration() throws Throwable {
         String[] args = new String[0];
         Element e = new Element("testQFactoryName");
-        new QFactory(new ObjectName(""), new Q2(args)).setConfiguration("", e);
-        assertEquals("e.getName()", "testQFactoryName", e.getName());
+        Q2 q2 = new Q2(args);
+        new QFactory(new ObjectName(""), q2).setConfiguration("", e);
+        assertEquals("testQFactoryName", e.getName(), "e.getName()");
+        q2.stop();
     }
 
     @Test
     public void testSetConfiguration1() throws Throwable {
         String[] args = new String[0];
         ISOFieldValidator obj = new ISOFieldValidator(true);
-        new QFactory(new ObjectName(""), new Q2(args)).setConfiguration(obj, new Element("testQFactoryName"));
-        assertFalse("obj.breakOnError()", obj.breakOnError());
+        Q2 q2 = new Q2(args);
+        new QFactory(new ObjectName(""), q2).setConfiguration(obj, new Element("testQFactoryName"));
+        assertFalse(obj.breakOnError(), "obj.breakOnError()");
+        q2.stop();
     }
 
     @Test
     public void testSetConfiguration3() throws Throwable {
         String[] args = new String[0];
         Element e = new Element("testQFactoryName", "testQFactoryPrefix", "testQFactoryUri");
-        new QFactory(null, new Q2(args)).setConfiguration(new BSHTransactionParticipant(), e);
-        assertEquals("e.getName()", "testQFactoryName", e.getName());
+        Q2 q2 = new Q2(args);
+        new QFactory(null, q2).setConfiguration(new BSHTransactionParticipant(), e);
+        assertEquals("testQFactoryName", e.getName(), "e.getName()");
+        q2.stop();
     }
 
     @Test
     public void testSetConfigurationThrowsConfigurationException() throws Throwable {
         String[] args = new String[0];
+        Q2 q2 = new Q2(args);
         try {
-            new QFactory(null, new Q2(args)).setConfiguration(new BSHTransactionParticipant(), null);
+            new QFactory(null, q2).setConfiguration(new BSHTransactionParticipant(), null);
             fail("Expected ConfigurationException to be thrown");
         } catch (ConfigurationException ex) {
-            assertEquals("ex.getMessage()", "org.jpos.core.ConfigurationException (java.lang.NullPointerException)", ex.getMessage());
-            assertNull("ex.getNested().getMessage()", ex.getNested().getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertEquals("org.jpos.core.ConfigurationException (java.lang.NullPointerException)", ex.getMessage(), "ex.getMessage()");
+                assertNull(ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            } else {
+                assertEquals("org.jpos.core.ConfigurationException: Cannot invoke \"org.jdom2.Element.getChild(String)\" because \"e\" is null (java.lang.NullPointerException: Cannot invoke \"org.jdom2.Element.getChild(String)\" because \"e\" is null)", ex.getMessage(), "ex.getMessage()");
+                assertEquals("Cannot invoke \"org.jdom2.Element.getChild(String)\" because \"e\" is null", ex.getNested().getMessage(), "ex.getNested().getMessage()");
+            }
+        } finally {
+            q2.stop();
         }
     }
 
     @Test
     public void testSetConfigurationThrowsNullPointerException() throws Throwable {
         String[] args = new String[0];
+        Q2 q2 = new Q2(args);
         try {
-            new QFactory(new ObjectName(""), new Q2(args)).setConfiguration(new IVA_ALPHANUM(true, 100, 1000,
+            new QFactory(new ObjectName(""), q2).setConfiguration(new IVA_ALPHANUM(true, 100, 1000,
                     "testQFactoryDescription"), null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"org.jdom2.Element.getAttributeValue(String)\" because \"e\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+        } finally {
+            q2.stop();
         }
     }
 
@@ -261,8 +305,10 @@ public class QFactory2Test {
     public void testSetLogger() throws Throwable {
         String[] args = new String[0];
         Element e = new Element("testQFactoryName");
-        new QFactory(new ObjectName(""), new Q2(args)).setLogger(new Object(), e);
-        assertEquals("e.getName()", "testQFactoryName", e.getName());
+        Q2 q2 = new Q2(args);
+        new QFactory(new ObjectName(""), q2).setLogger(new Object(), e);
+        assertEquals("testQFactoryName", e.getName(), "e.getName()");
+        q2.stop();
     }
 
     @Test
@@ -273,7 +319,13 @@ public class QFactory2Test {
             new QFactory(null, q2).startQBean(q2, new ObjectName(""));
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"javax.management.MBeanServer.invoke(javax.management.ObjectName, String, Object[], String[])\" because \"mserver\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+        } finally {
+            q2.stop();
         }
     }
 }

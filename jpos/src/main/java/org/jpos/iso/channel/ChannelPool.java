@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 
+@SuppressWarnings("unchecked")
 public class ChannelPool implements ISOChannel, LogSource, Configurable, Cloneable {
     boolean usable = true;
     String name = "";

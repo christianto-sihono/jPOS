@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,7 +29,7 @@ package org.jpos.core;
  * Sequencer interface isolate from particular DB implementations
  */
 public interface Sequencer {
-    public int get (String counterName);
-    public int get (String counterName, int add);
-    public int set (String counterName, int value);
+    int get(String counterName);
+    int get(String counterName, int add);
+    int set(String counterName, int value);
 }

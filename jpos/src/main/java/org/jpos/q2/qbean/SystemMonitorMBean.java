@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,6 @@ package org.jpos.q2.qbean;
  * MBean interface.
  * @author apr@cs.com.uy
  * @version $Id: SystemMonitor.java,v 1.2 2005/11/07 20:12:11 marklsalter Exp $
- * @see Logger
  */
 public interface SystemMonitorMBean extends org.jpos.q2.QBeanSupportMBean {
 

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,14 @@
 
 package  org.jpos.security;
 
+import org.javatuples.Pair;
+
+import java.security.MessageDigest;
+import java.security.PublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Date;
 import java.util.List;
-import org.javatuples.Pair;
+import java.util.Map;
 
 
 /**
@@ -31,29 +36,30 @@ import org.javatuples.Pair;
  * But application programmers will be communicating
  * with the security module using this simple interface.
  *
- * @todo support for EMV Secure Messaging, dCVV, CVC3 verification and RSA generation API's
+ * TODO: support for EMV card/issuer RSA generation API's
+ *
  * @author Hani S. Kirollos
  * @author Robert Demski
  * @version $Revision$ $Date$
  */
-public interface SMAdapter {
+public interface SMAdapter<T> {
     /**
      * DES Key Length <code>LENGTH_DES</code> = 64.
      */
-    public static final short LENGTH_DES = 64;
+    short LENGTH_DES = 64;
     /**
      * Triple DES (2 keys) <code>LENGTH_DES3_2KEY</code> = 128.
      */
-    public static final short LENGTH_DES3_2KEY = 128;
+    short LENGTH_DES3_2KEY = 128;
     /**
      * Triple DES (3 keys) <code>LENGTH_DES3_3KEY</code> = 192.
      */
-    public static final short LENGTH_DES3_3KEY = 192;
+    short LENGTH_DES3_3KEY = 192;
     /**
      * ZMK: Zone Master Key is a DES (or Triple-DES) key-encryption key which is distributed
      * manually in order that further keys can be exchanged automatically.
      */
-    public static final String TYPE_ZMK = "ZMK";
+    String TYPE_ZMK = "ZMK";
 
     /**
      * ZPK: Zone PIN Key.
@@ -62,7 +68,7 @@ public interface SMAdapter {
      * automatically and is used to encrypt PINs for transfer between
      * communicating parties (e.g. between acquirers and issuers).
      */
-    public static final String TYPE_ZPK = "ZPK";
+    String TYPE_ZPK = "ZPK";
 
     /**
      * TMK: Terminal Master Key.
@@ -72,7 +78,7 @@ public interface SMAdapter {
      * used to distribute data-encrypting keys, whithin a local network,
      * to an ATM or POS terminal or similar.
      */
-    public static final String TYPE_TMK = "TMK";
+    String TYPE_TMK = "TMK";
 
     /**
      * TPK: Terminal PIN Key.
@@ -81,7 +87,7 @@ public interface SMAdapter {
      * to encrypt PINs for transmission, within a local network,
      * between the terminal and the terminal data acquirer.
      */
-    public static final String TYPE_TPK = "TPK";
+    String TYPE_TPK = "TPK";
 
     /**
      * TAK: Terminal Authentication Key.
@@ -91,7 +97,7 @@ public interface SMAdapter {
      * is transmitted, within a local network, between the terminal and
      * the terminal data acquirer.
      */
-    public static final String TYPE_TAK = "TAK";
+    String TYPE_TAK = "TAK";
 
     /**
      * PVK: PIN Verification Key.
@@ -99,21 +105,21 @@ public interface SMAdapter {
      * generate and verify PIN verification data and thus verify the
      * authenticity of a PIN.
      */
-    public static final String TYPE_PVK = "PVK";
+    String TYPE_PVK = "PVK";
 
     /**
      * CVK: Card Verification Key.
      *
      * is similar for PVK but for card information instead of PIN
      */
-    public static final String TYPE_CVK = "CVK";
+    String TYPE_CVK = "CVK";
 
     /**
      * BDK: Base Derivation Key.
      * is a  Triple-DES key-encryption key used to derive transaction
      * keys in DUKPT (see ANSI X9.24)
      */
-    public static final String TYPE_BDK = "BDK";
+    String TYPE_BDK = "BDK";
 
     /**
      * ZAK: Zone Authentication Key.
@@ -123,13 +129,13 @@ public interface SMAdapter {
      * Authentication Code (MAC) when data is transmitted between
      * communicating parties (e.g. between acquirers and issuers)
      */
-    public static final String TYPE_ZAK = "ZAK";
+    String TYPE_ZAK = "ZAK";
 
     /**
      * MK-AC: Issuer Master Key for generating and verifying
      * Application Cryptograms.
      */
-    public static final String TYPE_MK_AC = "MK-AC";
+    String TYPE_MK_AC = "MK-AC";
 
     /**
      * MK-SMI: Issuer Master Key for Secure Messaging Integrity.
@@ -137,7 +143,7 @@ public interface SMAdapter {
      * is a Triple-DES key which is used to generating Message
      * Authrntication Codes (MAC) for scripts send to EMV chip cards.
      */
-    public static final String TYPE_MK_SMI = "MK-SMI";
+    String TYPE_MK_SMI = "MK-SMI";
 
     /**
      * MK-SMC: Issuer Master Key for Secure Messaging Confidentiality.
@@ -145,68 +151,105 @@ public interface SMAdapter {
      * is a Triple-DES data-encrypting key which is used to encrypt
      * data (e.g. PIN block) in scripts send to EMV chip cards.
      */
-    public static final String TYPE_MK_SMC = "MK-SMC";
+    String TYPE_MK_SMC = "MK-SMC";
 
     /**
      * MK-CVC3: Issuer Master Key for generating and verifying
      * Card Verification Code 3 (CVC3).
      */
-    public static final String TYPE_MK_CVC3 = "MK-CVC3";
+    String TYPE_MK_CVC3 = "MK-CVC3";
+
+    /**
+     * MK-DAC Issuer Master Key for generating and verifying
+     * Data Authentication Codes.
+     */
+    String TYPE_MK_DAC = "MK-DAC";
+
+    /**
+     * MK-DN: Issuer Master Key for generating and verifying
+     * Dynamic Numbers.
+     */
+    String TYPE_MK_DN = "MK-DN";
+
+    /**
+     * ZEK: Zone Encryption Key.
+     */
+    String TYPE_ZEK = "ZEK";
+
+    /**
+     * DEK: Data Encryption Key.
+     */
+    String TYPE_DEK = "DEK";
+
+    /**
+     * RSA: Private Key.
+     */
+    String TYPE_RSA_SK = "RSA_SK";
+
+    /**
+     * HMAC: Hash Message Authentication Code <i>(with key usage)</i>.
+     */
+    String TYPE_HMAC   = "HMAC";
+
+    /**
+     * RSA: Public Key.
+     */
+    String TYPE_RSA_PK = "RSA_PK";
 
     /**
      * PIN Block Format adopted by ANSI (ANSI X9.8) and is one of
      * two formats supported by the ISO (ISO 95641 - format 0).
      */
-    public static final byte FORMAT01 = (byte)01;
+    byte FORMAT01 = (byte)01;
 
     /**
      * PIN Block Format 02 supports Douctel ATMs.
      */
-    public static final byte FORMAT02 = (byte)02;
+    byte FORMAT02 = (byte)02;
 
     /**
          * PIN Block Format 03 is the Diabold Pin Block format.
          */
-    public static final byte FORMAT03 = (byte)03;
+    byte FORMAT03 = (byte)03;
 
     /**
      * PIN Block Format 04 is the PIN block format adopted
      * by the PLUS network.
      */
-    public static final byte FORMAT04 = (byte)04;
+    byte FORMAT04 = (byte)04;
 
     /**
      * PIN Block Format 05 is the ISO 9564-1 Format 1 PIN Block.
      */
-    public static final byte FORMAT05 = (byte)05;
+    byte FORMAT05 = (byte)05;
 
     /**
      * PIN Block Format 34 is the standard EMV PIN block format.
      * Is only avaliable as output of EMV PIN change commands.
      */
-    public static final byte FORMAT34 = (byte)34;
+    byte FORMAT34 = (byte)34;
 
     /**
      * PIN Block Format 35 is the required by Europay/MasterCard
      * for their Pay Now & Pay Later products.
      */
-    public static final byte FORMAT35 = (byte)35;
+    byte FORMAT35 = (byte)35;
 
     /**
      * PIN Block Format 41 is the Visa format for PIN change
      * without using the current PIN.
      */
-    public static final byte FORMAT41 = (byte)41;
+    byte FORMAT41 = (byte)41;
 
     /**
      * PIN Block Format 42 is the Visa format for PIN change
      * using the current (old) PIN.
      */
-    public static final byte FORMAT42 = (byte)42;
+    byte FORMAT42 = (byte)42;
 
     /**
      * Proprietary PIN Block format.
-     *
+     * <p>
      * Most Security Modules use a proprietary PIN Block format
      * when encrypting the PIN under the LMK of the Security Module
      * hence this format (FORMAT00).
@@ -220,7 +263,7 @@ public interface SMAdapter {
      * your own interchange.
      * </p>
      */
-    public static final byte FORMAT00 = (byte)00;
+    byte FORMAT00 = (byte)00;
 
     /**
      * Generates a random DES Key.
@@ -230,17 +273,44 @@ public interface SMAdapter {
      * @return the random key secured by the security module<BR>
      * @throws SMException
      */
-    public SecureDESKey generateKey (short keyLength, String keyType) throws SMException;
+    SecureDESKey generateKey(short keyLength, String keyType) throws SMException;
+
+    /**
+     * Generates a random Key.
+     *
+     * @param keySpec the specification of the key to be generated
+     *               (length, type, usage, algorithm, etc)
+     * @return the random key secured by the security module
+     * @throws SMException
+     * @see SecureKeySpec
+     */
+    SecureKey generateKey(SecureKeySpec keySpec) throws SMException;
+
+
+    /**
+     * Generates key check value.
+     *
+     * @param kd the key with untrusted or fake Key Check Value
+     * @return key check value bytes
+     * @throws SMException
+     */
+    byte[] generateKeyCheckValue(T kd) throws SMException;
 
 
 
     /**
-     * Generates key check value.<br>
-     * @param kd SecureDESKey with untrusted or fake Key Check Value
-     * @return key check value bytes
+     * Translate Key Scheme to more secure encription.
+     * <p>
+     * Converts an DES key encrypted using X9.17 methods to a more secure
+     * key using the variant method.
+     *
+     * @param key key to be translated to {@code destKeyScheme} scheme
+     * @param keyScheme destination key scheme
+     * @return translated key with {@code destKeyScheme} scheme
      * @throws SMException
      */
-    public byte[] generateKeyCheckValue (SecureDESKey kd) throws SMException;
+    SecureDESKey translateKeyScheme(SecureDESKey key, KeyScheme keyScheme)
+      throws SMException;
 
 
 
@@ -256,9 +326,25 @@ public interface SMAdapter {
      * @return imported key secured by the security module
      * @throws SMException if the parity of the imported key is not adjusted AND checkParity = true
      */
-    public SecureDESKey importKey (short keyLength, String keyType, byte[] encryptedKey,
-            SecureDESKey kek, boolean checkParity) throws SMException;
+    SecureDESKey importKey(short keyLength, String keyType, byte[] encryptedKey,
+                           SecureDESKey kek, boolean checkParity) throws SMException;
 
+    /**
+     * Imports a key from encryption under a KEK (Key-Encrypting Key)
+     * to protection under the security module.
+     *
+     * @param kek the key-encrypting key
+     * @param key key to be imported and encrypted under KEK
+     * @param keySpec the specification of the key to be imported. It allows
+     *        passing or change key block attributes.
+     * @param checkParity if {@code true}, the key is not imported unless it has
+     *        adjusted parity
+     * @return imported key secured by the security module
+     * @throws SMException e.g: if the parity of the imported key is not adjusted
+     *         and {@code checkParity} is {@code true}
+     */
+    SecureKey importKey(SecureKey kek, SecureKey key, SecureKeySpec keySpec, boolean checkParity)
+            throws SMException;
 
 
     /**
@@ -268,23 +354,36 @@ public interface SMAdapter {
      * @return the exported key (key encrypted under kek)
      * @throws SMException
      */
-    public byte[] exportKey (SecureDESKey key, SecureDESKey kek) throws SMException;
+    byte[] exportKey(SecureDESKey key, SecureDESKey kek) throws SMException;
+
+    /**
+     * Exports secure key to encryption under a KEK (Key-Encrypting Key).
+     *
+     * @param kek the key-encrypting key
+     * @param key the secure key to be exported
+     * @param keySpec the specification of the key to be exported. It allows
+     *        passing or change key block attributes.
+     * @return the exported key (key encrypted under kek)
+     * @throws SMException
+     */
+    SecureKey exportKey(SecureKey kek, SecureKey key, SecureKeySpec keySpec)
+            throws SMException;
 
     /**
      * Encrypts a clear pin under LMK.
      *
-     * CAUTION: The use of clear pin presents a significant security risk
+     * <p>CAUTION: The use of clear pin presents a significant security risk
      * @param pin clear pin as entered by card holder
      * @param accountNumber account number, including BIN and the check digit
      * @return PIN under LMK
      * @throws SMException
      */
-    public EncryptedPIN encryptPIN (String pin, String accountNumber) throws SMException;
+    EncryptedPIN encryptPIN(String pin, String accountNumber) throws SMException;
 
     /**
      * Encrypts a clear pin under LMK.
      *
-     * CAUTION: The use of clear pin presents a significant security risk
+     * <p>CAUTION: The use of clear pin presents a significant security risk
      * @param pin clear pin as entered by card holder
      * @param accountNumber if <code>extract</code> is false then account number, including BIN and the check digit
      *        or if parameter <code>extract</code> is true then 12 right-most digits of the account number, excluding the check digit
@@ -292,16 +391,16 @@ public interface SMAdapter {
      * @return PIN under LMK
      * @throws SMException
      */
-    public EncryptedPIN encryptPIN (String pin, String accountNumber, boolean extract) throws SMException;
+    EncryptedPIN encryptPIN(String pin, String accountNumber, boolean extract) throws SMException;
 
     /**
      * Decrypts an Encrypted PIN (under LMK).
-     * CAUTION: The use of clear pin presents a significant security risk
+     * <p>CAUTION: The use of clear pin presents a significant security risk
      * @param pinUnderLmk
      * @return clear pin as entered by card holder
      * @throws SMException
      */
-    public String decryptPIN (EncryptedPIN pinUnderLmk) throws SMException;
+    String decryptPIN(EncryptedPIN pinUnderLmk) throws SMException;
 
     /**
      * Imports a PIN from encryption under KD (Data Key)
@@ -312,7 +411,7 @@ public interface SMAdapter {
      * @return pin encrypted under LMK
      * @throws SMException
      */
-    public EncryptedPIN importPIN (EncryptedPIN pinUnderKd1, SecureDESKey kd1) throws SMException;
+    EncryptedPIN importPIN(EncryptedPIN pinUnderKd1, T kd1) throws SMException;
 
 
 
@@ -326,8 +425,8 @@ public interface SMAdapter {
      * @return pin encrypted under KD2
      * @throws SMException
      */
-    public EncryptedPIN translatePIN (EncryptedPIN pinUnderKd1, SecureDESKey kd1,
-            SecureDESKey kd2, byte destinationPINBlockFormat) throws SMException;
+    EncryptedPIN translatePIN(EncryptedPIN pinUnderKd1, T kd1,
+                              T kd2, byte destinationPINBlockFormat) throws SMException;
 
 
 
@@ -335,15 +434,31 @@ public interface SMAdapter {
      * Imports a PIN from encryption under a transaction key to encryption
      * under LMK.
      *
-     * The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * <p>The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * @deprecated Use signature that specifies tdes flag.
      * @param pinUnderDuk pin encrypted under a transaction key
      * @param ksn Key Serial Number (also called Key Name, in ANSI X9.24) needed to derive the transaction key
      * @param bdk Base Derivation Key, used to derive the transaction key underwhich the pin is encrypted
      * @return pin encrypted under LMK
      * @throws SMException
      */
-    public EncryptedPIN importPIN (EncryptedPIN pinUnderDuk, KeySerialNumber ksn,
-            SecureDESKey bdk) throws SMException;
+    EncryptedPIN importPIN(EncryptedPIN pinUnderDuk, KeySerialNumber ksn, T bdk)
+            throws SMException;
+
+    /**
+     * Imports a PIN from encryption under a transaction key to encryption
+     * under LMK.
+     *
+     * <p>The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * @param pinUnderDuk pin encrypted under a transaction key
+     * @param ksn Key Serial Number (also called Key Name, in ANSI X9.24) needed to derive the transaction key
+     * @param bdk Base Derivation Key, used to derive the transaction key underwhich the pin is encrypted
+     * @param tdes Use Triple DES to calculate derived transaction key.
+     * @return pin encrypted under LMK
+     * @throws SMException
+     */
+    EncryptedPIN importPIN(EncryptedPIN pinUnderDuk, KeySerialNumber ksn,
+                           T bdk, boolean tdes) throws SMException;
 
 
 
@@ -351,7 +466,8 @@ public interface SMAdapter {
      * Translates a PIN from encryption under a transaction key to
      * encryption under a KD (Data Key).
      *
-     * The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * <p>The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * @deprecated Use signature that specifies tdes flag.
      * @param pinUnderDuk pin encrypted under a DUKPT transaction key
      * @param ksn Key Serial Number (also called Key Name, in ANSI X9.24) needed to derive the transaction key
      * @param bdk Base Derivation Key, used to derive the transaction key underwhich the pin is encrypted
@@ -360,8 +476,26 @@ public interface SMAdapter {
      * @return pin encrypted under kd2
      * @throws SMException
      */
-    public EncryptedPIN translatePIN (EncryptedPIN pinUnderDuk, KeySerialNumber ksn,
-            SecureDESKey bdk, SecureDESKey kd2, byte destinationPINBlockFormat) throws SMException;
+    EncryptedPIN translatePIN(EncryptedPIN pinUnderDuk, KeySerialNumber ksn,
+                              T bdk, T kd2, byte destinationPINBlockFormat) throws SMException;
+
+
+    /**
+     * Translates a PIN from encryption under a transaction key to
+     * encryption under a KD (Data Key).
+     *
+     * <p>The transaction key is derived from the Key Serial Number and the Base Derivation Key using DUKPT (Derived Unique Key per Transaction). See ANSI X9.24 for more information.
+     * @param pinUnderDuk pin encrypted under a DUKPT transaction key
+     * @param ksn Key Serial Number (also called Key Name, in ANSI X9.24) needed to derive the transaction key
+     * @param bdk Base Derivation Key, used to derive the transaction key underwhich the pin is encrypted
+     * @param kd2 the destination Data Key (also called session key) under which the pin will be encrypted
+     * @param destinationPINBlockFormat the PIN Block Format of the translated encrypted PIN
+     * @param tdes Use Triple DES to calculate derived transaction key.
+     * @return pin encrypted under kd2
+     * @throws SMException
+     */
+    EncryptedPIN translatePIN(EncryptedPIN pinUnderDuk, KeySerialNumber ksn,
+                              T bdk, T kd2, byte destinationPINBlockFormat, boolean tdes) throws SMException;
 
 
 
@@ -375,7 +509,7 @@ public interface SMAdapter {
      * @return pin encrypted under kd2
      * @throws SMException
      */
-    public EncryptedPIN exportPIN (EncryptedPIN pinUnderLmk, SecureDESKey kd2, byte destinationPINBlockFormat) throws SMException;
+    EncryptedPIN exportPIN(EncryptedPIN pinUnderLmk, T kd2, byte destinationPINBlockFormat) throws SMException;
 
 
 
@@ -388,7 +522,7 @@ public interface SMAdapter {
      * @return generated PIN under LMK
      * @throws SMException
      */
-    public EncryptedPIN generatePIN(String accountNumber, int pinLen)
+    EncryptedPIN generatePIN(String accountNumber, int pinLen)
              throws SMException;
 
 
@@ -404,15 +538,38 @@ public interface SMAdapter {
      * @return generated PIN under LMK
      * @throws SMException
      */
-    public EncryptedPIN generatePIN(String accountNumber, int pinLen, List<String> excludes)
+    EncryptedPIN generatePIN(String accountNumber, int pinLen, List<String> excludes)
             throws SMException;
+
+    /**
+     * Print PIN or PIN and solicitation data to the HSM configured printer.
+     * <p>If {@code kd1} includes an encrypted PIN block then is first imported,
+     * Also template is updated if needed in HSM storage. Then the PIN and
+     * solicitation data are included into the template and result are
+     * printed to the HSM attached printer.
+     *
+     * @param accountNo The 12 right-most digits of the account number excluding the check digit.
+     * @param pinUnderKd1 pin block under Key Data 1
+     * @param kd1 Data Key 1 ZPK, TPK may be null if {@code pinUnderKd1} contains PIN under LMK
+     * @param template template text (PCL, PostScript or other) for PIN Mailer printer.
+     *                 Its format depends on used HSM. This template should
+     *                 includes placeholders tags (e.g. in format ${tag})
+     *                 indicationg place where coresponding value or PIN should
+     *                 be inserted. Tags values are passed in {@code fields}
+     *                 map argument except PIN which is passed in argument {@code pinUnderKd1}.
+     * @param fields map of tags values representing solicitation data to include
+     *               in template. null if no solicitation data are passed
+     * @throws SMException
+     */
+    void printPIN(String accountNo, EncryptedPIN pinUnderKd1, T kd1
+      , String template, Map<String, String> fields) throws SMException;
 
 
     /**
      * Calculate PVV (VISA PIN Verification Value of PIN under LMK)
      * with exclude list
      *
-     * NOTE: {@code pvkA} and {@code pvkB} should be single length keys
+     * <p>NOTE: {@code pvkA} and {@code pvkB} should be single length keys
      * but at least one of them may be double length key
      *
      * @param pinUnderLmk PIN under LMK
@@ -422,15 +579,14 @@ public interface SMAdapter {
      * @return PVV (VISA PIN Verification Value)
      * @throws SMException if PIN is on exclude list {@link WeakPINException} is thrown
      */
-    public String calculatePVV(EncryptedPIN pinUnderLmk, SecureDESKey pvkA,
-                               SecureDESKey pvkB, int pvkIdx) throws SMException;
-
+    String calculatePVV(EncryptedPIN pinUnderLmk, T pvkA, T pvkB, int pvkIdx)
+            throws SMException;
 
 
     /**
      * Calculate PVV (VISA PIN Verification Value of PIN under LMK)
      *
-     * NOTE: {@code pvkA} and {@code pvkB} should be single length keys
+     * <p>NOTE: {@code pvkA} and {@code pvkB} should be single length keys
      * but at least one of them may be double length key
      *
      * @param pinUnderLmk PIN under LMK
@@ -442,16 +598,14 @@ public interface SMAdapter {
      * @return PVV (VISA PIN Verification Value)
      * @throws SMException
      */
-    public String calculatePVV(EncryptedPIN pinUnderLmk, SecureDESKey pvkA,
-                               SecureDESKey pvkB, int pvkIdx,
-                               List<String> excludes) throws SMException;
-
+    String calculatePVV(EncryptedPIN pinUnderLmk, T pvkA, T pvkB, int pvkIdx,
+                        List<String> excludes) throws SMException;
 
 
     /**
      * Calculate PVV (VISA PIN Verification Value of customer selected PIN)
      *
-     * NOTE: {@code pvkA} and {@code pvkB} should be single length keys
+     * <p>NOTE: {@code pvkA} and {@code pvkB} should be single length keys
      * but at least one of them may be double length key
      *
      * @param pinUnderKd1 the encrypted PIN
@@ -462,16 +616,14 @@ public interface SMAdapter {
      * @return PVV (VISA PIN Verification Value)
      * @throws SMException
      */
-    public String calculatePVV(EncryptedPIN pinUnderKd1, SecureDESKey kd1,
-                               SecureDESKey pvkA, SecureDESKey pvkB, int pvkIdx)
+    String calculatePVV(EncryptedPIN pinUnderKd1, T kd1, T pvkA, T pvkB, int pvkIdx)
             throws SMException;
-
 
 
     /**
      * Calculate PVV (VISA PIN Verification Value of customer selected PIN)
      *
-     * NOTE: {@code pvkA} and {@code pvkB} should be single length keys
+     * <p>NOTE: {@code pvkA} and {@code pvkB} should be single length keys
      * but at least one of them may be double length key
      *
      * @param pinUnderKd1 the encrypted PIN
@@ -485,16 +637,14 @@ public interface SMAdapter {
      * @throws WeakPINException if passed PIN is on {@code excludes} list
      * @throws SMException
      */
-    public String calculatePVV(EncryptedPIN pinUnderKd1, SecureDESKey kd1,
-                               SecureDESKey pvkA, SecureDESKey pvkB, int pvkIdx,
-                               List<String> excludes) throws SMException;
-
+    String calculatePVV(EncryptedPIN pinUnderKd1, T kd1, T pvkA, T pvkB, int pvkIdx,
+                        List<String> excludes) throws SMException;
 
 
     /**
      * Verify PVV (VISA PIN Verification Value of an LMK encrypted PIN)
      *
-     * NOTE: {@code pvkA} and {@code pvkB} should be single
+     * <p>NOTE: {@code pvkA} and {@code pvkB} should be single
      * length keys but at least one of them may be double length key
      *
      * @param pinUnderKd1 pin block under {@code kd1}
@@ -506,15 +656,14 @@ public interface SMAdapter {
      * @return true if pin is valid false if not
      * @throws SMException
      */
-    public boolean verifyPVV(EncryptedPIN pinUnderKd1, SecureDESKey kd1, SecureDESKey pvkA,
-                             SecureDESKey pvkB, int pvki, String pvv) throws SMException;
-
+    boolean verifyPVV(EncryptedPIN pinUnderKd1, T kd1, T pvkA,
+                      T pvkB, int pvki, String pvv) throws SMException;
 
 
     /**
      * Calculate an PIN Offset using the IBM 3624 method
      *
-     * Using that method is not recomendated. PVV method is prefrred,
+     * <p>Using that method is not recomendated. PVV method is prefrred,
      * but it may be need in some legacy systms
      * @param pinUnderLmk PIN under LMK
      * @param pvk        accepts single, double, triple size key length.
@@ -529,16 +678,16 @@ public interface SMAdapter {
      * @return IBM PIN Offset
      * @throws SMException
      */
-    public String calculateIBMPINOffset(EncryptedPIN pinUnderLmk, SecureDESKey pvk,
-                                        String decTab, String pinValData,
-                                        int minPinLen) throws SMException;
+    String calculateIBMPINOffset(EncryptedPIN pinUnderLmk, T pvk,
+                                 String decTab, String pinValData,
+                                 int minPinLen) throws SMException;
 
 
 
     /**
      * Calculate an PIN Offset using the IBM 3624 method
      *
-     * Using that method is not recomendated. PVV method is prefrred,
+     * <p>Using that method is not recomendated. PVV method is prefrred,
      * but it may be need in some legacy systms
      * @param pinUnderLmk PIN under LMK
      * @param pvk        accepts single, double, triple size key length.
@@ -556,16 +705,16 @@ public interface SMAdapter {
      * @throws WeakPINException if passed PIN is on {@code excludes} list
      * @throws SMException
      */
-    public String calculateIBMPINOffset(EncryptedPIN pinUnderLmk, SecureDESKey pvk,
-                           String decTab, String pinValData, int minPinLen,
-                           List<String> excludes) throws SMException;
+    String calculateIBMPINOffset(EncryptedPIN pinUnderLmk, T pvk,
+                                 String decTab, String pinValData, int minPinLen,
+                                 List<String> excludes) throws SMException;
 
 
 
     /**
      * Calculate an PIN Offset using the IBM 3624 method of customer selected PIN
      *
-     * Using that method is not recomendated. PVV method is prefrred,
+     * <p>Using that method is not recomendated. PVV method is prefrred,
      * but it may be need in some legacy systms
      * @param pinUnderKd1 the encrypted PIN
      * @param kd1 Data Key under which the pin is encrypted
@@ -581,16 +730,16 @@ public interface SMAdapter {
      * @return IBM PIN Offset
      * @throws SMException
      */
-    public String calculateIBMPINOffset(EncryptedPIN pinUnderkd1, SecureDESKey kd1,
-                          SecureDESKey pvk, String decTab, String pinValData,
-                          int minPinLen) throws SMException;
+    String calculateIBMPINOffset(EncryptedPIN pinUnderKd1, T kd1,
+                                 T pvk, String decTab, String pinValData,
+                                 int minPinLen) throws SMException;
 
 
 
     /**
      * Calculate an PIN Offset using the IBM 3624 method of customer selected PIN
      *
-     * Using that method is not recomendated. PVV method is prefrred,
+     * <p>Using that method is not recomendated. PVV method is prefrred,
      * but it may be need in some legacy systms
      * @param pinUnderKd1 the encrypted PIN
      * @param kd1 Data Key under which the pin is encrypted
@@ -609,9 +758,9 @@ public interface SMAdapter {
      * @throws WeakPINException if passed PIN is on {@code excludes} list
      * @throws SMException
      */
-    public String calculateIBMPINOffset(EncryptedPIN pinUnderkd1, SecureDESKey kd1,
-                          SecureDESKey pvk, String decTab, String pinValData,
-                          int minPinLen, List<String> excludes) throws SMException;
+    String calculateIBMPINOffset(EncryptedPIN pinUnderKd1, T kd1,
+                                 T pvk, String decTab, String pinValData,
+                                 int minPinLen, List<String> excludes) throws SMException;
 
 
 
@@ -633,16 +782,16 @@ public interface SMAdapter {
      * @return true if pin offset is valid false if not
      * @throws SMException
      */
-    public boolean verifyIBMPINOffset(EncryptedPIN pinUnderKd1, SecureDESKey kd1, SecureDESKey pvk,
-                                      String offset, String decTab, String pinValData,
-                                      int minPinLen) throws SMException;
+    boolean verifyIBMPINOffset(EncryptedPIN pinUnderKd1, T kd1, T pvk,
+                               String offset, String decTab, String pinValData,
+                               int minPinLen) throws SMException;
 
 
 
     /**
      * Derive a PIN Using the IBM 3624 method
      *
-     * That method derive pin from pin offset (not exacly that same but working).
+     * <p>That method derive pin from pin offset (not exacly that same but working).
      * Therefore that metod is not recomendated. It is similar to obtain pin
      * from encrypted pinblock, but require (encrypted) decimalisation table
      * handling is more complicated and returned pin may differ from pin what user has selected 
@@ -661,16 +810,16 @@ public interface SMAdapter {
      * @return           PIN under LMK
      * @throws SMException
      */
-    public EncryptedPIN deriveIBMPIN(String accountNo, SecureDESKey pvk
-                              ,String decTab, String pinValData, int minPinLen
-                              ,String offset) throws SMException;
+    EncryptedPIN deriveIBMPIN(String accountNo, T pvk
+      , String decTab, String pinValData, int minPinLen
+      , String offset) throws SMException;
 
 
 
     /**
-     * Calaculate a Card Verification Code/Value
+     * Calaculate a Card Verification Code/Value.
      *
-     * NOTE: {@code cvkA} and {@code cvkB} should be single
+     * <p>NOTE: {@code cvkA} and {@code cvkB} should be single
      * length keys but at least one of them may be double length key
      *
      * @param accountNo The account number including BIN and the check digit
@@ -686,16 +835,74 @@ public interface SMAdapter {
      *        </ul>
      * @return Card Verification Code/Value
      * @throws SMException
+     * @deprecated Issuers do not always follow the recommended 'yyMM' format.
+     * Using the {@code java.util.Date} prevents from format manipulating to
+     * solve problem. Use {@link #calculateCVD} with string version of {@code expDate}
      */
-    public String calculateCVV(String accountNo, SecureDESKey cvkA, SecureDESKey cvkB,
-                               Date expDate, String serviceCode) throws SMException;
+    @Deprecated
+    String calculateCVV(String accountNo, T cvkA, T cvkB,
+                        Date expDate, String serviceCode) throws SMException;
 
 
 
     /**
-     * Verify a Card Verification Code/Value
+     * Calaculate a Card Verification Digit (Code/Value).
      *
-     * NOTE: {@code cvkA} and {@code cvkB} should be single
+     * <p>NOTE: {@code cvkA} and {@code cvkB} should be single
+     * length keys but at least one of them may be double length key
+     *
+     * @param accountNo The account number including BIN and the check digit
+     * @param cvkA        the first CVK in CVK pair
+     * @param cvkB        the second CVK in CVK pair
+     * @param expDate     the card expiration date
+     * @param serviceCode the card service code
+     *        Service code should be:
+     *        <ul>
+     *          <li>the value which will be placed onto card's magnetic stripe for encoding CVV1/CVC1</li>
+     *          <li>"000" for printing CVV2/CVC2 on card's signature stripe</li>
+     *          <li>"999" for inclusion iCVV/Chip CVC on EMV chip card</li>
+     *        </ul>
+     * @return Card Verification Digit (Code/Value)
+     * @throws SMException
+     */
+    String calculateCVD(String accountNo, T cvkA, T cvkB,
+                        String expDate, String serviceCode) throws SMException;
+
+
+
+    /**
+     * Calaculate a 3-D Secure CAVV/AAV.
+     *
+     * <ul>
+     * <li>Visa uses CAVV (Cardholder Authentication Verification Value)</li>
+     * <li>MasterCard uses AAV (Accountholder Authentication Value)</li>
+     * </ul>
+     * <p>NOTE: Algorithm used to calculation CAVV/AAV is same as for CVV/CVC
+     *          calculation. Only has been changed meaning of parameters
+     *          {@code expDate} and {@code serviceCode}.
+     *
+     * @param accountNo   the account number including BIN and the check digit.
+     * @param cvk         the key used to CVV/CVC generation
+     * @param upn         the unpredictable number. Calculated value based
+     *                    on Transaction Identifier (xid) from PAReq.
+     *                    A 4 decimal digits value must be supplied.
+     * @param authrc      the Authentication Results Code. A value based on
+     *                    the Transaction Status (status) that will be used in
+     *                    PARes. A 1 decimal digit value must be supplied.
+     * @param sfarc       the Second Factor Authentication Results Code.
+     *                    A value based on the result of second factor authentication.
+     *                    A 2 decimal digits value must be suppiled.
+     * @return Cardholder Authentication Verification Value/Accountholder
+     *         Authentication Value
+     * @throws SMException
+     */
+    String calculateCAVV(String accountNo, T cvk, String upn,
+                         String authrc, String sfarc) throws SMException;
+
+    /**
+     * Verify a Card Verification Code/Value.
+     *
+     * <p>NOTE: {@code cvkA} and {@code cvkB} should be single
      * length keys but at least one of them may be double length key
      *
      * @param accountNo The account number including BIN and the check digit
@@ -710,18 +917,77 @@ public interface SMAdapter {
      *         <li>"000" for verifing CVV2/CVC2 printed on card's signature stripe</li>
      *         <li>"999" for verifing iCVV/Chip CVC included on EMV chip card</li>
      *        </ul>
-     * @return true if CVV/CVC is falid or false if not
+     * @return true if CVV/CVC is valid or false if not
      * @throws SMException
+     * @deprecated Issuers do not always follow the recommended 'yyMM' format.
+     * Using the {@code java.util.Date} prevents from format manipulating to
+     * solve problem. Use {@link #verifyCVD} with string version of {@code expDate}
      */
-    public boolean verifyCVV(String accountNo, SecureDESKey cvkA, SecureDESKey cvkB,
-                     String cvv, Date expDate, String serviceCode) throws SMException;
-
+    @Deprecated
+    boolean verifyCVV(String accountNo, T cvkA, T cvkB,
+                      String cvv, Date expDate, String serviceCode) throws SMException;
 
 
     /**
-     * Verify a Dynamic Card Verification Value (CVV)
+     * Verify a Card Verification Digit (Code/Value).
      *
-     * The EMV "Track 2 Equivalent Data", provided in the authorisation
+     * <p>NOTE: {@code cvkA} and {@code cvkB} should be single
+     * length keys but at least one of them may be double length key
+     *
+     * @param accountNo The account number including BIN and the check digit
+     * @param cvkA the first CVK in CVK pair
+     * @param cvkB the second CVK in CVK pair
+     * @param cvv Card Verification Code/Value
+     * @param expDate the card expiration date
+     * @param serviceCode the card service code
+     *        Service code should be:
+     *        <ul>
+     *         <li>taken from card's magnetic stripe for verifing CVV1/CVC1</li>
+     *         <li>"000" for verifing CVV2/CVC2 printed on card's signature stripe</li>
+     *         <li>"999" for verifing iCVV/Chip CVC included on EMV chip card</li>
+     *        </ul>
+     * @return {@code true} if CVV/CVC is valid or {@code false} otherwise
+     * @throws SMException
+     */
+    boolean verifyCVD(String accountNo, T cvkA, T cvkB,
+                      String cvv, String expDate, String serviceCode) throws SMException;
+
+
+    /**
+     * Verify a 3-D Secure CAVV/AAV.
+     *
+     * <ul>
+     * <li>Visa uses CAVV (Cardholder Authentication Verification Value)</li>
+     * <li>MasterCard uses AAV (Accountholder Authentication Value)</li>
+     * </ul>
+     * <p>NOTE: Algorithm used to verification CAVV/AAV is same as for CVV/CVC
+     *          verification. Only has been changed meaning of parameters
+     *          {@code expDate} and {@code serviceCode}.
+     *
+     * @param accountNo   the account number including BIN and the check digit.
+     * @param cvk         the key used to CVV/CVC generation
+     * @param cavv        the Cardholder Authentication Verification Value
+     *                    or Accountholder Authentication Value.
+     * @param upn         the unpredictable number. Calculated value based
+     *                    on Transaction Identifier (xid) from PAReq.
+     *                    A 4 decimal digits value must be supplied.
+     * @param authrc      the Authentication Results Code. A value based on
+     *                    the Transaction Status (status) that will be used in
+     *                    PARes. A 1 decimal digit value must be supplied.
+     * @param sfarc       the Second Factor Authentication Results Code.
+     *                    A value based on the result of second factor authentication.
+     *                    A 2 decimal digits value must be suppiled.
+     * @return true if CAVV/AAV is valid or false if not
+     * @throws SMException
+     */
+    boolean verifyCAVV(String accountNo, T cvk, String cavv,
+                       String upn, String authrc, String sfarc) throws SMException;
+
+
+    /**
+     * Verify a Dynamic Card Verification Value (dCVV).
+     *
+     * <p>The EMV "Track 2 Equivalent Data", provided in the authorisation
      * message and originating from the contactless smart card, is the source
      * for the following data elements used in this function:
      * <li> {@code accountNo}
@@ -738,14 +1004,47 @@ public interface SMAdapter {
      * @param atc application transactin counter. This is used for ICC Master
      *        Key derivation. A 2 byte value must be supplied.
      * @param mkdm ICC Master Key Derivation Method. If {@code null} specified
-     *        is assumed {@see MKDMethod#OPTION_A}
-     * @return
+     *        is assumed.
+     * @return {@code true} if {@code dcvv} is valid, or {@code false} if not
      * @throws SMException
+     * @deprecated Issuers do not always follow the recommended 'yyMM' format.
+     * Using the {@code java.util.Date} prevents from format manipulating to
+     * solve problem. Use {@link #verifydCVV} with string version of {@code expDate}
      */
-    public boolean verifydCVV(String accountNo, SecureDESKey imkac, String dcvv,
-                     Date expDate, String serviceCode, byte[] atc, MKDMethod mkdm)
+    @Deprecated
+    boolean verifydCVV(String accountNo, T imkac, String dcvv,
+                       Date expDate, String serviceCode, byte[] atc, MKDMethod mkdm)
                      throws SMException;
 
+    /**
+     * Verify a Dynamic Card Verification Value (dCVV).
+     * <p>
+     * The EMV "Track 2 Equivalent Data", provided in the authorisation
+     * message and originating from the contactless smart card, is the source
+     * for the following data elements used in this function:
+     * <ul>
+     *   <li> {@code accountNo}
+     *   <li> {@code expDate}
+     *   <li> {@code serviceCode}
+     *   <li> {@code atc}
+     *   <li> {@code dCVV}
+     * </ul>
+     *
+     * @param accountNo The account number including BIN and the check digit
+     * @param imkac the issuer master key for generating and verifying Application Cryptograms
+     * @param dcvv dynamic Card Verification Value
+     * @param expDate the card expiration date
+     * @param serviceCode the card service code
+     * @param atc application transactin counter. This is used for ICC Master
+     *        Key derivation. A 2 byte value must be supplied.
+     * @param mkdm ICC Master Key Derivation Method. If {@code null} specified
+     *        is assumed.
+     * @return {@code true} if {@code dcvv} is valid, or {@code false} if not
+     * @throws SMException
+     */
+    boolean verifydCVV(String accountNo, T imkac, String dcvv,
+                       String expDate, String serviceCode, byte[] atc, MKDMethod mkdm)
+                     throws SMException;
 
 
     /**
@@ -783,26 +1082,27 @@ public interface SMAdapter {
      *            from <tt>MK-CVC3</tt>.
      *        </ul>
      * @param mkdm ICC Master Key Derivation Method. If {@code null} specified
-     *        is assumed {@see MKDMethod#OPTION_A}
+     *        is assumed.
      * @param cvc3 dynamic Card Verification Code 3. Should contain 5 decimal
      *        digits. Max value is {@code "65535"} (decimal representation
      *        of 2 byte value). Is possible to pass shorter cvc3 value e.g.
      *        {@code "789"} matches with calcuated CVC3 {@code "04789"}
-     * @return
+     * @return true if cvc3 is valid false if not
      * @throws SMException
      */
-    public boolean verifyCVC3(SecureDESKey imkcvc3, String accountNo, String acctSeqNo,
-                     byte[] atc, byte[] upn, byte[] data, MKDMethod mkdm, String cvc3)
+    boolean verifyCVC3(T imkcvc3, String accountNo, String acctSeqNo,
+                       byte[] atc, byte[] upn, byte[] data, MKDMethod mkdm, String cvc3)
                      throws SMException;
 
 
 
     /**
      * Verify Application Cryptogram (ARQC or TC/AAC)
-     * <br>
+     * <ul>
      * <li>Authorization Request Cryptogram (ARQC) - Online authorization
      * <li>Transaction certificate (TC) - Offline approval
      * <li>Application Authentication Cryptogram (AAC) - Offline decline
+     * </ul>
      *
      * @param mkdm ICC Master Key Derivation Method. For {@code skdm} equals
      *        {@link SKDMethod#VSDC} and {@link SKDMethod#MCHIP} this parameter
@@ -818,14 +1118,18 @@ public interface SMAdapter {
      * @param upn unpredictable number. This is used for Session Key Generation
      *        A 4 byte value must be supplied. For {@code skdm} equals
      *        {@link SKDMethod#VSDC} is not used.
-     * @param transData transaction data (without padding). Transaction data
-     *        elements and them order is dependend to proper cryptogram version
+     * @param txnData transaction data. Transaction data elements and them
+     *        order is dependend to proper cryptogram version. If the data
+     *        supplied is a multiple of 8 bytes, no extra padding is added.
+     *        If it is not a multiple of 8 bytes, additional zero padding is added.
+     *        <b>If alternative padding methods are required, it have to be
+     *        applied before</b>.
      * @return true if ARQC/TC/AAC is passed or false if not
      * @throws SMException
      */
-    public boolean verifyARQC(MKDMethod mkdm, SKDMethod skdm, SecureDESKey imkac
-            ,String accountNo, String acctSeqNo, byte[] arqc, byte[] atc
-            ,byte[] upn, byte[] transData) throws SMException;
+    boolean verifyARQC(MKDMethod mkdm, SKDMethod skdm, T imkac
+      , String accountNo, String acctSeqNo, byte[] arqc, byte[] atc
+      , byte[] upn, byte[] txnData) throws SMException;
 
 
 
@@ -861,9 +1165,9 @@ public interface SMAdapter {
      *        {@link ARPCMethod#METHOD_2} 4 bytes ARPC
      * @throws SMException
      */
-    public byte[] generateARPC(MKDMethod mkdm, SKDMethod skdm, SecureDESKey imkac
-            ,String accoutNo, String acctSeqNo, byte[] arqc, byte[] atc, byte[] upn
-            ,ARPCMethod arpcMethod, byte[] arc, byte[] propAuthData)
+    byte[] generateARPC(MKDMethod mkdm, SKDMethod skdm, T imkac
+      , String accoutNo, String acctSeqNo, byte[] arqc, byte[] atc, byte[] upn
+      , ARPCMethod arpcMethod, byte[] arc, byte[] propAuthData)
             throws SMException;
 
 
@@ -871,11 +1175,11 @@ public interface SMAdapter {
     /**
      * Verify Application Cryptogram (ARQC or TC/AAC) and Genarate
      * Authorisation Response Cryptogram (ARPC)
-     * <br>
+     * <ul>
      * <li>Authorization Request Cryptogram (ARQC) - Online authorization
      * <li>Transaction certificate (TC) - Offline approval
      * <li>Application Authentication Cryptogram (AAC) - Offline decline
-     *
+     * </ul>
      * @param mkdm ICC Master Key Derivation Method. For {@code skdm} equals
      *        {@link SKDMethod#VSDC} and {@link SKDMethod#MCHIP} this parameter
      *        is ignored and {@link MKDMethod#OPTION_A} is always used.
@@ -890,13 +1194,17 @@ public interface SMAdapter {
      * @param upn unpredictable number. This is used for Session Key Generation
      *        A 4 byte value must be supplied. For {@code skdm} equals
      *        {@link SKDMethod#VSDC} is not used.
-     * @param transData transaction data (without padding). Transaction data
-     *        elements and them order is dependend to proper cryptogram version
+     * @param txnData transaction data. Transaction data elements and them
+     *        order is dependend to proper cryptogram version. If the data
+     *        supplied is a multiple of 8 bytes, no extra padding is added.
+     *        If it is not a multiple of 8 bytes, additional zero padding is added.
+     *        <b>If alternative padding methods are required, it have to be
+     *        applied before</b>.
      * @param arpcMethod ARPC calculating method. For {@code skdm} equals
      *        {@link SKDMethod#VSDC}, {@link SKDMethod#MCHIP},
      *        {@link SKDMethod#AEPIS_V40} only {@link ARPCMethod#METHOD_1} is valid
      * @param arc the Authorisation Response Code. A 2 byte value must be supplied.
-     *        For {@code arpcMethod} equals {@link ARPCMethod#METHOD_2} it is 
+     *        For {@code arpcMethod} equals {@link ARPCMethod#METHOD_2} it is
      *        csu - Card Status Update. Then a 4 byte value must be supplied.
      * @param propAuthData Proprietary Authentication Data. Up to 8 bytes.
      *        Contains optional issuer data for transmission to the card in
@@ -908,15 +1216,15 @@ public interface SMAdapter {
      *         4 bytes ARPC, null in other case
      * @throws SMException
      */
-    public byte[] verifyARQCGenerateARPC(MKDMethod mkdm, SKDMethod skdm, SecureDESKey imkac
-            ,String accountNo, String acctSeqNo, byte[] arqc, byte[] atc, byte[] upn 
-            ,byte[] transData, ARPCMethod arpcMethod, byte[] arc, byte[] propAuthData)
+    byte[] verifyARQCGenerateARPC(MKDMethod mkdm, SKDMethod skdm, T imkac
+      , String accountNo, String acctSeqNo, byte[] arqc, byte[] atc, byte[] upn
+      , byte[] txnData, ARPCMethod arpcMethod, byte[] arc, byte[] propAuthData)
             throws SMException;
 
 
     /**
      * Generate Secure Message MAC over suppiled message data
-     * <br/>
+     * <p>
      * This method is used by issuer to generate MAC over message data send
      * from the issuer back to the card
      *
@@ -941,23 +1249,24 @@ public interface SMAdapter {
      * @return generated 8 bytes MAC
      * @throws SMException
      */
-    public byte[] generateSM_MAC(MKDMethod mkdm, SKDMethod skdm
-            ,SecureDESKey imksmi, String accountNo, String acctSeqNo
-            ,byte[] atc, byte[] arqc, byte[] data) throws SMException;
+    byte[] generateSM_MAC(MKDMethod mkdm, SKDMethod skdm
+      , T imksmi, String accountNo, String acctSeqNo
+      , byte[] atc, byte[] arqc, byte[] data) throws SMException;
 
 
 
     /**
      * Translate PIN and generate MAC over suppiled message data
-     * <br/>
+     * <p>
      * This method is used by issuer to:
+     * <ul>
      * <li>translate standard ATM PIN block format encrypted under zone
      * or terminal key {@code kd1} to an application specific PIN block
      * format, encrypted under a confidentiality session key, derived from
      * {@code imksmc}
      * <li>generate MAC over suppiled message {@code data} and translated
      * PIN block
-     *
+     * </ul>
      * @param mkdm ICC Master Key Derivation Method. For {@code skdm} equals
      *        {@link SKDMethod#VSDC} and {@link SKDMethod#MCHIP} this parameter
      *        is ignored and {@link MKDMethod#OPTION_A} is always used.
@@ -1008,12 +1317,49 @@ public interface SMAdapter {
      * @return Pair of values, encrypted PIN and 8 bytes MAC
      * @throws SMException
      */
-    public Pair<EncryptedPIN,byte[]> translatePINGenerateSM_MAC(MKDMethod mkdm
-           ,SKDMethod skdm, PaddingMethod padm, SecureDESKey imksmi
-           ,String accountNo, String acctSeqNo, byte[] atc, byte[] arqc
-           ,byte[] data, EncryptedPIN currentPIN, EncryptedPIN newPIN
-           ,SecureDESKey kd1, SecureDESKey imksmc, SecureDESKey imkac
-           ,byte destinationPINBlockFormat) throws SMException;
+    Pair<EncryptedPIN,byte[]> translatePINGenerateSM_MAC(MKDMethod mkdm
+      , SKDMethod skdm, PaddingMethod padm, T imksmi
+      , String accountNo, String acctSeqNo, byte[] atc, byte[] arqc
+      , byte[] data, EncryptedPIN currentPIN, EncryptedPIN newPIN
+      , T kd1, T imksmc, T imkac
+      , byte destinationPINBlockFormat) throws SMException;
+
+
+
+    /**
+     * Encrypt Data Block.
+     *
+     * @param cipherMode block cipher mode.
+     * @param kd DEK or ZEK key used to encrypt data.
+     * @param data data to be encrypted. If the data is not a multiple of
+     *        8 bytes, padding have to be applied before.
+     * @param iv initial vector. Its length must be equal to the length
+     *        of cipher block (8 bytes for DES, 3DES ciphers). After operation
+     *        will contain new iv value. Not used for {@link CipherMode#ECB}.
+     * @return encrypted data. In {@code iv} array refference new value of
+     *        initial vector value will be placed.
+     * @throws SMException
+     */
+    byte[] encryptData(CipherMode cipherMode, SecureDESKey kd
+      , byte[] data, byte[] iv) throws SMException;
+
+
+
+    /**
+     * Decrypt Data Block.
+     *
+     * @param cipherMode block cipher mode.
+     * @param kd DEK or ZEK key used to decrypt data.
+     * @param data data to be decrypted.
+     * @param iv initial vector. Its length must be equal to the length
+     *        of cipher block (8 bytes for DES, 3DES ciphers). After operation
+     *        will contain new iv value. Not used for {@link CipherMode#ECB}.
+     * @return decrypted data. In {@code iv} array refference new value of
+     *        initial vector value will be placed.
+     * @throws SMException
+     */
+    byte[] decryptData(CipherMode cipherMode, SecureDESKey kd
+      , byte[] data, byte[] iv) throws SMException;
 
 
 
@@ -1026,7 +1372,7 @@ public interface SMAdapter {
      * @return the MAC
      * @throws SMException
      */
-    public byte[] generateCBC_MAC (byte[] data, SecureDESKey kd) throws SMException;
+    byte[] generateCBC_MAC(byte[] data, T kd) throws SMException;
 
     /**
      * Generates EDE-MAC (Encrypt Decrypt Encrypt Message Message Authentication Code)
@@ -1037,17 +1383,121 @@ public interface SMAdapter {
      * @return the MAC
      * @throws SMException
      */
-    public byte[] generateEDE_MAC (byte[] data, SecureDESKey kd) throws SMException;
-    
+    byte[] generateEDE_MAC(byte[] data, T kd) throws SMException;
+
     /**
      * Translate key from encryption under the LMK held in key change storage
      * to encryption under a new LMK.
      *
      * @param kd the key encrypted under old LMK
      * @return key encrypted under the new LMK
-     * @throws SMException if the parity of the imported key is not adjusted AND checkParity = true
+     * @throws SMException
      */
-    public SecureDESKey translateKeyFromOldLMK (SecureDESKey kd) throws SMException;
+    SecureDESKey translateKeyFromOldLMK(SecureDESKey kd) throws SMException;
+
+
+    /**
+     * Translate key from encryption under the LMK held in key change storage
+     * to encryption under a new LMK.
+     *
+     * @param key the key encrypted under old LMK
+     * @param keySpec the specification of the key to be translated. It allows
+     *        passing new key block attributes.
+     * @return key encrypted under the new LMK
+     * @throws SMException
+     */
+    SecureKey translateKeyFromOldLMK(SecureKey key, SecureKeySpec keySpec) throws SMException;
+
+
+    /**
+     * Generate a public/private key pair.
+     *
+     * @param spec algorithm specific parameters, e.g. algorithm, key size,
+     *        public key exponent.
+     * @return key pair generated according to passed parameters
+     * @throws SMException
+     */
+    Pair<PublicKey, SecurePrivateKey> generateKeyPair(AlgorithmParameterSpec spec)
+      throws SMException;
+
+
+    /**
+     * Generate a public/private key pair.
+     *
+     * @param keySpec the specification of the key to be generated. It allows
+     *        passing key algorithm type, size and key block attributes.
+     *        NOTE: For pass an extra key usage of the RSA key, possible is use
+     *        e.g. {@code keySpec.setVariant()} or {@code keySpec.setReserved()}
+     * @return key pair generated according to passed parameters
+     * @throws SMException
+     */
+    Pair<PublicKey, SecureKey> generateKeyPair(SecureKeySpec keySpec) throws SMException;
+
+
+    /**
+     * Calculate signature of Data Block.
+     *
+     * @param hash identifier of the hash algorithm used to hash passed data.
+     * @param privateKey private key used to compute data signature.
+     * @param data data to be signed.
+     * @return signature of passed data.
+     * @throws SMException
+     */
+    byte[] calculateSignature(MessageDigest hash, SecureKey privateKey
+            ,byte[] data) throws SMException;
+
+
+    /**
+     * Encrypts clear Data Block with specified cipher.
+     * <p>
+     * NOTE: This is a more general version of the
+     * {@link #encryptData(CipherMode, SecureDESKey, byte[], byte[])}
+     *
+     * @param encKey the data encryption key e.g:
+     *        <ul>
+     *          <li>when RSA public key encapsulated in {@code SecurePrivateKey}
+     *          <li>when DES/TDES DEK {@code SecureDESKey}
+     *        </ul>
+     * @param data clear data block to encrypt
+     * @param algspec algorithm specification or {@code null} if not required.
+     *        Used to pass additional algorithm parameters e.g:
+     *        {@code OAEPParameterSpec} or custom extension of
+     *        {@code AlgorithmParameterSpec} to pass symetric cipher mode ECB, CBC
+     * @param iv the inital vector or {@code null} if not used <i>(e.g: RSA
+     *        cipher or ECB mode)</i>. If used, after operation will contain new
+     *        {@code iv} value.
+     * @return encrypted data block
+     * @throws SMException
+     */
+    byte[] encryptData(SecureKey encKey, byte[] data
+            , AlgorithmParameterSpec algspec, byte[] iv) throws SMException;
+
+
+    /**
+     * Decrypts encrypted Data Block with specified cipher.
+     * <p>
+     * NOTE: This is a more general version of the
+     * {@link #decryptData(CipherMode, SecureDESKey, byte[], byte[])}
+     *
+     * @param decKey the data decryption key e.g:
+     *        <ul>
+     *          <li>when RSA private key encapsulated in {@code SecurePrivateKey}
+     *          <li>when DES/TDES DEK {@code SecureDESKey}
+     *        </ul>
+     * @param data encrypted data block to decrypt
+     * @param algspec algorithm specification or {@code null} if not required.
+     *        Used to pass additional algorithm parameters e.g:
+     *        {@code OAEPParameterSpec} or custom extension of
+     *        {@code AlgorithmParameterSpec} to pass symetric cipher mode ECB, CBC
+     * @param iv the inital vector or {@code null} if not used <i>(e.g: RSA
+     *        cipher or ECB mode)</i>. If used, after operation will contain new
+     *        {@code iv} value.
+     * @return decrypted data block
+     * @throws SMException
+     */
+    byte[] decryptData(SecureKey decKey, byte[] data
+            , AlgorithmParameterSpec algspec, byte[] iv) throws SMException;
+
 
     /**
      * Erase the key change storage area of memory
@@ -1057,8 +1507,43 @@ public interface SMAdapter {
      *
      * @throws SMException
      */
-    public void eraseOldLMK () throws SMException;
+    void eraseOldLMK() throws SMException;
+
+    /**
+     * Encrypt Data
+     * @param bdk base derivation key
+     * @param clearText clear Text
+     * @return cyphertext
+     */
+    byte[] dataEncrypt(T bdk, byte[] clearText) throws SMException;
+
+    /**
+     * Decrypt Data
+     * @param bdk base derivation key
+     * @param cypherText clear Text
+     * @return cleartext
+     */
+    byte[] dataDecrypt(T bdk, byte[] cypherText) throws SMException;
+
+    /**
+     * Forms a key from 3 clear components and returns it encrypted under its corresponding LMK
+     * The corresponding LMK is determined from the keyType
+     * @param keyLength e.g. LENGTH_DES, LENGTH_DES3_2, LENGTH_DES3_3, ..
+     * @param keyType possible values are those defined in the SecurityModule inteface. e.g., ZMK, TMK,...
+     * @param clearComponent up to three HexStrings containing key components
+     * @return forms an SecureDESKey from two clear components
+     * @throws SMException
+     */
+    SecureDESKey formKEYfromClearComponents(short keyLength, String keyType, String... clearComponent) throws SMException;
+
+    /**
+     * Generates a random clear key component.
+     * @param keyLength
+     * @return clear key componenet
+     * @throws SMException
+     */
+    default String generateClearKeyComponent(short keyLength) throws SMException {
+        throw new SMException("Operation not supported in: " + this.getClass().getName());
+    }
+
 }
-
-
-

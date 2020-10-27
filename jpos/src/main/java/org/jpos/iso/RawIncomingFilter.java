@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,8 +36,8 @@ public interface RawIncomingFilter extends ISOFilter {
      * @return an ISOMsg (possibly parameter m)
      * @throws VetoException
      */
-    public ISOMsg filter (ISOChannel channel, ISOMsg m, 
-            byte[] header, byte[] image, LogEvent evt) 
+    ISOMsg filter(ISOChannel channel, ISOMsg m,
+                  byte[] header, byte[] image, LogEvent evt)
         throws VetoException;
 }
 

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,9 +21,9 @@ package org.jpos.util;
 import org.apache.log4j.Level;
 import org.apache.log4j.helpers.FileWatchdog;
 import org.apache.log4j.xml.DOMConfigurator;
+import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
 import org.jpos.core.ConfigurationException;
-import org.jpos.core.ReConfigurable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -42,7 +42,8 @@ import java.io.PrintStream;
  * be changed by calling <code>setLevel</code>
  */
 
-public class Log4JListener implements LogListener, ReConfigurable
+@SuppressWarnings("deprecation")
+public class Log4JListener implements LogListener, Configurable
 {
     private Level _level;
     /** 
@@ -82,7 +83,7 @@ public class Log4JListener implements LogListener, ReConfigurable
         if (watch == 0)
             watch = FileWatchdog.DEFAULT_DELAY;
 
-        if ( (config!=null) && (!config.trim().equals("")) )
+        if ( config!=null && !config.trim().equals(""))
             DOMConfigurator.configureAndWatch (config, watch);
 
         setLevel (cfg.get ("priority"));

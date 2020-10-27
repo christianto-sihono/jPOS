@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -35,17 +35,20 @@ public class FSDChannel extends NACChannel {
     String schema;
     Charset charset;
 
+    @Override
     public ISOMsg createMsg() {
         FSDMsg fsdmsg = new FSDMsg (schema);
         fsdmsg.setCharset(charset);
         return new FSDISOMsg (fsdmsg);
     }
+
+    @Override
     public void setConfiguration (Configuration cfg)
         throws ConfigurationException 
     {
         super.setConfiguration (cfg);
         schema = cfg.get ("schema");
-        charset = Charset.forName(cfg.get("charset", ISOUtil.ENCODING));
+        charset = Charset.forName(cfg.get("charset", ISOUtil.CHARSET.displayName()));
     }
 
     @Override
@@ -58,6 +61,7 @@ public class FSDChannel extends NACChannel {
       super.send(m);
     }
 
+    @Override
     protected int getMessageLength() throws IOException, ISOException {
         int len = super.getMessageLength();
         LogEvent evt = new LogEvent (this, "fsd-channel-debug");

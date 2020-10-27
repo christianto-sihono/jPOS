@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,17 +20,17 @@ package org.jpos.core;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
-import java.util.Properties;
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * @author apr@cs.com.uy
  * @version $Id$
  * @since jPOS 1.1
  */
-public class SimpleConfiguration implements Configuration {
+public class SimpleConfiguration implements Configuration, Serializable {
     private Properties props;
 
     public SimpleConfiguration () {
@@ -39,19 +39,37 @@ public class SimpleConfiguration implements Configuration {
     public SimpleConfiguration (Properties props) {
         this.props = props;
     }
-    public SimpleConfiguration (String filename) 
-        throws FileNotFoundException, IOException
+    public SimpleConfiguration (String filename)
+        throws IOException
     {
         props = new Properties();
         load (filename);
     }
+
+    /**
+     * Returns the value of the configuration property named <tt>name</tt>, or the default value <tt>def</tt>.
+     *
+     * If the property value has the format <code>${xxx}</code> then its value is taken from a system property
+     * if it exists, or an environment variable. System property takes priority over environment variable.
+     *
+     * If the format is <code>$sys{...}</code> we read only a system property.
+     * if the format is <code>$env{...}</code> only an environment variable is used.
+     *
+     * @param name The configuration property key name.
+     * @param def  The default value.
+     * @return  The value stored under <tt>name</tt>,
+     *          or <tt>def</tt> if there's no configuration property under the given <tt>name</tt>.
+     */
     public String get (String name, String def) {
         Object obj = props.get (name);
-        if (obj instanceof List) {
+        if (obj instanceof String[]) {
+            String[] arr= (String[]) obj;
+            obj = arr.length > 0 ? arr[0] : null;
+        } else if (obj instanceof List) {
             List l = (List) obj;
-            obj = (l.size() > 0) ? l.get(0) : null;
+            obj = l.size() > 0 ? l.get(0) : null;
         }
-        return (obj instanceof String) ? ((String) obj) : def;
+        return (obj instanceof String) ? Environment.get((String) obj, def) : def;
     }
     public String[] getAll (String name) {
         String[] ret;
@@ -64,7 +82,9 @@ public class SimpleConfiguration implements Configuration {
         } else
             ret = new String[0];
 
-        return ret;
+        Environment env = Environment.getEnvironment();
+        IntStream.range(0, ret.length).forEachOrdered(i -> ret[i] = env.getProperty(ret[i]));
+        return Arrays.stream(ret).filter(Objects::nonNull).toArray(String[]::new);
     }
     public int[] getInts (String name) {
         String[] ss = getAll (name);
@@ -95,29 +115,25 @@ public class SimpleConfiguration implements Configuration {
         return bb;
     }
     public String get (String name) {
-        return get (name, "");
+        return get(name, "");
     }
     public int getInt (String name) {
-        return Integer.parseInt(props.getProperty(name, "0").trim());
+        return Integer.parseInt(get(name, "0").trim());
     }
     public int getInt (String name, int def) {
-        return Integer.parseInt(
-            props.getProperty (name, Integer.toString (def)).trim());
+        return Integer.parseInt(get(name, Integer.toString(def)).trim());
     }
     public long getLong (String name) {
-        return Long.parseLong(props.getProperty(name, "0").trim());
+        return Long.parseLong(get(name, "0").trim());
     }
     public long getLong (String name, long def) {
-        return Long.parseLong (
-            props.getProperty (name, Long.toString (def)).trim());
+        return Long.parseLong(get(name, Long.toString(def)).trim());
     }
     public double getDouble(String name) {
-        return Double.valueOf(
-                props.getProperty(name, "0.00").trim());
+        return Double.valueOf(get(name, "0.00").trim());
     }
     public double getDouble(String name, double def) {
-        return Double.valueOf(
-                props.getProperty(name, Double.toString(def)).trim());
+        return Double.valueOf(get(name, Double.toString(def)).trim());
     }
     public boolean getBoolean (String name) {
         String v = get (name, "false").trim();
@@ -126,17 +142,42 @@ public class SimpleConfiguration implements Configuration {
     public boolean getBoolean (String name, boolean def) {
         String v = get (name);
         return v.length() == 0 ? def :
-            (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes"));
+                v.equalsIgnoreCase("true") || v.equalsIgnoreCase("yes");
     }
     public void load(String filename) 
-        throws FileNotFoundException, IOException
+        throws IOException
     {
         FileInputStream fis = new FileInputStream(filename);
         props.load(new BufferedInputStream(fis));
         fis.close();
     }
-    public void put (String name, Object value) {
+    public synchronized void put (String name, Object value) {
         props.put (name, value);
     }
-}
+    @Override
+    public Set<String> keySet() {
+        return props.stringPropertyNames();
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SimpleConfiguration that = (SimpleConfiguration) o;
+        return Objects.equals(props, that.props);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(props);
+    }
+
+    @Override
+    public String toString() {
+        return "SimpleConfiguration{" +
+          "props=" + props +
+          '}';
+    }
+
+    private static final long serialVersionUID = -6361797037366246968L;
+}

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -56,12 +56,12 @@ import java.io.ObjectOutput;
  * @see IFB_LLNUM
  * @see IFB_NUMERIC
  * @see IF_CHAR
- * @see IF_ECHAR
  */
 public abstract class ISOFieldPackager {
     private int len;
     private String description;
     protected boolean pad;
+    protected boolean trim;
 
     /**
      * Default Constructor
@@ -95,6 +95,10 @@ public abstract class ISOFieldPackager {
 
     public void setPad(boolean pad) {
         this.pad = pad;
+    }
+
+    public void setTrim(boolean trim) {
+        this.trim = trim;
     }
 
     public abstract int getMaxPackedLength();

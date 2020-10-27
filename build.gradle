@@ -1,115 +1,164 @@
+apply from: 'jpos/libraries.gradle'
 
 allprojects {
-    apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
-    apply plugin: 'maven'
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
     apply plugin: 'signing'
+    apply plugin: 'pmd'
+    apply plugin: 'jacoco'
+    apply plugin: 'project-report'
 
     group = 'org.jpos'
-    version = '1.9.1-SNAPSHOT'
+    version = '2.1.5-SNAPSHOT'
     [ compileJava, compileTestJava, javadoc ]*.options*.encoding = 'UTF-8'
     def isSnapshot = version.contains("SNAPSHOT")
     def mavenCentralRepo = isSnapshot ?
-        'https://oss.sonatype.org/content/repositories/snapshots/' : 
+        'https://oss.sonatype.org/content/repositories/snapshots/' :
         'https://oss.sonatype.org/service/local/staging/deploy/maven2';
 
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    configurations.compile.transitive = true
+    javadoc.failOnError = false
+    pmd.ignoreFailures = true
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
     repositories {
-        mavenLocal()
         mavenCentral()
-        mavenRepo name: 'oracle', url: "http://download.oracle.com/maven"
-        mavenRepo name: 'jline', url: "http://jline.sourceforge.net/m2repo"
+        maven { url 'https://jpos.org/maven' }
+        mavenLocal()
     }
     if (project.hasProperty("lint")) {
       // gradle -Plint ...
-      tasks.withType(Compile) { 
+      tasks.withType(JavaCompile) {
         options.compilerArgs << "-Xlint" 
       } 
     }
-    def pomConfig = {
-        name 'jPOS Project'
-        description """
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                pom {
+                    name = 'jPOS Project'
+                    description = """
     jPOS is an ISO-8583 based financial transaction 
     library/framework that can be customized and 
     extended in order to implement financial interchanges.
   """
-        url 'http://jpos.org'
-        inceptionYear '1998'
-        organization {
-            name 'jPOS.org'
-            url 'http://jpos.org'
-        }
-        issueManagement {
-            system 'YouTrack'
-            url 'https://jpos.org/issues'
-        }
-        scm {
-            url "http://github.com/jpos/jPOS"
-            connection "scm:git:https://github.com/jpos/jPOS.git"
-            developerConnection "scm:git:git@github.com:jpos/jPOS.git"
-        }
-        licenses {
-            license {
-                name 'GNU AFFERO GENERAL PUBLIC LICENSE'
-                url 'http://www.gnu.org/licenses/agpl-v3.html'
-                comments 'See http://jpos.org/license for more details.'
-                distribution 'repo'
+                    url = "http://jpos.org"
+                    organization {
+                        name = 'jPOS.org'
+                        url = 'http://jpos.org'
+                    }
+                    issueManagement {
+                        system = 'Github Issues'
+                        url = 'https://github.com/jpos/jPOS/issues'
+                    }
+                    scm {
+                        url = "http://github.com/jpos/jPOS"
+                        connection = "scm:git:https://github.com/jpos/jPOS.git"
+                        developerConnection = "scm:git:git@github.com:jpos/jPOS.git"
+                    }
+                    licenses {
+                        license {
+                            name = 'GNU AFFERO GENERAL PUBLIC LICENSE'
+                            url = 'http://www.gnu.org/licenses/agpl-v3.html'
+                            comments = 'See http://jpos.org/license for more details.'
+                            distribution = 'repo'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'jpos-team'
+                            name = 'jPOS Development Team'
+                            email = 'info@jpos.org'
+                        }
+                    }
+                }
+                groupId = 'org.jpos'
+                artifactId = 'jpos'
+                from components.java
             }
         }
-        developers {
-            developer {
-                id 'jpos-team'
-                name 'jPOS Development Team'
-                email 'info@jpos.org'
+        repositories {
+            maven {
+                def releasesRepoUrl = mavenCentralRepo
+                def snapshotsRepoUrl = 'file:///opt/local/maven'
+                url = isSnapshot ? snapshotsRepoUrl : releasesRepoUrl
+                if (!isSnapshot) {
+                    credentials {
+                        if (project.hasProperty("mavenCentralUsername"))
+                            username = mavenCentralUsername
+                        if (project.hasProperty("mavenCentralPassword"))
+                            password = mavenCentralPassword
+                    }
+                }
             }
         }
     }
+
     signing {
         required { !isSnapshot }
-        sign configurations.archives
+        sign publishing.publications.mavenJava
     }
-    configure(install.repositories.mavenInstaller) {
-        pom.project pomConfig
-    }
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                pom.project pomConfig
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-                /*
-                repository(url: mavenCentralRepo) {
-                    authentication(userName: mavenCentralUsername, password: mavenCentralPassword)
-                }
-                */
-                repository(url: 'file:///opt/local/maven')
-            }
+
+    javadoc {
+        configure(options) {
+            windowTitle = "jPOS ${project.version}"
+            header = "<b>jPOS ${project.version}</b>"
+            linkSource = true
+            links(
+                'https://docs.oracle.com/javase/8/docs/api'
+            )
+            tags(
+                'apiNote:a:API Note:',
+                'implSpec:a:Implementation Requirements:',
+                'implNote:a:Implementation Note:'
+            )
         }
     }
-}
 
-subprojects  {
-    configurations.compile.transitive = true
-}
-
-task aggregatedJavadoc (type: Javadoc, description: "Aggregated Javadocs") { 
-    source subprojects.collect {project -> 
-        project.sourceSets.main.allJava 
-    } 
-    destinationDir = new File(buildDir, 'docs/javadoc') 
-    classpath = files(subprojects.collect {project -> 
-        project.sourceSets.main.compileClasspath}) 
-} 
-
-task wrapper( type: Wrapper ) {
-    gradleVersion = '1.4'
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+        systemProperty 'user.language', 'en'
+        maxParallelForks = Runtime.runtime.availableProcessors()
+    }
+    jacoco {
+        toolVersion = '0.8.6'
+    }
 }
 
 // Configure IDEA to use Git
-idea.project.ipr {
-  withXml { provider ->
-    provider.node.component.find { it.@name == 'VcsDirectoryMappings' }.mapping.@vcs = 'Git'
-  }
+idea {
+    project {
+        ipr {
+            withXml { 
+                provider -> provider.node.component.find { 
+                    it.@name == 'VcsDirectoryMappings' 
+                }.mapping.@vcs = 'Git' 
+            }
+        }
+        languageLevel = '1.8'
+    }
+}
+
+task aggregatedJavadoc (type: Javadoc, description: "Aggregated Javadocs") {
+    source subprojects.collect {project ->
+        project.sourceSets.main.allJava
+    }
+    destinationDir = new File(buildDir, 'docs/javadoc')
+    classpath = files(subprojects.collect {project ->
+        project.sourceSets.main.compileClasspath})
+    failOnError = false
 }
 

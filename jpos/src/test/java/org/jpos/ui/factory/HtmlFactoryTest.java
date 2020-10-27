@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,36 +18,38 @@
 
 package org.jpos.ui.factory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URL;
 
 import javax.swing.event.HyperlinkEvent;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HtmlFactoryTest {
 
     @Test
     public void testConstructor() throws Throwable {
         new HtmlFactory();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testListenerConstructor() throws Throwable {
         new HtmlFactory.Listener();
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
     public void testListenerHyperlinkUpdate() throws Throwable {
         new HtmlFactory.Listener().hyperlinkUpdate(new HyperlinkEvent("", HyperlinkEvent.EventType.ENTERED, new URL(
                 "ftp://q:77s35Ms8!q@uxlmi.net:4622/9M/aQ2Jlp_vr.gtvf")));
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
@@ -57,7 +59,7 @@ public class HtmlFactoryTest {
                     "ftp://q:77s35Ms8!q@uxlmi.net:4622/9M/aQ2Jlp_vr.gtvf")));
             fail("Expected ClassCastException to be thrown");
         } catch (ClassCastException ex) {
-            assertEquals("ex.getClass()", ClassCastException.class, ex.getClass());
+            assertEquals(ClassCastException.class, ex.getClass(), "ex.getClass()");
         }
     }
 
@@ -67,7 +69,11 @@ public class HtmlFactoryTest {
             new HtmlFactory.Listener().hyperlinkUpdate(null);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"javax.swing.event.HyperlinkEvent.getEventType()\" because \"e\" is null", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 }

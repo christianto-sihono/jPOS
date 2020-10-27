@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,9 +31,9 @@ import java.net.URLClassLoader;
  * @author <a href="mailto:apr@cs.com.uy">Alejandro P. Revilla</a>
  * @author <a href="mailto:taherkordy@dpi2.dpi.net.ir">Alireza Taherkordi</a>
  * @version $Revision$ $Date$
- * @jmx:mbean description="Q2 Class Loader"
  */
-public class QClassLoader 
+@SuppressWarnings("deprecation")
+public class QClassLoader
     extends URLClassLoader 
     implements QClassLoaderMBean, FileFilter {
     File libDir;
@@ -51,10 +51,6 @@ public class QClassLoader
         this.server     = server;
     }
     
-    /**
-     * @jmx:managed-operation description=""
-     * @jmx:managed-operation-parameter name="url" position="0" description=""
-     */
     public void addURL (String url) throws MalformedURLException {
         addURL (new URL (url));
     }
@@ -64,17 +60,16 @@ public class QClassLoader
     }
 
     public boolean isModified () {
-        return libDir.canRead () && (lastModified != libDir.lastModified());
+        return libDir.canRead () && lastModified != libDir.lastModified();
     }
     public QClassLoader scan (boolean forceNewClassLoader) 
         throws InstanceAlreadyExistsException,
                InstanceNotFoundException,
                NotCompliantMBeanException,
-               MalformedURLException,
                MBeanRegistrationException
     
     {
-        if ((!isModified () && !forceNewClassLoader) || !libDir.canRead())
+        if (!isModified () && !forceNewClassLoader || !libDir.canRead())
             return this;
         QClassLoader loader;
         if (server.isRegistered (loaderName)) {

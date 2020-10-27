@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -48,9 +48,6 @@ public class RightPadder implements Padder
         this.pad = pad;
     }
 
-    /**
-	 * @see org.jpos.iso.Padder#pad(String, int)
-	 */
     public String pad(String data, int maxLength) throws ISOException
     {
         int len = data.length();
@@ -69,9 +66,6 @@ public class RightPadder implements Padder
         return data;
     }
 
-    /**
-	 * @see org.jpos.iso.Padder#unpad(String)
-	 */
     public String unpad(String paddedData)
     {
         int len = paddedData.length();

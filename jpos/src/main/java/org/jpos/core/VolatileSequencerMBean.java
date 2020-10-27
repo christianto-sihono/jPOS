@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,8 +25,8 @@ package org.jpos.core;
  * @since jPOS 1.3.9
  */
 public interface VolatileSequencerMBean {
-    public String[] getCounterNames ();
-    public int get (String counterName, int add);
-    public int set (String counterName, int value);
+    String[] getCounterNames();
+    int get(String counterName, int add);
+    int set(String counterName, int value);
 }
 

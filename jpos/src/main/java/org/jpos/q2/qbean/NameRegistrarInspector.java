@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,21 +27,14 @@ import java.util.Map;
  *
  * @author <a href="mailto:nevyn@debian.org">Alwyn Schoeman</a>
  * @version $Revision$ $Date$
- * @jmx:mbean description="Name Registrar Inspector"
  */
 public class NameRegistrarInspector implements NameRegistrarInspectorMBean {
 
-    /**
-     * @jmx:managed-constructor description="Empty default constructor"
-     */
     public NameRegistrarInspector () {
     }
 
-    /**
-     * @jmx:managed-attribute description="Registry contents"
-     */
     public Map getRegistry () {
-        return NameRegistrar.getMap ();
+        return NameRegistrar.getAsMap();
     }
 }
 

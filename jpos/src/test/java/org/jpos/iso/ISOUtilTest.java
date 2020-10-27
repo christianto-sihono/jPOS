@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,24 +21,32 @@ package org.jpos.iso;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import static org.apache.commons.lang3.JavaVersion.JAVA_10;
+import static org.apache.commons.lang3.JavaVersion.JAVA_14;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtMost;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.BitSet;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ISOUtilTest {
     final String lineSep = System.getProperty("line.separator");
@@ -47,42 +55,58 @@ public class ISOUtilTest {
     public void testAsciiToEbcdic() throws Throwable {
         byte[] a = new byte[0];
         byte[] result = ISOUtil.asciiToEbcdic(a);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testAsciiToEbcdic1() throws Throwable {
         byte[] a = new byte[1];
         byte[] result = ISOUtil.asciiToEbcdic(a);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
     public void testAsciiToEbcdic2() throws Throwable {
         byte[] e = new byte[13];
         ISOUtil.asciiToEbcdic("testISOUtils", e, 0);
-        assertEquals("e[0]", (byte) -93, e[0]);
+        assertEquals((byte) -93, e[0], "e[0]");
     }
 
     @Test
     public void testAsciiToEbcdic3() throws Throwable {
-        byte[] e = new byte[3];
-        ISOUtil.asciiToEbcdic("", e, 100);
-        assertEquals("e.length", 3, e.length);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            ISOUtil.asciiToEbcdic("", new byte[3], 100);
+        });
     }
 
     @Test
     public void testAsciiToEbcdic4() throws Throwable {
         byte[] result = ISOUtil.asciiToEbcdic("");
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testAsciiToEbcdic5() throws Throwable {
         byte[] result = ISOUtil.asciiToEbcdic("testISOUtils");
-        assertEquals("result.length", 12, result.length);
-        assertEquals("result[0]", (byte) -93, result[0]);
+        assertEquals(12, result.length, "result.length");
+        assertEquals((byte) -93, result[0], "result[0]");
+    }
+
+    @Test
+    public void testAsciiToEbcdic6() throws Throwable {
+        byte[] result = ISOUtil.asciiToEbcdic("testISOUtils");
+        byte[] expected = new byte[]{(byte)0xA3, (byte)0x85, (byte)0xA2, (byte)0xA3, (byte)0xC9,
+                (byte)0xE2, (byte)0xD6, (byte)0xE4, (byte)0xA3, (byte) 0x89, (byte)0x93, (byte)0xA2 };
+        assertArrayEquals(expected, result, "full result");
+    }
+
+    @Test
+    public void testAsciiToEbcdic7() throws Throwable {
+        String testString = "testISOUtils1047`¬!\"£$%^&*()-=_+;:[]{}'@#~\\|,<>./?";
+        byte[] result = ISOUtil.asciiToEbcdic(testString);
+        byte[] expected = testString.getBytes("Cp1047");
+        assertArrayEquals(expected, result, "full result");
     }
 
     @Test
@@ -91,28 +115,15 @@ public class ISOUtilTest {
         try {
             ISOUtil.asciiToEbcdic("testISOUtils", e, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
-            assertEquals("e.length", 0, e.length);
-        }
+        } catch (ArrayIndexOutOfBoundsException ex) { }
     }
+
 
     @Test
-    public void testAsciiToEbcdicThrowsArrayIndexOutOfBoundsException1() throws Throwable {
-        byte[] e = new byte[1];
-        try {
-            ISOUtil.asciiToEbcdic("testISOUtils", e, 0);
-            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("e[0]", (byte) -93, e[0]);
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
-            assertEquals("e.length", 1, e.length);
-        }
-    }
-
-    @Test(expected = NullPointerException.class)
     public void testAsciiToEbcdicThrowsNullPointerException() throws Throwable {
-        ISOUtil.asciiToEbcdic((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.asciiToEbcdic((byte[]) null);
+        });
     }
 
     @Test
@@ -122,28 +133,34 @@ public class ISOUtilTest {
             ISOUtil.asciiToEbcdic((String) null, e, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("e.length", 3, e.length);
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot invoke \"java.lang.CharSequence.length()\" because \"csq\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(3, e.length, "e.length");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testAsciiToEbcdicThrowsNullPointerException2() throws Throwable {
-        ISOUtil.asciiToEbcdic((String) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.asciiToEbcdic((String) null);
+        });
     }
 
     @Test
     public void testBcd2str() throws Throwable {
         byte[] b = new byte[0];
         String result = ISOUtil.bcd2str(b, 100, 0, true);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testBcd2str1() throws Throwable {
         byte[] b = new byte[2];
         String result = ISOUtil.bcd2str(b, 0, 2, true);
-        assertEquals("result", "00", result);
+        assertEquals("00", result, "result");
     }
 
     @Test
@@ -151,7 +168,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) -61;
         String result = ISOUtil.bcd2str(b, 0, 1, false);
-        assertEquals("result", "C", result);
+        assertEquals("C", result, "result");
     }
 
     @Test
@@ -159,7 +176,7 @@ public class ISOUtilTest {
         byte[] b = new byte[1];
         b[0] = (byte) -3;
         String result = ISOUtil.bcd2str(b, 0, 1, true);
-        assertEquals("result", "=", result);
+        assertEquals("=", result, "result");
     }
 
     @Test
@@ -167,14 +184,14 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) -31;
         String result = ISOUtil.bcd2str(b, 0, 1, false);
-        assertEquals("result", "E", result);
+        assertEquals("E", result, "result");
     }
 
     @Test
     public void testBcd2str5() throws Throwable {
         byte[] b = new byte[3];
         String result = ISOUtil.bcd2str(b, 0, 1, true);
-        assertEquals("result", "0", result);
+        assertEquals("0", result, "result");
     }
 
     @Test
@@ -182,78 +199,98 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[1] = (byte) 14;
         String result = ISOUtil.bcd2str(b, 0, 3, true);
-        assertEquals("result", "00E", result);
+        assertEquals("00E", result, "result");
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException() throws Throwable {
-        byte[] b = new byte[41];
-        b[25] = (byte) -100;
-        b[30] = (byte) 13;
-        b[35] = (byte) -29;
-        ISOUtil.bcd2str(b, 16, 61, true);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[41];
+            b[25] = (byte) -100;
+            b[30] = (byte) 13;
+            b[35] = (byte) -29;
+            ISOUtil.bcd2str(b, 16, 61, true);
+        });
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException1() throws Throwable {
-        byte[] b = new byte[41];
-        b[25] = (byte) -100;
-        b[30] = (byte) 13;
-        b[35] = (byte) -29;
-        ISOUtil.bcd2str(b, 16, 61, false);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[41];
+            b[25] = (byte) -100;
+            b[30] = (byte) 13;
+            b[35] = (byte) -29;
+            ISOUtil.bcd2str(b, 16, 61, false);
+        });
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException2() throws Throwable {
-        byte[] b = new byte[25];
-        b[2] = (byte) -63;
-        b[3] = (byte) 62;
-        b[23] = (byte) 29;
-        ISOUtil.bcd2str(b, 0, 100, true);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[25];
+            b[2] = (byte) -63;
+            b[3] = (byte) 62;
+            b[23] = (byte) 29;
+            ISOUtil.bcd2str(b, 0, 100, true);
+        });
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException3() throws Throwable {
-        byte[] b = new byte[41];
-        b[25] = (byte) -100;
-        b[35] = (byte) -29;
-        ISOUtil.bcd2str(b, 16, 61, false);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[41];
+            b[25] = (byte) -100;
+            b[35] = (byte) -29;
+            ISOUtil.bcd2str(b, 16, 61, false);
+        });
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException4() throws Throwable {
-        byte[] b = new byte[2];
-        b[1] = (byte) 28;
-        ISOUtil.bcd2str(b, 0, 27, true);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[2];
+            b[1] = (byte) 28;
+            ISOUtil.bcd2str(b, 0, 27, true);
+        });
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testBcd2strThrowsArrayIndexOutOfBoundsException5() throws Throwable {
-        byte[] b = new byte[25];
-        b[2] = (byte) -63;
-        b[3] = (byte) 62;
-        ISOUtil.bcd2str(b, 0, 100, true);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] b = new byte[25];
+            b[2] = (byte) -63;
+            b[3] = (byte) 62;
+            ISOUtil.bcd2str(b, 0, 100, true);
+        });
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testBcd2strThrowsNegativeArraySizeException() throws Throwable {
-        byte[] b = new byte[3];
-        ISOUtil.bcd2str(b, 100, -1, true);
+        assertThrows(NegativeArraySizeException.class, () -> {
+            byte[] b = new byte[3];
+            ISOUtil.bcd2str(b, 100, -1, true);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testBcd2strThrowsNullPointerException() throws Throwable {
-        ISOUtil.bcd2str((byte[]) null, 100, 1, false);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bcd2str(null, 100, 1, false);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testBcd2strThrowsNullPointerException1() throws Throwable {
-        ISOUtil.bcd2str((byte[]) null, 100, 1, true);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bcd2str(null, 100, 1, true);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testBcd2strThrowsNullPointerException2() throws Throwable {
-        ISOUtil.bcd2str((byte[]) null, 100, 1000, true);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bcd2str(null, 100, 1000, true);
+        });
     }
 
     @Test
@@ -266,31 +303,81 @@ public class ISOUtilTest {
         BitSet b3 = new BitSet(100);
         b3.or(bmap);
         byte[] result = ISOUtil.bitSet2byte(b3);
-        assertEquals("result.length", 8, result.length);
-        assertEquals("result[0]", (byte) -16, result[0]);
+        assertEquals(8, result.length, "result.length");
+        assertEquals((byte) -16, result[0], "result[0]");
     }
 
     @Test
     public void testBitSet2byte3() throws Throwable {
         byte[] result = ISOUtil.bitSet2byte(new BitSet(100));
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
+    public void testBitSetByteHexInteroperability() throws Throwable {
+        BitSet bs = new BitSet();
+        bs.set(1);
+        bs.set(63);
+        bs.set(127);
+        bs.set(191);
+        byte[] b = ISOUtil.bitSet2byte(bs);
+        BitSet bs1 = ISOUtil.byte2BitSet(b, 0, 192);
+        BitSet bs2 = ISOUtil.hex2BitSet(ISOUtil.hexString(b).getBytes(), 0, 192);
+        assertEquals(bs1, bs2, "BitSets should be equal");
+    }
+
+    @Test
+    public void testBitSetByteHexInteroperability2() throws Throwable {
+        byte[] b = ISOUtil.hex2byte("F23C04800EE0000080000000000000000000380000000000");
+        BitSet bs1 = ISOUtil.byte2BitSet(b, 0, 192);
+        BitSet bs2 = ISOUtil.hex2BitSet (ISOUtil.hexString(b).getBytes(), 0, 192);
+        assertEquals(bs1, bs2, "BitSets should be equal");
+        assertEquals(ISOUtil.hexString(b), ISOUtil.hexString(ISOUtil.bitSet2byte(bs1)), "Image matches");
+    }
+
+    @Test
+    public void testBitSetByteHexInteroperability3() throws Throwable {
+        byte[] b = ISOUtil.hex2byte("F23C04800AE00000800000000000010863BC780000000010");
+        BitSet bs1 = ISOUtil.byte2BitSet(b, 0, 192);
+        BitSet bs2 = ISOUtil.hex2BitSet (ISOUtil.hexString(b).getBytes(), 0, 192);
+        assertEquals(bs1, bs2, "BitSets should be equal");
+        assertEquals(ISOUtil.hexString(b), ISOUtil.hexString(ISOUtil.bitSet2byte(bs1)), "Image matches");
+    }
+
+    @Test
     public void testBitSet2byteThrowsNullPointerException() throws Throwable {
-        ISOUtil.bitSet2byte(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bitSet2byte(null);
+        });
     }
 
     @Test
     public void testBitSet2extendedByte() throws Throwable {
         byte[] result = ISOUtil.bitSet2extendedByte(new BitSet(100));
-        assertEquals("result.length", 16, result.length);
-        assertEquals("result[0]", (byte) -128, result[0]);
+        assertEquals(16, result.length, "result.length");
+        assertEquals((byte) -128, result[0], "result[0]");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
+    public void testShortBitset2Byte() {
+        byte[] expected = ISOUtil.hex2byte("C00000");
+        BitSet b = new BitSet();
+        b.set(1);
+        b.set(2);
+        int configuredLength = 3;
+        int len = configuredLength >= 8 ? b.length()+62 >>6 <<3 : configuredLength;
+        byte[] sb = ISOUtil.bitSet2byte(b, len);
+        BitSet b1 = ISOUtil.byte2BitSet(sb, 0, len << 3);
+        assertEquals(3, len);
+        assertArrayEquals(expected, sb);
+        assertEquals(b, b1);
+    }
+
+    @Test
     public void testBitSet2extendedByteThrowsNullPointerException() throws Throwable {
-        ISOUtil.bitSet2extendedByte(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bitSet2extendedByte(null);
+        });
     }
 
     @Test
@@ -302,53 +389,55 @@ public class ISOUtilTest {
         bmap.flip(0, 100);
         String result = ISOUtil.bitSet2String(bmap);
         assertEquals(
-                "result",
                 "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000",
-                result);
+                result, "result");
     }
 
     @Test
     public void testBitSet2String1() throws Throwable {
         String result = ISOUtil.bitSet2String(new BitSet(100));
         assertEquals(
-                "result",
                 "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                result);
+                result, "result");
     }
 
     @Test
     public void testBitSet2String2() throws Throwable {
         String result = ISOUtil.bitSet2String(new BitSet(0));
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testBitSet2StringThrowsNullPointerException() throws Throwable {
-        ISOUtil.bitSet2String(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.bitSet2String(null);
+        });
     }
 
     @Test
     public void testBlankUnPad() throws Throwable {
         String result = ISOUtil.blankUnPad("");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testBlankUnPad1() throws Throwable {
         String result = ISOUtil.blankUnPad("1");
-        assertEquals("result", "1", result);
+        assertEquals("1", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testBlankUnPadThrowsNullPointerException() throws Throwable {
-        ISOUtil.blankUnPad(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.blankUnPad(null);
+        });
     }
 
     @Test
     public void testByte2BitSet() throws Throwable {
         byte[] b = new byte[9];
         BitSet result = ISOUtil.byte2BitSet(b, 0, true);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
@@ -356,7 +445,7 @@ public class ISOUtilTest {
         byte[] b = new byte[9];
         b[4] = (byte) 1;
         BitSet result = ISOUtil.byte2BitSet(b, 0, true);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
@@ -364,14 +453,14 @@ public class ISOUtilTest {
         byte[] b = new byte[9];
         b[1] = (byte) -3;
         BitSet result = ISOUtil.byte2BitSet(b, 0, 63);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
     public void testByte2BitSet2() throws Throwable {
         byte[] b = new byte[10];
         BitSet result = ISOUtil.byte2BitSet(b, 0, 1000);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
@@ -379,21 +468,21 @@ public class ISOUtilTest {
         byte[] b = new byte[9];
         b[1] = (byte) -3;
         BitSet result = ISOUtil.byte2BitSet(b, 0, 127);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
     public void testByte2BitSet5() throws Throwable {
         byte[] b = new byte[1];
-        BitSet result = ISOUtil.byte2BitSet((BitSet) null, b, 100);
-        assertNull("result", result);
+        BitSet result = ISOUtil.byte2BitSet(null, b, 100);
+        assertNull(result, "result");
     }
 
     @Test
     public void testByte2BitSet6() throws Throwable {
         byte[] b = new byte[0];
-        BitSet result = ISOUtil.byte2BitSet((BitSet) null, b, 100);
-        assertNull("result", result);
+        BitSet result = ISOUtil.byte2BitSet(null, b, 100);
+        assertNull(result, "result");
     }
 
     @Test
@@ -401,7 +490,7 @@ public class ISOUtilTest {
         byte[] b = new byte[9];
         b[1] = (byte) -3;
         BitSet result = ISOUtil.byte2BitSet(b, 0, 128);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
@@ -409,14 +498,14 @@ public class ISOUtilTest {
         byte[] b = new byte[9];
         b[1] = (byte) -3;
         BitSet result = ISOUtil.byte2BitSet(b, 0, 1000);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
     public void testByte2BitSet9() throws Throwable {
         byte[] b = new byte[10];
         BitSet result = ISOUtil.byte2BitSet(b, 0, 100);
-        assertEquals("result.size()", 64, result.size());
+        assertEquals(64, result.size(), "result.size()");
     }
 
     @Test
@@ -428,7 +517,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 62, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "71", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("71", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 71 out of bounds for length 71", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -440,7 +533,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -451,7 +548,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 100, 64);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -463,7 +564,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -474,7 +579,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -485,7 +594,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -496,7 +609,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 100, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -507,22 +624,32 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 100, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
-    @Test
-    public void testByte2BitSetThrowsArrayIndexOutOfBoundsException17() throws Throwable {
-        byte[] b = new byte[12];
-        b[1] = (byte) 1;
-        b[9] = (byte) -128;
-        try {
-            ISOUtil.byte2BitSet(b, 1, 129);
-            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "12", ex.getMessage());
-        }
-    }
+//    This test SHOULD NOT throw an ArrayIndexOutOfBoundsException
+//    because the first bit of the first byte (byte[1] since we're calling with offset 1) is 0.
+//    Therefore, only 8 bytes should be decoded, which is enough for the 11 available bytes in the array
+//    The test used to be successful (i.e. failed) because of a bad implementation of ISOUtil.byte2BitSet
+//    when asked for more than 128 bits, and bit 1 of the bitmap was 0 and bit 65 was one (in which case it
+//    wrongly attempted to unpack 24 bytes instead of just 8)
+//    @Test
+//    public void testByte2BitSetThrowsArrayIndexOutOfBoundsException17() throws Throwable {
+//        byte[] b = new byte[12];
+//        b[1] = (byte) 1;
+//        b[9] = (byte) -128;
+//        try {
+//            ISOUtil.byte2BitSet(b, 1, 129);
+//            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
+//        } catch (ArrayIndexOutOfBoundsException ex) {
+//            assertEquals("ex.getMessage()", "12", ex.getMessage());
+//        }
+//    }
 
     @Test
     public void testByte2BitSetThrowsArrayIndexOutOfBoundsException18() throws Throwable {
@@ -533,7 +660,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 1, 1000);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "12", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("12", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 12 out of bounds for length 12", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -545,7 +676,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 128);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -557,7 +692,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 1, 129);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -569,7 +708,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 1, 127);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -581,7 +724,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 63);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -593,7 +740,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 129);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -605,7 +756,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 64);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -616,7 +771,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 128);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -627,7 +786,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 63);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -638,7 +801,11 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(b, 0, 129);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -653,46 +820,56 @@ public class ISOUtilTest {
             ISOUtil.byte2BitSet(bmap, b2, -30);
             fail("Expected IndexOutOfBoundsException to be thrown");
         } catch (IndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "bitIndex < 0: -22", ex.getMessage());
-            assertEquals("bmap.size()", 128, bmap.size());
+            assertEquals("bitIndex < 0: -22", ex.getMessage(), "ex.getMessage()");
+            assertEquals(128, bmap.size(), "bmap.size()");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testByte2BitSetThrowsNullPointerException() throws Throwable {
-        ISOUtil.byte2BitSet((byte[]) null, 100, true);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.byte2BitSet(null, 100, true);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testByte2BitSetThrowsNullPointerException1() throws Throwable {
-        byte[] b = new byte[4];
-        b[2] = (byte) 127;
-        ISOUtil.byte2BitSet((BitSet) null, b, 100);
+        assertThrows(NullPointerException.class, () -> {
+            byte[] b = new byte[4];
+            b[2] = (byte) 127;
+            ISOUtil.byte2BitSet(null, b, 100);
+        });
     }
 
     @Test
     public void testByte2BitSetThrowsNullPointerException2() throws Throwable {
         BitSet bmap = new BitSet(100);
         try {
-            ISOUtil.byte2BitSet(bmap, (byte[]) null, 100);
+            ISOUtil.byte2BitSet(bmap, null, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("bmap.size()", 128, bmap.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(128, bmap.size(), "bmap.size()");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testByte2BitSetThrowsNullPointerException3() throws Throwable {
-        ISOUtil.byte2BitSet((byte[]) null, 100, 65);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.byte2BitSet(null, 100, 65);
+        });
     }
 
     @Test
     public void testConcat() throws Throwable {
         byte[] array1 = new byte[3];
         byte[] result = ISOUtil.concat(array1, 0, 1, ISOUtil.asciiToEbcdic("testISOUtils"), 10, 0);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
@@ -700,7 +877,7 @@ public class ISOUtilTest {
         byte[] array2 = new byte[3];
         byte[] array1 = new byte[3];
         byte[] result = ISOUtil.concat(array1, 0, 0, array2, 1, 0);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
@@ -708,8 +885,8 @@ public class ISOUtilTest {
         byte[] array1 = new byte[1];
         byte[] array2 = new byte[3];
         byte[] result = ISOUtil.concat(array1, array2);
-        assertEquals("result.length", 4, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(4, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
@@ -717,25 +894,31 @@ public class ISOUtilTest {
         byte[] array2 = new byte[0];
         byte[] array1 = new byte[0];
         byte[] result = ISOUtil.concat(array1, array2);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testConcatThrowsNegativeArraySizeException() throws Throwable {
-        byte[] array1 = new byte[0];
-        byte[] array2 = new byte[1];
-        ISOUtil.concat(array1, 100, 0, array2, 1000, -1);
+        assertThrows(NegativeArraySizeException.class, () -> {
+            byte[] array1 = new byte[0];
+            byte[] array2 = new byte[1];
+            ISOUtil.concat(array1, 100, 0, array2, 1000, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testConcatThrowsNullPointerException() throws Throwable {
-        ISOUtil.concat((byte[]) null, 100, 1000, ISOUtil.asciiToEbcdic("testISOUtils"), 0, -1);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.concat(null, 100, 1000, ISOUtil.asciiToEbcdic("testISOUtils"), 0, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testConcatThrowsNullPointerException1() throws Throwable {
-        byte[] array2 = new byte[3];
-        ISOUtil.concat((byte[]) null, array2);
+        assertThrows(NullPointerException.class, () -> {
+            byte[] array2 = new byte[3];
+            ISOUtil.concat(null, array2);
+        });
     }
 
     @Test
@@ -746,7 +929,7 @@ public class ISOUtilTest {
         b[3] = (byte) 29;
         b[4] = (byte) -17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{SYN}{BEL}[1D]\uFFEF", result);
+        assertEquals("{NULL}{SYN}{BEL}[1D]\uFFEF", result, "result");
     }
 
     @Test
@@ -756,7 +939,7 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[3] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK} {NULL}{DLE}{NULL}", result);
+        assertEquals("{ACK} {NULL}{DLE}{NULL}", result, "result");
     }
 
     @Test
@@ -768,7 +951,7 @@ public class ISOUtilTest {
         b[3] = (byte) -6;
         b[4] = (byte) 27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}{ENQ}\uFFE3\uFFFA[1B]", result);
+        assertEquals("{ACK}{ENQ}\uFFE3\uFFFA[1B]", result, "result");
     }
 
     @Test
@@ -780,7 +963,7 @@ public class ISOUtilTest {
         b[3] = (byte) -2;
         b[4] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}[0F]\uFF80\uFFFE{DLE}", result);
+        assertEquals("{NAK}[0F]\uFF80\uFFFE{DLE}", result, "result");
     }
 
     @Test
@@ -790,7 +973,7 @@ public class ISOUtilTest {
         b[1] = (byte) 93;
         b[2] = (byte) 17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{CR}][11]", result);
+        assertEquals("{CR}][11]", result, "result");
     }
 
     @Test
@@ -799,7 +982,7 @@ public class ISOUtilTest {
         b[0] = (byte) 1;
         b[2] = (byte) 29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}{NULL}[1D]{NULL}", result);
+        assertEquals("{SOH}{NULL}[1D]{NULL}", result, "result");
     }
 
     @Test
@@ -809,7 +992,7 @@ public class ISOUtilTest {
         b[2] = (byte) -16;
         b[3] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NULL}\uFFF0{FS}{NULL}", result);
+        assertEquals("{STX}{NULL}\uFFF0{FS}{NULL}", result, "result");
     }
 
     @Test
@@ -820,7 +1003,7 @@ public class ISOUtilTest {
         b[2] = (byte) 127;
         b[3] = (byte) 21;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ} [7F]{NAK}{NULL}", result);
+        assertEquals("{ENQ} [7F]{NAK}{NULL}", result, "result");
     }
 
     @Test
@@ -830,7 +1013,7 @@ public class ISOUtilTest {
         b[1] = (byte) -10;
         b[2] = (byte) 21;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[0B]\uFFF6{NAK}", result);
+        assertEquals("[0B]\uFFF6{NAK}", result, "result");
     }
 
     @Test
@@ -840,7 +1023,7 @@ public class ISOUtilTest {
         b[1] = (byte) -17;
         b[2] = (byte) 20;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}\uFFEF[14]", result);
+        assertEquals("{FS}\uFFEF[14]", result, "result");
     }
 
     @Test
@@ -850,7 +1033,7 @@ public class ISOUtilTest {
         b[2] = (byte) 25;
         b[3] = (byte) -23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{ACK}[19]\uFFE9", result);
+        assertEquals("{NULL}{ACK}[19]\uFFE9", result, "result");
     }
 
     @Test
@@ -858,7 +1041,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 10;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{LF}", result);
+        assertEquals("{NULL}{LF}", result, "result");
     }
 
     @Test
@@ -870,7 +1053,7 @@ public class ISOUtilTest {
         b[3] = (byte) -108;
         b[4] = (byte) -16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}\uFFF1\uFFED\uFF94\uFFF0", result);
+        assertEquals("{SOH}\uFFF1\uFFED\uFF94\uFFF0", result, "result");
     }
 
     @Test
@@ -880,7 +1063,7 @@ public class ISOUtilTest {
         b[1] = (byte) 6;
         b[3] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[18]{ACK}{NULL}{SYN}", result);
+        assertEquals("[18]{ACK}{NULL}{SYN}", result, "result");
     }
 
     @Test
@@ -892,7 +1075,7 @@ public class ISOUtilTest {
         b[3] = (byte) -3;
         b[4] = (byte) -1;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{DLE}[09]]\uFFFD\uFFFF", result);
+        assertEquals("{DLE}[09]]\uFFFD\uFFFF", result, "result");
     }
 
     @Test
@@ -902,7 +1085,7 @@ public class ISOUtilTest {
         b[1] = (byte) -13;
         b[2] = (byte) 26;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{BEL}\uFFF3[1A]", result);
+        assertEquals("{BEL}\uFFF3[1A]", result, "result");
     }
 
     @Test
@@ -914,7 +1097,7 @@ public class ISOUtilTest {
         b[3] = (byte) -5;
         b[4] = (byte) -28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}[0E]^\uFFFB\uFFE4", result);
+        assertEquals("{ACK}[0E]^\uFFFB\uFFE4", result, "result");
     }
 
     @Test
@@ -924,7 +1107,7 @@ public class ISOUtilTest {
         b[1] = (byte) 30;
         b[2] = (byte) -91;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}{RS}\uFFA5{NULL}{NULL}", result);
+        assertEquals("{ETX}{RS}\uFFA5{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -932,7 +1115,7 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[0] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}{NULL}{NULL}", result);
+        assertEquals("{FS}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -943,7 +1126,7 @@ public class ISOUtilTest {
         b[2] = (byte) -93;
         b[4] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}[0F]\uFFA3{NULL}{FS}", result);
+        assertEquals("{STX}[0F]\uFFA3{NULL}{FS}", result, "result");
     }
 
     @Test
@@ -955,7 +1138,7 @@ public class ISOUtilTest {
         b[3] = (byte) -27;
         b[4] = (byte) 27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE6\uFFF9\uFFE5[1B]", result);
+        assertEquals("{RS}\uFFE6\uFFF9\uFFE5[1B]", result, "result");
     }
 
     @Test
@@ -966,7 +1149,7 @@ public class ISOUtilTest {
         b[2] = (byte) 29;
         b[3] = (byte) 12;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}`[1D][0C]", result);
+        assertEquals("{SOH}`[1D][0C]", result, "result");
     }
 
     @Test
@@ -976,7 +1159,7 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[3] = (byte) 21;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ} {NULL}{NAK}{NULL}", result);
+        assertEquals("{ENQ} {NULL}{NAK}{NULL}", result, "result");
     }
 
     @Test
@@ -986,7 +1169,7 @@ public class ISOUtilTest {
         b[1] = (byte) 9;
         b[2] = (byte) 93;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{DLE}[09]]{NULL}{NULL}", result);
+        assertEquals("{DLE}[09]]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -998,7 +1181,7 @@ public class ISOUtilTest {
         b[3] = (byte) -23;
         b[4] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{SOH}{CR}\uFFE9[17]", result);
+        assertEquals("{EOT}{SOH}{CR}\uFFE9[17]", result, "result");
     }
 
     @Test
@@ -1009,7 +1192,7 @@ public class ISOUtilTest {
         b[2] = (byte) 23;
         b[3] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[18]{ACK}[17]{SYN}", result);
+        assertEquals("[18]{ACK}[17]{SYN}", result, "result");
     }
 
     @Test
@@ -1018,7 +1201,7 @@ public class ISOUtilTest {
         b[0] = (byte) 1;
         b[1] = (byte) 15;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}[0F]", result);
+        assertEquals("{SOH}[0F]", result, "result");
     }
 
     @Test
@@ -1029,7 +1212,7 @@ public class ISOUtilTest {
         b[2] = (byte) 2;
         b[3] = (byte) -3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{RS}{STX}\uFFFD", result);
+        assertEquals("{SYN}{RS}{STX}\uFFFD", result, "result");
     }
 
     @Test
@@ -1037,7 +1220,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 7;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{BEL}", result);
+        assertEquals("{NULL}{BEL}", result, "result");
     }
 
     @Test
@@ -1048,7 +1231,7 @@ public class ISOUtilTest {
         b[2] = (byte) 13;
         b[3] = (byte) -23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{SOH}{CR}\uFFE9{NULL}", result);
+        assertEquals("{EOT}{SOH}{CR}\uFFE9{NULL}", result, "result");
     }
 
     @Test
@@ -1059,7 +1242,7 @@ public class ISOUtilTest {
         b[2] = (byte) 7;
         b[4] = (byte) -17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{SYN}{BEL}{NULL}\uFFEF", result);
+        assertEquals("{NAK}{SYN}{BEL}{NULL}\uFFEF", result, "result");
     }
 
     @Test
@@ -1070,7 +1253,7 @@ public class ISOUtilTest {
         b[2] = (byte) -8;
         b[3] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ}[08]\uFFF8{DLE}", result);
+        assertEquals("{ENQ}[08]\uFFF8{DLE}", result, "result");
     }
 
     @Test
@@ -1080,7 +1263,7 @@ public class ISOUtilTest {
         b[1] = (byte) 1;
         b[3] = (byte) -9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{SOH}{NULL}\uFFF7", result);
+        assertEquals("{SYN}{SOH}{NULL}\uFFF7", result, "result");
     }
 
     @Test
@@ -1090,7 +1273,7 @@ public class ISOUtilTest {
         b[1] = (byte) -18;
         b[2] = (byte) 91;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}\uFFEE[", result);
+        assertEquals("{NAK}\uFFEE[", result, "result");
     }
 
     @Test
@@ -1099,7 +1282,7 @@ public class ISOUtilTest {
         b[0] = (byte) 7;
         b[1] = (byte) -24;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{BEL}\uFFE8{NULL}", result);
+        assertEquals("{BEL}\uFFE8{NULL}", result, "result");
     }
 
     @Test
@@ -1109,7 +1292,7 @@ public class ISOUtilTest {
         b[1] = (byte) -8;
         b[3] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}\uFFF8{NULL}[1F]", result);
+        assertEquals("{FS}\uFFF8{NULL}[1F]", result, "result");
     }
 
     @Test
@@ -1118,7 +1301,7 @@ public class ISOUtilTest {
         b[0] = (byte) 5;
         b[2] = (byte) 119;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ}{NULL}w{NULL}", result);
+        assertEquals("{ENQ}{NULL}w{NULL}", result, "result");
     }
 
     @Test
@@ -1126,7 +1309,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 5;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{ENQ}", result);
+        assertEquals("{NULL}{ENQ}", result, "result");
     }
 
     @Test
@@ -1136,7 +1319,7 @@ public class ISOUtilTest {
         b[1] = (byte) -6;
         b[4] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}\uFFFA{NULL}{NULL}{SYN}", result);
+        assertEquals("{LF}\uFFFA{NULL}{NULL}{SYN}", result, "result");
     }
 
     @Test
@@ -1148,7 +1331,7 @@ public class ISOUtilTest {
         b[3] = (byte) 11;
         b[4] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}\uFFFA\uFFE3[0B]{SYN}", result);
+        assertEquals("{LF}\uFFFA\uFFE3[0B]{SYN}", result, "result");
     }
 
     @Test
@@ -1158,7 +1341,7 @@ public class ISOUtilTest {
         b[2] = (byte) 2;
         b[3] = (byte) -3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{RS}{STX}\uFFFD", result);
+        assertEquals("{NULL}{RS}{STX}\uFFFD", result, "result");
     }
 
     @Test
@@ -1167,7 +1350,7 @@ public class ISOUtilTest {
         b[0] = (byte) 11;
         b[2] = (byte) 21;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[0B]{NULL}{NAK}", result);
+        assertEquals("[0B]{NULL}{NAK}", result, "result");
     }
 
     @Test
@@ -1177,7 +1360,7 @@ public class ISOUtilTest {
         b[1] = (byte) 8;
         b[3] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ}[08]{NULL}{DLE}", result);
+        assertEquals("{ENQ}[08]{NULL}{DLE}", result, "result");
     }
 
     @Test
@@ -1187,7 +1370,7 @@ public class ISOUtilTest {
         b[1] = (byte) 21;
         b[2] = (byte) -16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NAK}\uFFF0{NULL}{NULL}", result);
+        assertEquals("{STX}{NAK}\uFFF0{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1196,7 +1379,7 @@ public class ISOUtilTest {
         b[0] = (byte) 28;
         b[1] = (byte) -4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}\uFFFC{NULL}", result);
+        assertEquals("{FS}\uFFFC{NULL}", result, "result");
     }
 
     @Test
@@ -1207,7 +1390,7 @@ public class ISOUtilTest {
         b[2] = (byte) 119;
         b[3] = (byte) -105;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ}[17]w\uFF97", result);
+        assertEquals("{ENQ}[17]w\uFF97", result, "result");
     }
 
     @Test
@@ -1219,7 +1402,7 @@ public class ISOUtilTest {
         b[3] = (byte) 15;
         b[4] = (byte) 26;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}\uFFF4[1F][0F][1A]", result);
+        assertEquals("{LF}\uFFF4[1F][0F][1A]", result, "result");
     }
 
     @Test
@@ -1229,7 +1412,7 @@ public class ISOUtilTest {
         b[1] = (byte) 96;
         b[2] = (byte) 29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}`[1D]{NULL}", result);
+        assertEquals("{SOH}`[1D]{NULL}", result, "result");
     }
 
     @Test
@@ -1240,7 +1423,7 @@ public class ISOUtilTest {
         b[2] = (byte) -128;
         b[4] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}[0F]\uFF80{NULL}{DLE}", result);
+        assertEquals("{NAK}[0F]\uFF80{NULL}{DLE}", result, "result");
     }
 
     @Test
@@ -1248,7 +1431,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{NULL}", result);
+        assertEquals("{EOT}{NULL}", result, "result");
     }
 
     @Test
@@ -1259,7 +1442,7 @@ public class ISOUtilTest {
         b[3] = (byte) 29;
         b[4] = (byte) -17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{SYN}{NULL}[1D]\uFFEF", result);
+        assertEquals("{NAK}{SYN}{NULL}[1D]\uFFEF", result, "result");
     }
 
     @Test
@@ -1268,7 +1451,7 @@ public class ISOUtilTest {
         b[0] = (byte) 13;
         b[2] = (byte) 17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{CR}{NULL}[11]", result);
+        assertEquals("{CR}{NULL}[11]", result, "result");
     }
 
     @Test
@@ -1278,7 +1461,7 @@ public class ISOUtilTest {
         b[2] = (byte) 127;
         b[3] = (byte) 21;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL} [7F]{NAK}{NULL}", result);
+        assertEquals("{NULL} [7F]{NAK}{NULL}", result, "result");
     }
 
     @Test
@@ -1289,7 +1472,7 @@ public class ISOUtilTest {
         b[2] = (byte) 13;
         b[4] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{SOH}{CR}{NULL}[17]", result);
+        assertEquals("{EOT}{SOH}{CR}{NULL}[17]", result, "result");
     }
 
     @Test
@@ -1298,7 +1481,7 @@ public class ISOUtilTest {
         b[0] = (byte) 22;
         b[2] = (byte) -26;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{NULL}\uFFE6{NULL}{NULL}", result);
+        assertEquals("{SYN}{NULL}\uFFE6{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1308,7 +1491,7 @@ public class ISOUtilTest {
         b[1] = (byte) -29;
         b[4] = (byte) 9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE3{NULL}{NULL}[09]", result);
+        assertEquals("{RS}\uFFE3{NULL}{NULL}[09]", result, "result");
     }
 
     @Test
@@ -1316,7 +1499,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{NULL}", result);
+        assertEquals("{SYN}{NULL}", result, "result");
     }
 
     @Test
@@ -1325,7 +1508,7 @@ public class ISOUtilTest {
         b[1] = (byte) 23;
         b[2] = (byte) 5;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}[17]{ENQ}{NULL}", result);
+        assertEquals("{NULL}[17]{ENQ}{NULL}", result, "result");
     }
 
     @Test
@@ -1334,7 +1517,7 @@ public class ISOUtilTest {
         b[0] = (byte) 3;
         b[2] = (byte) -91;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}{NULL}\uFFA5{NULL}{NULL}", result);
+        assertEquals("{ETX}{NULL}\uFFA5{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1344,7 +1527,7 @@ public class ISOUtilTest {
         b[1] = (byte) -20;
         b[4] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}\uFFEC{NULL}{NULL}{EOT}", result);
+        assertEquals("{ETX}\uFFEC{NULL}{NULL}{EOT}", result, "result");
     }
 
     @Test
@@ -1352,7 +1535,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) 1;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}{NULL}", result);
+        assertEquals("{SOH}{NULL}", result, "result");
     }
 
     @Test
@@ -1363,7 +1546,7 @@ public class ISOUtilTest {
         b[2] = (byte) -29;
         b[4] = (byte) 27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}{ENQ}\uFFE3{NULL}[1B]", result);
+        assertEquals("{ACK}{ENQ}\uFFE3{NULL}[1B]", result, "result");
     }
 
     @Test
@@ -1372,7 +1555,7 @@ public class ISOUtilTest {
         b[0] = (byte) 4;
         b[1] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}[17]{NULL}{NULL}", result);
+        assertEquals("{EOT}[17]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1382,7 +1565,7 @@ public class ISOUtilTest {
         b[2] = (byte) -8;
         b[3] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ}{NULL}\uFFF8{DLE}", result);
+        assertEquals("{ENQ}{NULL}\uFFF8{DLE}", result, "result");
     }
 
     @Test
@@ -1391,7 +1574,7 @@ public class ISOUtilTest {
         b[0] = (byte) 4;
         b[1] = (byte) 5;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{ENQ}", result);
+        assertEquals("{EOT}{ENQ}", result, "result");
     }
 
     @Test
@@ -1402,7 +1585,7 @@ public class ISOUtilTest {
         b[2] = (byte) 9;
         b[3] = (byte) -9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{SOH}[09]\uFFF7", result);
+        assertEquals("{SYN}{SOH}[09]\uFFF7", result, "result");
     }
 
     @Test
@@ -1411,7 +1594,7 @@ public class ISOUtilTest {
         b[0] = (byte) 30;
         b[1] = (byte) -26;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE6{NULL}{NULL}{NULL}", result);
+        assertEquals("{RS}\uFFE6{NULL}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1420,7 +1603,7 @@ public class ISOUtilTest {
         b[1] = (byte) 8;
         b[2] = (byte) -31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}[08]\uFFE1{NULL}", result);
+        assertEquals("{NULL}[08]\uFFE1{NULL}", result, "result");
     }
 
     @Test
@@ -1432,7 +1615,7 @@ public class ISOUtilTest {
         b[3] = (byte) 7;
         b[4] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}\uFFEB\uFFFA{BEL}[1F]", result);
+        assertEquals("{STX}\uFFEB\uFFFA{BEL}[1F]", result, "result");
     }
 
     @Test
@@ -1444,7 +1627,7 @@ public class ISOUtilTest {
         b[3] = (byte) 28;
         b[4] = (byte) 2;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NAK}\uFFF0{FS}{STX}", result);
+        assertEquals("{STX}{NAK}\uFFF0{FS}{STX}", result, "result");
     }
 
     @Test
@@ -1453,7 +1636,7 @@ public class ISOUtilTest {
         b[0] = (byte) 2;
         b[2] = (byte) -23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NULL}\uFFE9", result);
+        assertEquals("{STX}{NULL}\uFFE9", result, "result");
     }
 
     @Test
@@ -1463,7 +1646,7 @@ public class ISOUtilTest {
         b[1] = (byte) -12;
         b[2] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}\uFFF4[1F]{NULL}{NULL}", result);
+        assertEquals("{LF}\uFFF4[1F]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1473,7 +1656,7 @@ public class ISOUtilTest {
         b[2] = (byte) 2;
         b[3] = (byte) -3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{NULL}{STX}\uFFFD", result);
+        assertEquals("{SYN}{NULL}{STX}\uFFFD", result, "result");
     }
 
     @Test
@@ -1484,7 +1667,7 @@ public class ISOUtilTest {
         b[2] = (byte) -26;
         b[3] = (byte) 11;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}[12]\uFFE6[0B]", result);
+        assertEquals("{SYN}[12]\uFFE6[0B]", result, "result");
     }
 
     @Test
@@ -1495,7 +1678,7 @@ public class ISOUtilTest {
         b[3] = (byte) 4;
         b[4] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NULL}\uFFA3{EOT}{FS}", result);
+        assertEquals("{STX}{NULL}\uFFA3{EOT}{FS}", result, "result");
     }
 
     @Test
@@ -1503,7 +1686,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 30;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{RS}", result);
+        assertEquals("{NULL}{RS}", result, "result");
     }
 
     @Test
@@ -1513,7 +1696,7 @@ public class ISOUtilTest {
         b[1] = (byte) -8;
         b[2] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}\uFFF8{DLE}{NULL}", result);
+        assertEquals("{FS}\uFFF8{DLE}{NULL}", result, "result");
     }
 
     @Test
@@ -1521,7 +1704,7 @@ public class ISOUtilTest {
         byte[] b = new byte[5];
         b[2] = (byte) 13;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{NULL}{CR}{NULL}{NULL}", result);
+        assertEquals("{NULL}{NULL}{CR}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1529,7 +1712,7 @@ public class ISOUtilTest {
         byte[] b = new byte[1];
         b[0] = (byte) 49;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "1", result);
+        assertEquals("1", result, "result");
     }
 
     @Test
@@ -1538,7 +1721,7 @@ public class ISOUtilTest {
         b[0] = (byte) 16;
         b[1] = (byte) -7;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{DLE}\uFFF9", result);
+        assertEquals("{DLE}\uFFF9", result, "result");
     }
 
     @Test
@@ -1549,7 +1732,7 @@ public class ISOUtilTest {
         b[2] = (byte) 16;
         b[3] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}\uFFF8{DLE}[1F]", result);
+        assertEquals("{FS}\uFFF8{DLE}[1F]", result, "result");
     }
 
     @Test
@@ -1559,7 +1742,7 @@ public class ISOUtilTest {
         b[1] = (byte) 8;
         b[2] = (byte) -24;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[1A][08]\uFFE8", result);
+        assertEquals("[1A][08]\uFFE8", result, "result");
     }
 
     @Test
@@ -1568,7 +1751,7 @@ public class ISOUtilTest {
         b[0] = (byte) 16;
         b[2] = (byte) 93;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{DLE}{NULL}]{NULL}{NULL}", result);
+        assertEquals("{DLE}{NULL}]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1577,7 +1760,7 @@ public class ISOUtilTest {
         b[0] = (byte) 21;
         b[1] = (byte) -18;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}\uFFEE{NULL}", result);
+        assertEquals("{NAK}\uFFEE{NULL}", result, "result");
     }
 
     @Test
@@ -1588,7 +1771,7 @@ public class ISOUtilTest {
         b[2] = (byte) -16;
         b[3] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NAK}\uFFF0{FS}{NULL}", result);
+        assertEquals("{STX}{NAK}\uFFF0{FS}{NULL}", result, "result");
     }
 
     @Test
@@ -1600,7 +1783,7 @@ public class ISOUtilTest {
         b[3] = (byte) 4;
         b[4] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}[0F]\uFFA3{EOT}{FS}", result);
+        assertEquals("{STX}[0F]\uFFA3{EOT}{FS}", result, "result");
     }
 
     @Test
@@ -1610,7 +1793,7 @@ public class ISOUtilTest {
         b[1] = (byte) -12;
         b[2] = (byte) 27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}\uFFF4[1B]{NULL}", result);
+        assertEquals("{EOT}\uFFF4[1B]{NULL}", result, "result");
     }
 
     @Test
@@ -1619,7 +1802,7 @@ public class ISOUtilTest {
         b[0] = (byte) 28;
         b[2] = (byte) 20;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}{NULL}[14]", result);
+        assertEquals("{FS}{NULL}[14]", result, "result");
     }
 
     @Test
@@ -1628,7 +1811,7 @@ public class ISOUtilTest {
         b[0] = (byte) 6;
         b[1] = (byte) 7;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}{BEL}", result);
+        assertEquals("{ACK}{BEL}", result, "result");
     }
 
     @Test
@@ -1637,7 +1820,7 @@ public class ISOUtilTest {
         b[0] = (byte) 24;
         b[3] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[18]{NULL}{NULL}{SYN}", result);
+        assertEquals("[18]{NULL}{NULL}{SYN}", result, "result");
     }
 
     @Test
@@ -1647,7 +1830,7 @@ public class ISOUtilTest {
         b[1] = (byte) 5;
         b[2] = (byte) -29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}{ENQ}\uFFE3{NULL}{NULL}", result);
+        assertEquals("{ACK}{ENQ}\uFFE3{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1656,7 +1839,7 @@ public class ISOUtilTest {
         b[0] = (byte) -1;
         b[2] = (byte) 13;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "\uFFFF{NULL}{CR}{NULL}{NULL}", result);
+        assertEquals("\uFFFF{NULL}{CR}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1665,7 +1848,7 @@ public class ISOUtilTest {
         b[0] = (byte) 4;
         b[1] = (byte) -22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}\uFFEA", result);
+        assertEquals("{EOT}\uFFEA", result, "result");
     }
 
     @Test
@@ -1676,7 +1859,7 @@ public class ISOUtilTest {
         b[3] = (byte) -23;
         b[4] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{SOH}{NULL}\uFFE9[17]", result);
+        assertEquals("{EOT}{SOH}{NULL}\uFFE9[17]", result, "result");
     }
 
     @Test
@@ -1687,7 +1870,7 @@ public class ISOUtilTest {
         b[2] = (byte) -93;
         b[3] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}[0F]\uFFA3{EOT}{NULL}", result);
+        assertEquals("{STX}[0F]\uFFA3{EOT}{NULL}", result, "result");
     }
 
     @Test
@@ -1696,7 +1879,7 @@ public class ISOUtilTest {
         b[0] = (byte) 6;
         b[1] = (byte) 8;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}[08]", result);
+        assertEquals("{ACK}[08]", result, "result");
     }
 
     @Test
@@ -1706,7 +1889,7 @@ public class ISOUtilTest {
         b[1] = (byte) 16;
         b[2] = (byte) -23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{DLE}\uFFE9", result);
+        assertEquals("{STX}{DLE}\uFFE9", result, "result");
     }
 
     @Test
@@ -1717,7 +1900,7 @@ public class ISOUtilTest {
         b[3] = (byte) 11;
         b[4] = (byte) 22;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}\uFFFA{NULL}[0B]{SYN}", result);
+        assertEquals("{LF}\uFFFA{NULL}[0B]{SYN}", result, "result");
     }
 
     @Test
@@ -1726,14 +1909,14 @@ public class ISOUtilTest {
         b[0] = (byte) 24;
         b[1] = (byte) 18;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "[18][12]", result);
+        assertEquals("[18][12]", result, "result");
     }
 
     @Test
     public void testDumpString51() throws Throwable {
         byte[] b = new byte[0];
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
@@ -1744,7 +1927,7 @@ public class ISOUtilTest {
         b[3] = (byte) 7;
         b[4] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}\uFFEB{NULL}{BEL}[1F]", result);
+        assertEquals("{STX}\uFFEB{NULL}{BEL}[1F]", result, "result");
     }
 
     @Test
@@ -1753,7 +1936,7 @@ public class ISOUtilTest {
         b[0] = (byte) 10;
         b[2] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{LF}{NULL}[1F]{NULL}{NULL}", result);
+        assertEquals("{LF}{NULL}[1F]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1763,7 +1946,7 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[2] = (byte) 127;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ} [7F]{NULL}{NULL}", result);
+        assertEquals("{ENQ} [7F]{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1775,7 +1958,7 @@ public class ISOUtilTest {
         b[3] = (byte) 16;
         b[4] = (byte) -28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK} \uFFA3{DLE}\uFFE4", result);
+        assertEquals("{ACK} \uFFA3{DLE}\uFFE4", result, "result");
     }
 
     @Test
@@ -1786,7 +1969,7 @@ public class ISOUtilTest {
         b[3] = (byte) -23;
         b[4] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{SOH}{CR}\uFFE9[17]", result);
+        assertEquals("{NULL}{SOH}{CR}\uFFE9[17]", result, "result");
     }
 
     @Test
@@ -1795,7 +1978,7 @@ public class ISOUtilTest {
         b[0] = (byte) 7;
         b[2] = (byte) 26;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{BEL}{NULL}[1A]", result);
+        assertEquals("{BEL}{NULL}[1A]", result, "result");
     }
 
     @Test
@@ -1805,7 +1988,7 @@ public class ISOUtilTest {
         b[1] = (byte) 1;
         b[2] = (byte) 9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{SOH}[09]{NULL}", result);
+        assertEquals("{SYN}{SOH}[09]{NULL}", result, "result");
     }
 
     @Test
@@ -1816,7 +1999,7 @@ public class ISOUtilTest {
         b[2] = (byte) 27;
         b[3] = (byte) 12;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}\uFFF4[1B][0C]", result);
+        assertEquals("{EOT}\uFFF4[1B][0C]", result, "result");
     }
 
     @Test
@@ -1826,7 +2009,7 @@ public class ISOUtilTest {
         b[1] = (byte) 23;
         b[2] = (byte) 5;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}[17]{ENQ}{NULL}", result);
+        assertEquals("{EOT}[17]{ENQ}{NULL}", result, "result");
     }
 
     @Test
@@ -1838,7 +2021,7 @@ public class ISOUtilTest {
         b[3] = (byte) 21;
         b[4] = (byte) -9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ENQ} [7F]{NAK}\uFFF7", result);
+        assertEquals("{ENQ} [7F]{NAK}\uFFF7", result, "result");
     }
 
     @Test
@@ -1848,7 +2031,7 @@ public class ISOUtilTest {
         b[2] = (byte) 13;
         b[4] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}\uFFEC{CR}{NULL}{EOT}", result);
+        assertEquals("{NULL}\uFFEC{CR}{NULL}{EOT}", result, "result");
     }
 
     @Test
@@ -1859,7 +2042,7 @@ public class ISOUtilTest {
         b[2] = (byte) 5;
         b[3] = (byte) 29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}[17]{ENQ}[1D]", result);
+        assertEquals("{EOT}[17]{ENQ}[1D]", result, "result");
     }
 
     @Test
@@ -1868,7 +2051,7 @@ public class ISOUtilTest {
         b[0] = (byte) 1;
         b[1] = (byte) -15;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}\uFFF1{NULL}{NULL}{NULL}", result);
+        assertEquals("{SOH}\uFFF1{NULL}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -1880,7 +2063,7 @@ public class ISOUtilTest {
         b[3] = (byte) -24;
         b[4] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}\uFFEC{CR}\uFFE8{EOT}", result);
+        assertEquals("{ETX}\uFFEC{CR}\uFFE8{EOT}", result, "result");
     }
 
     @Test
@@ -1891,7 +2074,7 @@ public class ISOUtilTest {
         b[2] = (byte) 30;
         b[3] = (byte) -27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}\uFFEE{RS}\uFFE5", result);
+        assertEquals("{SYN}\uFFEE{RS}\uFFE5", result, "result");
     }
 
     @Test
@@ -1899,7 +2082,7 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[2] = (byte) 6;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{NULL}{ACK}", result);
+        assertEquals("{NULL}{NULL}{ACK}", result, "result");
     }
 
     @Test
@@ -1908,7 +2091,7 @@ public class ISOUtilTest {
         b[0] = (byte) 2;
         b[1] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{DLE}{NULL}", result);
+        assertEquals("{STX}{DLE}{NULL}", result, "result");
     }
 
     @Test
@@ -1918,7 +2101,7 @@ public class ISOUtilTest {
         b[1] = (byte) -21;
         b[4] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}\uFFEB{NULL}{NULL}[1F]", result);
+        assertEquals("{STX}\uFFEB{NULL}{NULL}[1F]", result, "result");
     }
 
     @Test
@@ -1926,7 +2109,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) -15;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}\uFFF1", result);
+        assertEquals("{NULL}\uFFF1", result, "result");
     }
 
     @Test
@@ -1936,7 +2119,7 @@ public class ISOUtilTest {
         b[3] = (byte) 7;
         b[4] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}\uFFEB{NULL}{BEL}[1F]", result);
+        assertEquals("{NULL}\uFFEB{NULL}{BEL}[1F]", result, "result");
     }
 
     @Test
@@ -1945,7 +2128,7 @@ public class ISOUtilTest {
         b[0] = (byte) 22;
         b[1] = (byte) 29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}[1D]", result);
+        assertEquals("{SYN}[1D]", result, "result");
     }
 
     @Test
@@ -1956,7 +2139,7 @@ public class ISOUtilTest {
         b[3] = (byte) 4;
         b[4] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}[0F]{NULL}{EOT}{FS}", result);
+        assertEquals("{STX}[0F]{NULL}{EOT}{FS}", result, "result");
     }
 
     @Test
@@ -1968,7 +2151,7 @@ public class ISOUtilTest {
         b[3] = (byte) 7;
         b[4] = (byte) 9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE3\uFFF8{BEL}[09]", result);
+        assertEquals("{RS}\uFFE3\uFFF8{BEL}[09]", result, "result");
     }
 
     @Test
@@ -1977,7 +2160,7 @@ public class ISOUtilTest {
         b[0] = (byte) 3;
         b[1] = (byte) 92;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}\\", result);
+        assertEquals("{ETX}\\", result, "result");
     }
 
     @Test
@@ -1987,7 +2170,7 @@ public class ISOUtilTest {
         b[2] = (byte) -128;
         b[4] = (byte) 16;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{NULL}\uFF80{NULL}{DLE}", result);
+        assertEquals("{NAK}{NULL}\uFF80{NULL}{DLE}", result, "result");
     }
 
     @Test
@@ -1996,7 +2179,7 @@ public class ISOUtilTest {
         b[0] = (byte) -19;
         b[1] = (byte) 30;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "\uFFED{RS}", result);
+        assertEquals("\uFFED{RS}", result, "result");
     }
 
     @Test
@@ -2005,7 +2188,7 @@ public class ISOUtilTest {
         b[0] = (byte) 6;
         b[1] = (byte) -27;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}\uFFE5", result);
+        assertEquals("{ACK}\uFFE5", result, "result");
     }
 
     @Test
@@ -2014,7 +2197,7 @@ public class ISOUtilTest {
         b[1] = (byte) 28;
         b[2] = (byte) 3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{FS}{ETX}", result);
+        assertEquals("{NULL}{FS}{ETX}", result, "result");
     }
 
     @Test
@@ -2024,7 +2207,7 @@ public class ISOUtilTest {
         b[1] = (byte) -20;
         b[2] = (byte) 13;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}\uFFEC{CR}{NULL}{NULL}", result);
+        assertEquals("{ETX}\uFFEC{CR}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -2035,7 +2218,7 @@ public class ISOUtilTest {
         b[3] = (byte) -23;
         b[4] = (byte) 23;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{EOT}{NULL}{CR}\uFFE9[17]", result);
+        assertEquals("{EOT}{NULL}{CR}\uFFE9[17]", result, "result");
     }
 
     @Test
@@ -2046,7 +2229,7 @@ public class ISOUtilTest {
         b[3] = (byte) 4;
         b[4] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}[0F]\uFFA3{EOT}{FS}", result);
+        assertEquals("{NULL}[0F]\uFFA3{EOT}{FS}", result, "result");
     }
 
     @Test
@@ -2056,7 +2239,7 @@ public class ISOUtilTest {
         b[1] = (byte) 30;
         b[3] = (byte) -3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{RS}{NULL}\uFFFD", result);
+        assertEquals("{SYN}{RS}{NULL}\uFFFD", result, "result");
     }
 
     @Test
@@ -2066,7 +2249,7 @@ public class ISOUtilTest {
         b[1] = (byte) 21;
         b[3] = (byte) 28;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}{NAK}{NULL}{FS}{NULL}", result);
+        assertEquals("{STX}{NAK}{NULL}{FS}{NULL}", result, "result");
     }
 
     @Test
@@ -2074,7 +2257,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 15;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}[0F]", result);
+        assertEquals("{NULL}[0F]", result, "result");
     }
 
     @Test
@@ -2085,7 +2268,7 @@ public class ISOUtilTest {
         b[2] = (byte) 13;
         b[4] = (byte) 4;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}\uFFEC{CR}{NULL}{EOT}", result);
+        assertEquals("{ETX}\uFFEC{CR}{NULL}{EOT}", result, "result");
     }
 
     @Test
@@ -2094,7 +2277,7 @@ public class ISOUtilTest {
         b[0] = (byte) 3;
         b[2] = (byte) 6;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}{NULL}{ACK}", result);
+        assertEquals("{ETX}{NULL}{ACK}", result, "result");
     }
 
     @Test
@@ -2104,7 +2287,7 @@ public class ISOUtilTest {
         b[2] = (byte) 9;
         b[3] = (byte) -9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{NULL}[09]\uFFF7", result);
+        assertEquals("{SYN}{NULL}[09]\uFFF7", result, "result");
     }
 
     @Test
@@ -2116,7 +2299,7 @@ public class ISOUtilTest {
         b[3] = (byte) 94;
         b[4] = (byte) -30;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}{RS}\uFFA5^\uFFE2", result);
+        assertEquals("{ETX}{RS}\uFFA5^\uFFE2", result, "result");
     }
 
     @Test
@@ -2126,7 +2309,7 @@ public class ISOUtilTest {
         b[1] = (byte) -24;
         b[2] = (byte) 90;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{BEL}\uFFE8Z", result);
+        assertEquals("{BEL}\uFFE8Z", result, "result");
     }
 
     @Test
@@ -2136,14 +2319,14 @@ public class ISOUtilTest {
         b[1] = (byte) -21;
         b[3] = (byte) 7;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{STX}\uFFEB{NULL}{BEL}{NULL}", result);
+        assertEquals("{STX}\uFFEB{NULL}{BEL}{NULL}", result, "result");
     }
 
     @Test
     public void testDumpString89() throws Throwable {
         byte[] b = new byte[1];
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}", result);
+        assertEquals("{NULL}", result, "result");
     }
 
     @Test
@@ -2152,7 +2335,7 @@ public class ISOUtilTest {
         b[0] = (byte) 6;
         b[2] = (byte) 94;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ACK}{NULL}^{NULL}{NULL}", result);
+        assertEquals("{ACK}{NULL}^{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -2161,7 +2344,7 @@ public class ISOUtilTest {
         b[0] = (byte) 1;
         b[1] = (byte) 10;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SOH}{LF}", result);
+        assertEquals("{SOH}{LF}", result, "result");
     }
 
     @Test
@@ -2171,7 +2354,7 @@ public class ISOUtilTest {
         b[1] = (byte) 30;
         b[2] = (byte) 2;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{SYN}{RS}{STX}{NULL}", result);
+        assertEquals("{SYN}{RS}{STX}{NULL}", result, "result");
     }
 
     @Test
@@ -2182,7 +2365,7 @@ public class ISOUtilTest {
         b[2] = (byte) 7;
         b[3] = (byte) 29;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{SYN}{BEL}[1D]{NULL}", result);
+        assertEquals("{NAK}{SYN}{BEL}[1D]{NULL}", result, "result");
     }
 
     @Test
@@ -2194,7 +2377,7 @@ public class ISOUtilTest {
         b[3] = (byte) 29;
         b[4] = (byte) -17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{SYN}{BEL}[1D]\uFFEF", result);
+        assertEquals("{NAK}{SYN}{BEL}[1D]\uFFEF", result, "result");
     }
 
     @Test
@@ -2202,7 +2385,7 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[0] = (byte) 3;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{ETX}{NULL}{NULL}", result);
+        assertEquals("{ETX}{NULL}{NULL}", result, "result");
     }
 
     @Test
@@ -2211,7 +2394,7 @@ public class ISOUtilTest {
         b[1] = (byte) 6;
         b[2] = (byte) 25;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NULL}{ACK}[19]{NULL}", result);
+        assertEquals("{NULL}{ACK}[19]{NULL}", result, "result");
     }
 
     @Test
@@ -2222,7 +2405,7 @@ public class ISOUtilTest {
         b[3] = (byte) 29;
         b[4] = (byte) -17;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{NAK}{NULL}{BEL}[1D]\uFFEF", result);
+        assertEquals("{NAK}{NULL}{BEL}[1D]\uFFEF", result, "result");
     }
 
     @Test
@@ -2232,7 +2415,7 @@ public class ISOUtilTest {
         b[1] = (byte) -29;
         b[3] = (byte) 7;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE3{NULL}{BEL}{NULL}", result);
+        assertEquals("{RS}\uFFE3{NULL}{BEL}{NULL}", result, "result");
     }
 
     @Test
@@ -2242,7 +2425,7 @@ public class ISOUtilTest {
         b[2] = (byte) 16;
         b[3] = (byte) 31;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{FS}{NULL}{DLE}[1F]", result);
+        assertEquals("{FS}{NULL}{DLE}[1F]", result, "result");
     }
 
     @Test
@@ -2253,152 +2436,144 @@ public class ISOUtilTest {
         b[3] = (byte) 7;
         b[4] = (byte) 9;
         String result = ISOUtil.dumpString(b);
-        assertEquals("result", "{RS}\uFFE3{NULL}{BEL}[09]", result);
+        assertEquals("{RS}\uFFE3{NULL}{BEL}[09]", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testDumpStringThrowsNullPointerException() throws Throwable {
-        ISOUtil.dumpString((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.dumpString(null);
+        });
     }
 
     @Test
     public void testEbcdicToAscii() throws Throwable {
         byte[] e = new byte[2];
         String result = ISOUtil.ebcdicToAscii(e);
-        assertEquals("result", "\u0000\u0000", result);
+        assertEquals("\u0000\u0000", result, "result");
     }
 
     @Test
     public void testEbcdicToAscii1() throws Throwable {
         byte[] e = new byte[3];
         String result = ISOUtil.ebcdicToAscii(e, 0, 1);
-        assertEquals("result", "\u0000", result);
+        assertEquals("\u0000", result, "result");
     }
 
     @Test
     public void testEbcdicToAsciiBytes() throws Throwable {
         byte[] e = new byte[2];
         byte[] result = ISOUtil.ebcdicToAsciiBytes(e, 0, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
-    }
-
-    @Test
-    public void testEbcdicToAsciiBytes1() throws Throwable {
-        byte[] e = new byte[3];
-        byte[] result = ISOUtil.ebcdicToAsciiBytes(e, 100, 0);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
     public void testEbcdicToAsciiBytes2() throws Throwable {
         byte[] e = new byte[0];
         byte[] result = ISOUtil.ebcdicToAsciiBytes(e);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testEbcdicToAsciiBytes3() throws Throwable {
         byte[] e = new byte[2];
         byte[] result = ISOUtil.ebcdicToAsciiBytes(e);
-        assertEquals("result.length", 2, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(2, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
     public void testEbcdicToAsciiBytesThrowsArrayIndexOutOfBoundsException() throws Throwable {
-        byte[] e = new byte[1];
-        try {
-            ISOUtil.ebcdicToAsciiBytes(e, 0, 100);
-            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
-        }
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            ISOUtil.ebcdicToAsciiBytes(new byte[1], 0, 100);
+        });
     }
 
     @Test
     public void testEbcdicToAsciiBytesThrowsArrayIndexOutOfBoundsException1() throws Throwable {
-        byte[] e = new byte[1];
-        try {
-            ISOUtil.ebcdicToAsciiBytes(e, 100, 1000);
-            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
-        }
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            ISOUtil.ebcdicToAsciiBytes(new byte[1], 100, 1000);
+        });
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testEbcdicToAsciiBytesThrowsNegativeArraySizeException() throws Throwable {
-        byte[] e = new byte[1];
-        ISOUtil.ebcdicToAsciiBytes(e, 100, -1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            byte[] e = new byte[1];
+            ISOUtil.ebcdicToAsciiBytes(e, 100, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testEbcdicToAsciiBytesThrowsNullPointerException() throws Throwable {
-        ISOUtil.ebcdicToAsciiBytes((byte[]) null, 100, 1000);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.ebcdicToAsciiBytes(null, 100, 1000);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testEbcdicToAsciiBytesThrowsNullPointerException1() throws Throwable {
-        ISOUtil.ebcdicToAsciiBytes((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.ebcdicToAsciiBytes(null);
+        });
     }
 
     @Test
     public void testEbcdicToAsciiThrowsArrayIndexOutOfBoundsException() throws Throwable {
-        byte[] e = new byte[1];
-        try {
-            ISOUtil.ebcdicToAscii(e, 100, 1000);
-            fail("Expected ArrayIndexOutOfBoundsException to be thrown");
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
-        }
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            ISOUtil.ebcdicToAscii(new byte[1], 100, 1000);
+        });
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testEbcdicToAsciiThrowsNegativeArraySizeException() throws Throwable {
-        byte[] e = new byte[1];
-        ISOUtil.ebcdicToAscii(e, 100, -1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            ISOUtil.ebcdicToAscii(new byte[1], 100, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testEbcdicToAsciiThrowsNullPointerException() throws Throwable {
-        ISOUtil.ebcdicToAscii((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.ebcdicToAscii(null);
+        });
     }
 
     @Test
     public void testFormatAmount() throws Throwable {
         String result = ISOUtil.formatAmount(100000L, 7);
-        assertEquals("result", "1000.00", result);
+        assertEquals("1000.00", result, "result");
     }
 
     @Test
     public void testFormatAmount1() throws Throwable {
         String result = ISOUtil.formatAmount(1000L, 100);
-        assertEquals("result",
+        assertEquals(
                 "                                                                                               10.00",
-                result);
+                result, "result");
     }
 
     @Test
     public void testFormatAmount2() throws Throwable {
         String result = ISOUtil.formatAmount(100L, 100);
-        assertEquals("result",
+        assertEquals(
                 "                                                                                                1.00",
-                result);
+                result, "result");
     }
 
     @Test
     public void testFormatAmount3() throws Throwable {
         String result = ISOUtil.formatAmount(99L, 100);
-        assertEquals("result",
+        assertEquals(
                 "                                                                                                0.99",
-                result);
+                result, "result");
     }
 
     @Test
     public void testFormatAmount4() throws Throwable {
         String result = ISOUtil.formatAmount(101L, 4);
-        assertEquals("result", "1.01", result);
+        assertEquals("1.01", result, "result");
     }
 
     @Test
@@ -2407,8 +2582,8 @@ public class ISOUtilTest {
             ISOUtil.formatAmount(99L, 0);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "invalid len 3/-1", ex.getMessage());
-            assertNull("ex.nested", ex.nested);
+            assertEquals("invalid len 3/-1", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.nested, "ex.nested");
         }
     }
 
@@ -2418,8 +2593,8 @@ public class ISOUtilTest {
             ISOUtil.formatAmount(100L, 0);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "invalid len 3/-1", ex.getMessage());
-            assertNull("ex.nested", ex.nested);
+            assertEquals("invalid len 3/-1", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.nested, "ex.nested");
         }
     }
 
@@ -2429,51 +2604,51 @@ public class ISOUtilTest {
             ISOUtil.formatAmount(Long.MIN_VALUE, 100);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "invalid len 20/3", ex.getMessage());
-            assertNull("ex.nested", ex.nested);
+            assertEquals("invalid len 20/3", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.nested, "ex.nested");
         }
     }
 
     @Test
     public void testFormatDouble() throws Throwable {
         String result = ISOUtil.formatDouble(100.0, 100);
-        assertEquals("result",
+        assertEquals(
                 "                                                                                              100.00",
-                result);
+                result, "result");
     }
 
     @Test
     public void testFormatDouble1() throws Throwable {
         String result = ISOUtil.formatDouble(100.0, 0);
-        assertEquals("result", "100.00", result);
+        assertEquals("100.00", result, "result");
     }
 
     @Test
     public void testHex2BitSet() throws Throwable {
         byte[] b = new byte[82];
         BitSet result = ISOUtil.hex2BitSet(b, 0, false);
-        assertEquals("result.size()", 128, result.size());
+        assertEquals(128, result.size(), "result.size()");
     }
 
     @Test
     public void testHex2BitSet1() throws Throwable {
         byte[] b = new byte[82];
         BitSet result = ISOUtil.hex2BitSet(b, 0, true);
-        assertEquals("result.size()", 256, result.size());
+        assertEquals(256, result.size(), "result.size()");
     }
 
     @Test
     public void testHex2BitSet10() throws Throwable {
         byte[] b = new byte[80];
         BitSet result = ISOUtil.hex2BitSet(b, 0, 1000);
-        assertEquals("result.size()", 256, result.size());
+        assertEquals(384, result.size(), "result.size()");
     }
 
     @Test
     public void testHex2BitSet3() throws Throwable {
         byte[] b = new byte[0];
-        BitSet result = ISOUtil.hex2BitSet((BitSet) null, b, 100);
-        assertNull("result", result);
+        BitSet result = ISOUtil.hex2BitSet(null, b, 100);
+        assertNull(result, "result");
     }
 
     @Test
@@ -2481,21 +2656,21 @@ public class ISOUtilTest {
         byte[] b = new byte[20];
         b[11] = (byte) 65;
         BitSet result = ISOUtil.hex2BitSet(b, 0, false);
-        assertEquals("result.size()", 128, result.size());
+        assertEquals(128, result.size(), "result.size()");
     }
 
     @Test
     public void testHex2BitSet7() throws Throwable {
         byte[] b = new byte[46];
         BitSet result = ISOUtil.hex2BitSet(b, 0, 64);
-        assertEquals("result.size()", 128, result.size());
+        assertEquals(128, result.size(), "result.size()");
     }
 
     @Test
     public void testHex2BitSet9() throws Throwable {
         byte[] b = new byte[80];
         BitSet result = ISOUtil.hex2BitSet(b, 0, 100);
-        assertEquals("result.size()", 256, result.size());
+        assertEquals(256, result.size(), "result.size()");
     }
 
     @Test
@@ -2506,7 +2681,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "19", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("19", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 19 out of bounds for length 19", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2518,7 +2697,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2530,7 +2713,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 65);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "19", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("19", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 19 out of bounds for length 19", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2542,7 +2729,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 66, 127);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "83", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("83", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 83 out of bounds for length 83", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2553,7 +2744,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 65);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "19", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("19", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 19 out of bounds for length 19", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2565,7 +2760,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "20", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("20", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 20 out of bounds for length 20", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2576,7 +2775,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 1000);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "18", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("18", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 18 out of bounds for length 18", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2588,7 +2791,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 64);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2599,7 +2806,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 65);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2610,7 +2821,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, 63);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2621,7 +2836,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2632,7 +2851,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 0, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2643,7 +2866,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 100, false);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2654,7 +2881,11 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(b, 100, true);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2668,41 +2899,53 @@ public class ISOUtilTest {
             ISOUtil.hex2BitSet(bmap, b2, -29);
             fail("Expected IndexOutOfBoundsException to be thrown");
         } catch (IndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "bitIndex < 0: -28", ex.getMessage());
-            assertEquals("bmap.size()", 128, bmap.size());
+            assertEquals("bitIndex < 0: -28", ex.getMessage(), "ex.getMessage()");
+            assertEquals(128, bmap.size(), "bmap.size()");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2BitSetThrowsNullPointerException() throws Throwable {
-        ISOUtil.hex2BitSet((byte[]) null, 100, true);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hex2BitSet(null, 100, true);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2BitSetThrowsNullPointerException1() throws Throwable {
-        ISOUtil.hex2BitSet((byte[]) null, 100, 63);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hex2BitSet(null, 100, 63);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2BitSetThrowsNullPointerException2() throws Throwable {
-        ISOUtil.hex2BitSet((byte[]) null, 100, 65);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hex2BitSet(null, 100, 65);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2BitSetThrowsNullPointerException3() throws Throwable {
-        byte[] b = new byte[2];
-        ISOUtil.hex2BitSet((BitSet) null, b, 100);
+        assertThrows(NullPointerException.class, () -> {
+            byte[] b = new byte[2];
+            ISOUtil.hex2BitSet(null, b, 100);
+        });
     }
 
     @Test
     public void testHex2BitSetThrowsNullPointerException4() throws Throwable {
         BitSet bmap = new BitSet();
         try {
-            ISOUtil.hex2BitSet(bmap, (byte[]) null, 100);
+            ISOUtil.hex2BitSet(bmap, null, 100);
             fail("Expected NullPointerException to be thrown");
         } catch (NullPointerException ex) {
-            assertNull("ex.getMessage()", ex.getMessage());
-            assertEquals("bmap.size()", 64, bmap.size());
+            if (isJavaVersionAtMost(JAVA_14)) {
+                assertNull(ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Cannot read the array length because \"b\" is null", ex.getMessage(), "ex.getMessage()");
+            }
+            assertEquals(64, bmap.size(), "bmap.size()");
         }
     }
 
@@ -2710,28 +2953,28 @@ public class ISOUtilTest {
     public void testHex2byte() throws Throwable {
         byte[] b = new byte[3];
         byte[] result = ISOUtil.hex2byte(b, 0, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) -1, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) -1, result[0], "result[0]");
     }
 
     @Test
     public void testHex2byte1() throws Throwable {
         byte[] b = new byte[3];
         byte[] result = ISOUtil.hex2byte(b, 100, 0);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testHex2byte2() throws Throwable {
         byte[] result = ISOUtil.hex2byte("");
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testHex2byte3() throws Throwable {
         byte[] result = ISOUtil.hex2byte("testISOUtils");
-        assertEquals("result.length", 6, result.length);
-        assertEquals("result[0]", (byte) -2, result[0]);
+        assertEquals(6, result.length, "result.length");
+        assertEquals((byte) -2, result[0], "result[0]");
     }
 
     @Test
@@ -2741,24 +2984,34 @@ public class ISOUtilTest {
             ISOUtil.hex2byte(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testHex2byteThrowsNegativeArraySizeException() throws Throwable {
-        byte[] b = new byte[1];
-        ISOUtil.hex2byte(b, 100, -1);
+        assertThrows(NegativeArraySizeException.class, () -> {
+            byte[] b = new byte[1];
+            ISOUtil.hex2byte(b, 100, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2byteThrowsNullPointerException() throws Throwable {
-        ISOUtil.hex2byte((byte[]) null, 100, 1000);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hex2byte(null, 100, 1000);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHex2byteThrowsNullPointerException1() throws Throwable {
-        ISOUtil.hex2byte(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hex2byte(null);
+        });
     }
 
     @Test
@@ -2772,8 +3025,8 @@ public class ISOUtilTest {
         byte[] b = new byte[34];
         b[16] = (byte) 127;
         String result = ISOUtil.hexdump(b, 0, 17);
-        assertEquals("result", "0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
-                + "0010  7F                                                ." + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
+                + "0010  7F                                                ." + lineSep, result, "result");
     }
 
     @Test
@@ -2781,8 +3034,8 @@ public class ISOUtilTest {
         byte[] b = new byte[34];
         b[17] = (byte) 31;
         String result = ISOUtil.hexdump(b, 0, 32);
-        assertEquals("result", "0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
-                + "0010  00 1F 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
+                + "0010  00 1F 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep, result, "result");
     }
 
     @Test
@@ -2790,7 +3043,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[1] = (byte) 32;
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "0000  00 20                                             . " + lineSep, result);
+        assertEquals("0000  00 20                                             . " + lineSep, result, "result");
     }
 
     @Test
@@ -2798,7 +3051,7 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[1] = (byte) 127;
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "0000  00 7F 00                                          ..." + lineSep, result);
+        assertEquals("0000  00 7F 00                                          ..." + lineSep, result, "result");
     }
 
     @Test
@@ -2806,14 +3059,14 @@ public class ISOUtilTest {
         byte[] b = new byte[12];
         b[8] = (byte) 32;
         String result = ISOUtil.hexdump(b, 0, 10);
-        assertEquals("result", "0000  00 00 00 00 00 00 00 00  20 00                    ........ ." + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 00 00  20 00                    ........ ." + lineSep, result, "result");
     }
 
     @Test
     public void testHexdump13() throws Throwable {
         byte[] b = new byte[0];
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
@@ -2821,7 +3074,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) 126;
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "0000  7E 00                                             ~." + lineSep, result);
+        assertEquals("0000  7E 00                                             ~." + lineSep, result, "result");
     }
 
     @Test
@@ -2829,7 +3082,7 @@ public class ISOUtilTest {
         byte[] b = new byte[1];
         b[0] = (byte) 33;
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "0000  21                                                !" + lineSep, result);
+        assertEquals("0000  21                                                !" + lineSep, result, "result");
     }
 
     @Test
@@ -2837,7 +3090,7 @@ public class ISOUtilTest {
         byte[] b = new byte[2];
         b[0] = (byte) 31;
         String result = ISOUtil.hexdump(b);
-        assertEquals("result", "0000  1F 00                                             .." + lineSep, result);
+        assertEquals("0000  1F 00                                             .." + lineSep, result, "result");
     }
 
     @Test
@@ -2845,7 +3098,7 @@ public class ISOUtilTest {
         byte[] b = new byte[3];
         b[1] = (byte) 31;
         String result = ISOUtil.hexdump(b, 0, 3);
-        assertEquals("result", "0000  00 1F 00                                          ..." + lineSep, result);
+        assertEquals("0000  00 1F 00                                          ..." + lineSep, result, "result");
     }
 
     @Test
@@ -2855,8 +3108,8 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[5] = (byte) 31;
         String result = ISOUtil.hexdump(b, 0, 17);
-        assertEquals("result", "0000  7F 20 00 00 00 1F 00 00  00 00 00 00 00 00 00 00  . .............." + lineSep
-                + "0010  00                                                ." + lineSep, result);
+        assertEquals("0000  7F 20 00 00 00 1F 00 00  00 00 00 00 00 00 00 00  . .............." + lineSep
+                + "0010  00                                                ." + lineSep, result, "result");
     }
 
     @Test
@@ -2865,7 +3118,7 @@ public class ISOUtilTest {
         b[0] = (byte) 127;
         b[1] = (byte) 32;
         String result = ISOUtil.hexdump(b, 0, 2);
-        assertEquals("result", "0000  7F 20                                             . " + lineSep, result);
+        assertEquals("0000  7F 20                                             . " + lineSep, result, "result");
     }
 
     @Test
@@ -2874,8 +3127,8 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[5] = (byte) 31;
         String result = ISOUtil.hexdump(b, 0, 17);
-        assertEquals("result", "0000  00 20 00 00 00 1F 00 00  00 00 00 00 00 00 00 00  . .............." + lineSep
-                + "0010  00                                                ." + lineSep, result);
+        assertEquals("0000  00 20 00 00 00 1F 00 00  00 00 00 00 00 00 00 00  . .............." + lineSep
+                + "0010  00                                                ." + lineSep, result, "result");
     }
 
     @Test
@@ -2883,7 +3136,7 @@ public class ISOUtilTest {
         byte[] b = new byte[1];
         b[0] = (byte) 32;
         String result = ISOUtil.hexdump(b, 0, 1);
-        assertEquals("result", "0000  20                                                 " + lineSep, result);
+        assertEquals("0000  20                                                 " + lineSep, result, "result");
     }
 
     @Test
@@ -2892,15 +3145,15 @@ public class ISOUtilTest {
         b[0] = (byte) 127;
         b[1] = (byte) 32;
         String result = ISOUtil.hexdump(b, 0, 3);
-        assertEquals("result", "0000  7F 20 00                                          . ." + lineSep, result);
+        assertEquals("0000  7F 20 00                                          . ." + lineSep, result, "result");
     }
 
     @Test
     public void testHexdump22() throws Throwable {
         byte[] b = new byte[18];
         b[14] = (byte) 46;
-        String result = ISOUtil.hexdump(b, 10, 15);
-        assertEquals("result", "0000  00 00 00 00 2E                                    ....." + lineSep, result);
+        String result = ISOUtil.hexdump(b, 10,5);
+        assertEquals("0000  00 00 00 00 2E                                    ....." + lineSep, result, "result");
     }
 
     @Test
@@ -2908,22 +3161,22 @@ public class ISOUtilTest {
         byte[] b = new byte[12];
         b[6] = (byte) -48;
         String result = ISOUtil.hexdump(b, 0, 10);
-        assertEquals("result", "0000  00 00 00 00 00 00 D0 00  00 00                    .........." + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 D0 00  00 00                    .........." + lineSep, result, "result");
     }
 
     @Test
     public void testHexdump3() throws Throwable {
         byte[] b = new byte[2];
         String result = ISOUtil.hexdump(b, 100, 0);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testHexdump4() throws Throwable {
         byte[] b = new byte[3];
         b[1] = (byte) -4;
-        String result = ISOUtil.hexdump(b, 1, 2);
-        assertEquals("result", "0000  FC                                                ." + lineSep, result);
+        String result = ISOUtil.hexdump(b, 1, 1);
+        assertEquals("0000  FC                                                ." + lineSep, result, "result");
     }
 
     @Test
@@ -2933,22 +3186,22 @@ public class ISOUtilTest {
         b[1] = (byte) 32;
         b[5] = (byte) 31;
         String result = ISOUtil.hexdump(b, 0, 10);
-        assertEquals("result", "0000  7F 20 00 00 00 1F 00 00  00 00                    . ........" + lineSep, result);
+        assertEquals("0000  7F 20 00 00 00 1F 00 00  00 00                    . ........" + lineSep, result, "result");
     }
 
     @Test
     public void testHexdump6() throws Throwable {
         byte[] b = new byte[34];
         String result = ISOUtil.hexdump(b, 0, 10);
-        assertEquals("result", "0000  00 00 00 00 00 00 00 00  00 00                    .........." + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 00 00  00 00                    .........." + lineSep, result, "result");
     }
 
     @Test
     public void testHexdump7() throws Throwable {
         byte[] b = new byte[10];
         b[7] = (byte) -2;
-        String result = ISOUtil.hexdump(b, 7, 8);
-        assertEquals("result", "0000  FE                                                ." + lineSep, result);
+        String result = ISOUtil.hexdump(b, 7, 1);
+        assertEquals("0000  FE                                                ." + lineSep, result, "result");
     }
 
     @Test
@@ -2957,7 +3210,7 @@ public class ISOUtilTest {
         b[1] = (byte) 31;
         b[2] = (byte) -48;
         String result = ISOUtil.hexdump(b, 0, 3);
-        assertEquals("result", "0000  00 1F D0                                          ..." + lineSep, result);
+        assertEquals("0000  00 1F D0                                          ..." + lineSep, result, "result");
     }
 
     @Test
@@ -2965,8 +3218,8 @@ public class ISOUtilTest {
         byte[] b = new byte[34];
         b[16] = (byte) 127;
         String result = ISOUtil.hexdump(b, 0, 32);
-        assertEquals("result", "0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
-                + "0010  7F 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep, result);
+        assertEquals("0000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep
+                + "0010  7F 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................" + lineSep, result, "result");
     }
 
     @Test
@@ -2979,7 +3232,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "19", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("19", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 19 out of bounds for length 19", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -2992,7 +3249,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "34", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("34", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 34 out of bounds for length 34", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3003,7 +3264,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "2", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("2", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 2 out of bounds for length 2", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3015,7 +3280,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3027,7 +3296,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "10", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("10", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 10 out of bounds for length 10", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3040,7 +3313,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3052,7 +3329,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "9", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("9", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 9 out of bounds for length 9", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3064,7 +3345,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3076,7 +3361,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 10, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "18", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("18", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 18 out of bounds for length 18", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3089,7 +3378,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "12", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("12", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 12 out of bounds for length 12", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3102,7 +3395,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "3", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("3", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 3 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3114,7 +3411,11 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3127,58 +3428,66 @@ public class ISOUtilTest {
             ISOUtil.hexdump(b, 7, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "9", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("9", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 9 out of bounds for length 9", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHexdumpThrowsNullPointerException() throws Throwable {
-        ISOUtil.hexdump((byte[]) null, 100, 1000);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hexdump(null, 100, 1000);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHexdumpThrowsNullPointerException1() throws Throwable {
-        ISOUtil.hexdump((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hexdump(null);
+        });
     }
 
     @Test
     public void testHexor() throws Throwable {
         String result = ISOUtil.hexor("", "");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testHexor1() throws Throwable {
         String result = ISOUtil.hexor("testISOUtilOp1", "testISOUtilOp2");
-        assertEquals("result", "00000000000003", result);
+        assertEquals("00000000000003", result, "result");
     }
 
     @Test
     public void testHexString() throws Throwable {
         byte[] b = new byte[2];
         String result = ISOUtil.hexString(b, 0, 1);
-        assertEquals("result", "00", result);
+        assertEquals("00", result, "result");
     }
 
     @Test
     public void testHexString1() throws Throwable {
         byte[] b = new byte[3];
         String result = ISOUtil.hexString(b, 100, 0);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testHexString2() throws Throwable {
         byte[] b = new byte[1];
         String result = ISOUtil.hexString(b);
-        assertEquals("result", "00", result);
+        assertEquals("00", result, "result");
     }
 
     @Test
     public void testHexString3() throws Throwable {
         byte[] b = new byte[0];
         String result = ISOUtil.hexString(b);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
@@ -3188,7 +3497,11 @@ public class ISOUtilTest {
             ISOUtil.hexString(b, 100, 1000);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "100", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("100", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 100 out of bounds for length 3", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3199,42 +3512,54 @@ public class ISOUtilTest {
             ISOUtil.hexString(b, 0, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "1", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("1", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 1 out of bounds for length 1", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testHexStringThrowsNegativeArraySizeException() throws Throwable {
-        byte[] b = new byte[1];
-        ISOUtil.hexString(b, 100, -1);
+        assertThrows(NegativeArraySizeException.class, () -> {
+            byte[] b = new byte[1];
+            ISOUtil.hexString(b, 100, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHexStringThrowsNullPointerException() throws Throwable {
-        ISOUtil.hexString((byte[]) null, 100, 1000);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hexString(null, 100, 1000);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testHexStringThrowsNullPointerException1() throws Throwable {
-        ISOUtil.hexString((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.hexString(null);
+        });
     }
 
     @Test
     public void testIsAlphaNumeric() throws Throwable {
         boolean result = ISOUtil.isAlphaNumeric("testISOUtil\rs");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsAlphaNumeric1() throws Throwable {
         boolean result = ISOUtil.isAlphaNumeric(")\r3\u001F,\u0011-\u0005\u000FU\u000E5M2)\u0017h\u0011&ln" + lineSep
                 + "G4@\u0015\u000272A\u001D9&qW\u001An|YP");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testIsAlphaNumericThrowsNullPointerException() throws Throwable {
-        ISOUtil.isAlphaNumeric(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.isAlphaNumeric(null);
+        });
     }
 
     @Test
@@ -3243,7 +3568,7 @@ public class ISOUtilTest {
             ISOUtil.isAlphaNumeric(" ");
             fail("Expected StringIndexOutOfBoundsException to be thrown");
         } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 1", ex.getMessage());
+            assertEquals("String index out of range: 1", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3253,7 +3578,7 @@ public class ISOUtilTest {
             ISOUtil.isAlphaNumeric("");
             fail("Expected StringIndexOutOfBoundsException to be thrown");
         } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 0", ex.getMessage());
+            assertEquals("String index out of range: 0", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3263,83 +3588,89 @@ public class ISOUtilTest {
             ISOUtil.isAlphaNumeric("testISOUtils");
             fail("Expected StringIndexOutOfBoundsException to be thrown");
         } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 12", ex.getMessage());
+            assertEquals("String index out of range: 12", ex.getMessage(), "ex.getMessage()");
         }
     }
 
     @Test
     public void testIsBlank() throws Throwable {
         boolean result = ISOUtil.isBlank("");
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testIsBlank1() throws Throwable {
         boolean result = ISOUtil.isBlank("1");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testIsBlankThrowsNullPointerException() throws Throwable {
-        ISOUtil.isBlank(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.isBlank(null);
+        });
     }
 
     @Test
     public void testIsNumeric() throws Throwable {
         boolean result = ISOUtil.isNumeric("10Characte", 32);
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testIsNumeric1() throws Throwable {
         boolean result = ISOUtil.isNumeric("testISOUtils", 100);
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsNumeric2() throws Throwable {
         boolean result = ISOUtil.isNumeric("testISOUtil\rs", 32);
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsNumeric3() throws Throwable {
         boolean result = ISOUtil.isNumeric("", 100);
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testIsNumericThrowsNullPointerException() throws Throwable {
-        ISOUtil.isNumeric(null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.isNumeric(null, 100);
+        });
     }
 
     @Test
     public void testIsZero() throws Throwable {
         boolean result = ISOUtil.isZero("0 q");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsZero1() throws Throwable {
         boolean result = ISOUtil.isZero("000");
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
     @Test
     public void testIsZero2() throws Throwable {
         boolean result = ISOUtil.isZero("testISOUtils");
-        assertFalse("result", result);
+        assertFalse(result, "result");
     }
 
     @Test
     public void testIsZero3() throws Throwable {
         boolean result = ISOUtil.isZero("");
-        assertTrue("result", result);
+        assertTrue(result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testIsZeroThrowsNullPointerException() throws Throwable {
-        ISOUtil.isZero(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.isZero(null);
+        });
     }
 
     @Test
@@ -3349,69 +3680,69 @@ public class ISOUtilTest {
                         "S\u0002\"m\u0011Ap}q\\!\u0005\u0010$:\"X\u0008FM\u00028\u000E&CZ#\"\"]'\u0008k\"\u000B$jT>L\u0017-<3z\u0000%E<\u0011\"j\u001F\u0014\u001C\fR\u00138\r\">\u0016<T7l\u0002]oM|w\"$4*ks{~Cqqx7fW^^zi}gV;cY<A=ylA%DR-9",
                         true);
         assertEquals(
-                "result",
-                "S&#2;&quot;m&#17;Ap}q\\!&#5;&#16;$:&quot;X&#8;FM&#2;8&#14;&amp;CZ#&quot;&quot;]'&#8;k&quot;&#11;$jT&gt;L&#23;-&lt;3z&#0;%E&lt;&#17;&quot;j&#31;&#20;&#28;&#12;R&#19;8&#13;&quot;&gt;&#22;&lt;T7l&#2;]oM|w&quot;$4*ks{~Cqqx7fW^^zi}gV;cY&lt;A=ylA%DR-9",
-                result);
+                "S\\u0002&quot;m\\u0011Ap}q\\!\\u0005\\u0010$:&quot;X\\u0008FM\\u00028\\u000e&amp;CZ#&quot;&quot;]&apos;\\u0008k&quot;\\u000b$jT&gt;L\\u0017-&lt;3z\\u0000%E&lt;\\u0011&quot;j\\u001f\\u0014\\u001c\\u000cR\\u00138\\u000d&quot;&gt;\\u0016&lt;T7l\\u0002]oM|w&quot;$4*ks{~Cqqx7fW^^zi}gV;cY&lt;A=ylA%DR-9",
+          result, "result");
+
     }
 
     @Test
     public void testNormalize1() throws Throwable {
         String result = ISOUtil.normalize("testISOUtil\rs", true);
-        assertEquals("result", "testISOUtil&#13;s", result);
+        assertEquals("testISOUtil\\u000ds", result, "result");
     }
 
     @Test
     public void testNormalize10() throws Throwable {
         String result = ISOUtil.normalize(null, true);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testNormalize11() throws Throwable {
         String result = ISOUtil.normalize("", true);
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testNormalize12() throws Throwable {
         String result = ISOUtil.normalize("\u5BC7<t2e76HTO- 63;TwFix", true);
-        assertEquals("result", "\u5BC7&lt;t2e76HTO- 63;TwFix", result);
+        assertEquals("\u5BC7&lt;t2e76HTO- 63;TwFix", result, "result");
     }
 
     @Test
     public void testNormalize13() throws Throwable {
         String result = ISOUtil.normalize("\u0014", true);
-        assertEquals("result", "&#20;", result);
+        assertEquals("\\u0014", result, "result");
     }
 
     @Test
     public void testNormalize14() throws Throwable {
         String result = ISOUtil.normalize("\u7D79\u0001#h<Fuo|s)C<D&\\J:'{ul'p\\Nz@^dt`.", true);
-        assertEquals("result", "\u7D79&#1;#h&lt;Fuo|s)C&lt;D&amp;\\J:'{ul'p\\Nz@^dt`.", result);
+        assertEquals("\u7D79\\u0001#h&lt;Fuo|s)C&lt;D&amp;\\J:&apos;{ul&apos;p\\Nz@^dt`.", result, "result");
     }
 
     @Test
     public void testNormalize15() throws Throwable {
         String result = ISOUtil.normalize("&quot;", true);
-        assertEquals("result", "&amp;quot;", result);
+        assertEquals("&amp;quot;", result, "result");
     }
 
     @Test
     public void testNormalize16() throws Throwable {
         String result = ISOUtil.normalize(" ");
-        assertEquals("result", " ", result);
+        assertEquals(" ", result, "result");
     }
 
     @Test
     public void testNormalize17() throws Throwable {
         String result = ISOUtil.normalize("testISOUtil\rs");
-        assertEquals("result", "testISOUtil&#13;s", result);
+        assertEquals("testISOUtil\\u000ds", result, "result");
     }
 
     @Test
     public void testNormalize18() throws Throwable {
         String result = ISOUtil.normalize("\rI\u0004\"e", true);
-        assertEquals("result", "&#13;I&#4;&quot;e", result);
+        assertEquals("\\u000dI\\u0004&quot;e", result, "result");
     }
 
     @Test
@@ -3421,21 +3752,20 @@ public class ISOUtilTest {
                         "\u0014iSa4\r@\u0005/\u001Ai>iK>&%EA]\u001E\u001D:B\u000F-\u0016\u0012K=9\u001D\u0019t:&.2\"F<}Nf\u0011\u0003\u0008,\u0015=\u001D\n?\u0012\u000Eo<E\u001F\u0007\u001AC\u001C3\u0012d7:rf^l,`",
                         false);
         assertEquals(
-                "result",
-                "&#20;iSa4&#13;@&#5;/&#26;i&gt;iK&gt;&amp;%EA]&#30;&#29;:B&#15;-&#22;&#18;K=9&#29;&#25;t:&amp;.2&quot;F&lt;}Nf&#17;&#3;&#8;,&#21;=&#29;&#10;?&#18;&#14;o&lt;E&#31;&#7;&#26;C&#28;3&#18;d7:rf^l,`",
-                result);
+                "\\u0014iSa4&#13;@\\u0005/\\u001ai&gt;iK&gt;&amp;%EA]\\u001e\\u001d:B\\u000f-\\u0016\\u0012K=9\\u001d\\u0019t:&amp;.2&quot;F&lt;}Nf\\u0011\\u0003\\u0008,\\u0015=\\u001d&#10;?\\u0012\\u000eo&lt;E\\u001f\\u0007\\u001aC\\u001c3\\u0012d7:rf^l,`",
+                result, "result");
     }
 
     @Test
     public void testNormalize2() throws Throwable {
         String result = ISOUtil.normalize(" ", true);
-        assertEquals("result", " ", result);
+        assertEquals(" ", result, "result");
     }
 
     @Test
     public void testNormalize20() throws Throwable {
         String result = ISOUtil.normalize("\rX XX", false);
-        assertEquals("result", "&#13;X XX", result);
+        assertEquals("&#13;X XX", result, "result");
     }
 
     @Test
@@ -3445,9 +3775,8 @@ public class ISOUtilTest {
                         "\u0004r2\u0013&mX&\u0014\u0017hT\u000E}Y!{\u0004&\u0016\u000Fb\"D\u001B\u0014Qz\u001E-&fe<\u0012]<.5\\\u0001\u0000\u001D%v\u001FraS\"mMlc\u0014\u001F\u0008Q\"\u0019&\u000E\\\u0004\u000F\t\u000F&:\u4BF6",
                         true);
         assertEquals(
-                "result",
-                "&#4;r2&#19;&amp;mX&amp;&#20;&#23;hT&#14;}Y!{&#4;&amp;&#22;&#15;b&quot;D&#27;&#20;Qz&#30;-&amp;fe&lt;&#18;]&lt;.5\\&#1;&#0;&#29;%v&#31;raS&quot;mMlc&#20;&#31;&#8;Q&quot;&#25;&amp;&#14;\\&#4;&#15;&#9;&#15;&amp;:\u4BF6",
-                result);
+                "\\u0004r2\\u0013&amp;mX&amp;\\u0014\\u0017hT\\u000e}Y!{\\u0004&amp;\\u0016\\u000fb&quot;D\\u001b\\u0014Qz\\u001e-&amp;fe&lt;\\u0012]&lt;.5\\\\u0001\\u0000\\u001d%v\\u001fraS&quot;mMlc\\u0014\\u001f\\u0008Q&quot;\\u0019&amp;\\u000e\\\\u0004\\u000f\\u0009\\u000f&amp;:\u4BF6",
+                result, "result");
     }
 
     @Test
@@ -3457,15 +3786,14 @@ public class ISOUtilTest {
                         "@|k7\u0014[\"7w\u0002'>\u0005\u001D[\u001D\fu0,\"9'K\u0007u\u0017[@\">V><uNo>\u001Eyj8>, pS5V&</sCZ \u0008dBz\"M\"%Wv)lQ)<u7>c]VKWRExFkiXlc1#'>?QU |d45\\eZR",
                         true);
         assertEquals(
-                "result",
-                "@|k7&#20;[&quot;7w&#2;'&gt;&#5;&#29;[&#29;&#12;u0,&quot;9'K&#7;u&#23;[@&quot;&gt;V&gt;&lt;uNo&gt;&#30;yj8&gt;, pS5V&amp;&lt;/sCZ &#8;dBz&quot;M&quot;%Wv)lQ)&lt;u7&gt;c]VKWRExFkiXlc1#'&gt;?QU |d45\\eZR",
-                result);
+                "@|k7\\u0014[&quot;7w\\u0002&apos;&gt;\\u0005\\u001d[\\u001d\\u000cu0,&quot;9&apos;K\\u0007u\\u0017[@&quot;&gt;V&gt;&lt;uNo&gt;\\u001eyj8&gt;, pS5V&amp;&lt;/sCZ \\u0008dBz&quot;M&quot;%Wv)lQ)&lt;u7&gt;c]VKWRExFkiXlc1#&apos;&gt;?QU |d45\\eZR",
+                result, "result");
     }
 
     @Test
     public void testNormalize23() throws Throwable {
         String result = ISOUtil.normalize(">&Y/G%za1ZHz$O^bPBeB nUlTf{n9,", true);
-        assertEquals("result", "&gt;&amp;Y/G%za1ZHz$O^bPBeB nUlTf{n9,", result);
+        assertEquals("&gt;&amp;Y/G%za1ZHz$O^bPBeB nUlTf{n9,", result, "result");
     }
 
     @Test
@@ -3475,22 +3803,21 @@ public class ISOUtilTest {
                         "iC\u0012Vi<\t< A\\`>|&\rw\u0018l\u0000d\u000F_`>\\ N8\u0016%Up\rf\u0005\u0019G>%>1Wnx;Ul0Rz}%[wn\u000E\u001C*\t>DJ,<\uDB18\uCA4B\u8FF8\u340F\u4F1F",
                         false);
         assertEquals(
-                "result",
-                "iC&#18;Vi&lt;&#9;&lt; A\\`&gt;|&amp;&#13;w&#24;l&#0;d&#15;_`&gt;\\ N8&#22;%Up&#13;f&#5;&#25;G&gt;%&gt;1Wnx;Ul0Rz}%[wn&#14;&#28;*&#9;&gt;DJ,&lt;\uDB18\uCA4B\u8FF8\u340F\u4F1F",
-                result);
+                "iC\\u0012Vi&lt;\\u0009&lt; A\\`&gt;|&amp;&#13;w\\u0018l\\u0000d\\u000f_`&gt;\\ N8\\u0016%Up&#13;f\\u0005\\u0019G&gt;%&gt;1Wnx;Ul0Rz}%[wn\\u000e\\u001c*\\u0009&gt;DJ,&lt;\uDB18\uCA4B\u8FF8\u340F\u4F1F",
+                result, "result");
     }
 
     @Test
     public void testNormalize3() throws Throwable {
         String result = ISOUtil.normalize("#g];unko,nsk 3<yhj>\\-)fw47&3,@p~rh[2cGi[", true);
-        assertEquals("result", "#g];unko,nsk 3&lt;yhj&gt;\\-)fw47&amp;3,@p~rh[2cGi[", result);
+        assertEquals("#g];unko,nsk 3&lt;yhj&gt;\\-)fw47&amp;3,@p~rh[2cGi[", result, "result");
     }
 
     @Test
     public void testNormalize4() throws Throwable {
         String result = ISOUtil.normalize(" XX XXXX  XX XXXX X  XXX  XX XXXXX XXXXX   XX XXXXXXXX   XX X X  \t XXX",
                 true);
-        assertEquals("result", " XX XXXX  XX XXXX X  XXX  XX XXXXX XXXXX   XX XXXXXXXX   XX X X  &#9; XXX", result);
+        assertEquals(" XX XXXX  XX XXXX X  XXX  XX XXXXX XXXXX   XX XXXXXXXX   XX X X  \\u0009 XXX", result, "result");
     }
 
     @Test
@@ -3500,51 +3827,60 @@ public class ISOUtilTest {
                         "iC\u0012Vi<\t< A\\`>|&\rw\u0018l\u0000d\u000F_`>\\ N8\u0016%Up\rf\u0005\u0019G>%>1Wnx;Ul0Rz}%[wn\u000E\u001C*\t>DJ,<\uDB18\uCA4B\u8FF8\u340F\u4F1F",
                         true);
         assertEquals(
-                "result",
-                "iC&#18;Vi&lt;&#9;&lt; A\\`&gt;|&amp;&#13;w&#24;l&#0;d&#15;_`&gt;\\ N8&#22;%Up&#13;f&#5;&#25;G&gt;%&gt;1Wnx;Ul0Rz}%[wn&#14;&#28;*&#9;&gt;DJ,&lt;\uDB18\uCA4B\u8FF8\u340F\u4F1F",
-                result);
+                "iC\\u0012Vi&lt;\\u0009&lt; A\\`&gt;|&amp;\\u000dw\\u0018l\\u0000d\\u000f_`&gt;\\ N8\\u0016%Up\\u000df\\u0005\\u0019G&gt;%&gt;1Wnx;Ul0Rz}%[wn\\u000e\\u001c*\\u0009&gt;DJ,&lt;\uDB18\uCA4B\u8FF8\u340F\u4F1F",
+                result, "result");
     }
 
     @Test
     public void testNormalize6() throws Throwable {
         String result = ISOUtil.normalize("\rI\u0004\"e", false);
-        assertEquals("result", "&#13;I&#4;&quot;e", result);
+        assertEquals("&#13;I\\u0004&quot;e", result, "result");
     }
 
     @Test
     public void testNormalize7() throws Throwable {
         String result = ISOUtil.normalize("J\u0006YTuVP>F}R+Js:(aD", true);
-        assertEquals("result", "J&#6;YTuVP&gt;F}R+Js:(aD", result);
+        assertEquals("J\\u0006YTuVP&gt;F}R+Js:(aD", result, "result");
     }
 
     @Test
     public void testNormalize8() throws Throwable {
         String result = ISOUtil.normalize(">=\u0011[\u0011_f\u0019<&[", true);
-        assertEquals("result", "&gt;=&#17;[&#17;_f&#25;&lt;&amp;[", result);
+        assertEquals("&gt;=\\u0011[\\u0011_f\\u0019&lt;&amp;[", result, "result");
     }
 
     @Test
     public void testNormalize9() throws Throwable {
-        String result = ISOUtil
-                .normalize(
-                        "<\u0010}\"\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4",
-                        true);
+        String s = "<\u0010}\"\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4";
+
+        String result = ISOUtil.normalize(s, true);
         assertEquals(
-                "result",
-                "&lt;&#16;}&quot;\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4",
-                result);
+                "&lt;\\u0010}&quot;\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4",
+                result, "result");
+    }
+
+    @Test
+    public void testNormalizeDenormalize() throws Throwable {
+        String s = "\u0010}\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4";
+
+        String result = ISOUtil.normalize(s, true);
+        assertEquals(
+                "\\u0010}\uCD88\uD16A\u1384\uFE1A\u44B2\u2712\u3BD7\u3AE5\uFCC4\uD19B\u16F2\uD45A\u45F8\u65FF\uA224\u3930\u946E\u8FB0\u3550\u061D\u4741\u8084\u8606\u6B1A\u8F81\uC634\u0190\u2053\uFA5A\u4C3F\uD365\uF7A7\uF8D4",
+          result, "result");
+
+        assertEquals(s, ISOUtil.stripUnicode(result), "original");
     }
 
     @Test
     public void testPadleft() throws Throwable {
         String result = ISOUtil.padleft("testString", 11, '2');
-        assertEquals("result", "2testString", result);
+        assertEquals("2testString", result, "result");
     }
 
     @Test
     public void testPadleft1() throws Throwable {
         String result = ISOUtil.padleft("2C", 2, ' ');
-        assertEquals("result", "2C", result);
+        assertEquals("2C", result, "result");
     }
 
     @Test
@@ -3553,14 +3889,16 @@ public class ISOUtilTest {
             ISOUtil.padleft("testString", 0, '\u0002');
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "invalid len 10/0", ex.getMessage());
-            assertNull("ex.nested", ex.nested);
+            assertEquals("invalid len 10/0", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.nested, "ex.nested");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testPadleftThrowsNullPointerException() throws Throwable {
-        ISOUtil.padleft(null, 0, '\u0002');
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.padleft(null, 0, '\u0002');
+        });
     }
 
     @Test
@@ -3569,7 +3907,7 @@ public class ISOUtilTest {
         cArray[0] = 'S';
         cArray[1] = 'C';
         int result = ISOUtil.parseInt(cArray, 35);
-        assertEquals("result", 992, result);
+        assertEquals(992, result, "result");
     }
 
     @Test
@@ -3577,25 +3915,25 @@ public class ISOUtilTest {
         char[] cArray = new char[1];
         cArray[0] = '1';
         int result = ISOUtil.parseInt(cArray);
-        assertEquals("result", 1, result);
+        assertEquals(1, result, "result");
     }
 
     @Test
     public void testParseInt2() throws Throwable {
         int result = ISOUtil.parseInt("1", 10);
-        assertEquals("result", 1, result);
+        assertEquals(1, result, "result");
     }
 
     @Test
     public void testParseInt3() throws Throwable {
         int result = ISOUtil.parseInt("2C", 31);
-        assertEquals("result", 74, result);
+        assertEquals(74, result, "result");
     }
 
     @Test
     public void testParseInt4() throws Throwable {
         int result = ISOUtil.parseInt("1");
-        assertEquals("result", 1, result);
+        assertEquals(1, result, "result");
     }
 
     @Test
@@ -3603,7 +3941,7 @@ public class ISOUtilTest {
         byte[] bArray = new byte[1];
         bArray[0] = (byte) 49;
         int result = ISOUtil.parseInt(bArray);
-        assertEquals("result", 1, result);
+        assertEquals(1, result, "result");
     }
 
     @Test
@@ -3613,7 +3951,11 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("0", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 0 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3624,7 +3966,11 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("0", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 0 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3635,7 +3981,11 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray, 100);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("0", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 0 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
@@ -3646,38 +3996,54 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "0", ex.getMessage());
+            if (isJavaVersionAtMost(JAVA_10)) {
+                assertEquals("0", ex.getMessage(), "ex.getMessage()");
+            } else {
+                assertEquals("Index 0 out of bounds for length 0", ex.getMessage(), "ex.getMessage()");
+            }
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException() throws Throwable {
-        ISOUtil.parseInt((char[]) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((char[]) null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException1() throws Throwable {
-        ISOUtil.parseInt((char[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((char[]) null);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException2() throws Throwable {
-        ISOUtil.parseInt((String) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((String) null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException3() throws Throwable {
-        ISOUtil.parseInt((String) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((String) null);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException4() throws Throwable {
-        ISOUtil.parseInt((byte[]) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((byte[]) null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testParseIntThrowsNullPointerException5() throws Throwable {
-        ISOUtil.parseInt((byte[]) null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.parseInt((byte[]) null);
+        });
     }
 
     @Test
@@ -3689,7 +4055,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray, 35);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Char array contains non-digit", ex.getMessage());
+            assertEquals("Char array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3701,7 +4067,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray, 10);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Char array contains non-digit", ex.getMessage());
+            assertEquals("Char array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3711,7 +4077,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("0\"/", 10);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "String contains non-digit", ex.getMessage());
+            assertEquals("String contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3721,7 +4087,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("9Characte", 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "String contains non-digit", ex.getMessage());
+            assertEquals("String contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3731,7 +4097,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("8Charact", 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "String contains non-digit", ex.getMessage());
+            assertEquals("String contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3741,7 +4107,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("10Characte", 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Number can have maximum 9 digits", ex.getMessage());
+            assertEquals("Number can have maximum 9 digits", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3753,7 +4119,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray, 10);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Byte array contains non-digit", ex.getMessage());
+            assertEquals("Byte array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3764,7 +4130,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray, 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Byte array contains non-digit", ex.getMessage());
+            assertEquals("Byte array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3775,7 +4141,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray, 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Byte array contains non-digit", ex.getMessage());
+            assertEquals("Byte array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3786,7 +4152,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(bArray, 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Number can have maximum 9 digits", ex.getMessage());
+            assertEquals("Number can have maximum 9 digits", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3797,7 +4163,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray, 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Char array contains non-digit", ex.getMessage());
+            assertEquals("Char array contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3808,7 +4174,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt(cArray, 100);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "Number can have maximum 9 digits", ex.getMessage());
+            assertEquals("Number can have maximum 9 digits", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3818,7 +4184,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("o`2L\\*@@#", 28);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "String contains non-digit", ex.getMessage());
+            assertEquals("String contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3828,7 +4194,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("9Characte", 28);
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "String contains non-digit", ex.getMessage());
+            assertEquals("String contains non-digit", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3838,7 +4204,7 @@ public class ISOUtilTest {
             ISOUtil.parseInt("", 100);
             fail("Expected StringIndexOutOfBoundsException to be thrown");
         } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 0", ex.getMessage());
+            assertEquals("String index out of range: 0", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -3848,181 +4214,183 @@ public class ISOUtilTest {
             ISOUtil.parseInt("");
             fail("Expected StringIndexOutOfBoundsException to be thrown");
         } catch (StringIndexOutOfBoundsException ex) {
-            assertEquals("ex.getMessage()", "String index out of range: 0", ex.getMessage());
+            assertEquals("String index out of range: 0", ex.getMessage(), "ex.getMessage()");
         }
     }
 
     @Test
     public void testProtect() throws Throwable {
         String result = ISOUtil.protect("10Characte");
-        assertEquals("result", "10Characte", result);
+        assertEquals("10Characte", result, "result");
     }
 
     @Test
     public void testProtect1() throws Throwable {
         String result = ISOUtil.protect("=WaW=4V0");
-        assertEquals("result", "=___=___", result);
+        assertEquals("=___=___", result, "result");
     }
 
     @Test
     public void testProtect10() throws Throwable {
         String result = ISOUtil.protect("=====^===========^====^===");
-        assertEquals("result", "=====^===========^====^===", result);
+        assertEquals("=====^===========^====^===", result, "result");
     }
 
     @Test
     public void testProtect11() throws Throwable {
         String result = ISOUtil.protect("testISOUtils");
-        assertEquals("result", "testIS__tils", result);
+        assertEquals("testIS__tils", result, "result");
     }
 
     @Test
     public void testProtect12() throws Throwable {
         String result = ISOUtil.protect("=HNb^D4uZfz0@|\")61b:~dSS`[.2!!qlL4Z0");
-        assertEquals("result", "=___^D4uZfz0@|\")61b:~dSS`[.2!!qlL4Z0", result);
+        assertEquals("=___^D4uZfz0@|\")61b:~dSS`[.2!!qlL4Z0", result, "result");
     }
 
     @Test
     public void testProtect13() throws Throwable {
         String result = ISOUtil.protect("^58*(=@");
-        assertEquals("result", "^58*(=_", result);
+        assertEquals("^58*(=_", result, "result");
     }
 
     @Test
     public void testProtect14() throws Throwable {
         String result = ISOUtil.protect("===\u3455w");
-        assertEquals("result", "===__", result);
+        assertEquals("===__", result, "result");
     }
 
     @Test
     public void testProtect15() throws Throwable {
         String result = ISOUtil.protect("=\u0AC4\uC024\uF29B=~2A)~5aCgl\"lLU*lm_cJ1M/!KFnA");
-        assertEquals("result", "=___=________________________KFnA", result);
+        assertEquals("=___=________________________KFnA", result, "result");
     }
 
     @Test
     public void testProtect16() throws Throwable {
         String result = ISOUtil.protect("\u30C5\uE09B\u6028\uB54E\u2094\uFA25\uAD56\u3A1F\uE55C\u31AA\u5FE0=$");
-        assertEquals("result", "\u30C5\uE09B\u6028\uB54E\u2094\uFA25_\u3A1F\uE55C\u31AA\u5FE0=_", result);
+        assertEquals("\u30C5\uE09B\u6028\uB54E\u2094\uFA25_\u3A1F\uE55C\u31AA\u5FE0=_", result, "result");
     }
 
     @Test
     public void testProtect17() throws Throwable {
         String result = ISOUtil.protect("+6+[=I?");
-        assertEquals("result", "+6+[=__", result);
+        assertEquals("+6+[=__", result, "result");
     }
 
     @Test
     public void testProtect18() throws Throwable {
         String result = ISOUtil.protect("=======");
-        assertEquals("result", "=======", result);
+        assertEquals("=======", result, "result");
     }
 
     @Test
     public void testProtect19() throws Throwable {
         String result = ISOUtil.protect("===^^+^=");
-        assertEquals("result", "===^^+^=", result);
+        assertEquals("===^^+^=", result, "result");
     }
 
     @Test
     public void testProtect2() throws Throwable {
         String result = ISOUtil.protect("===^===");
-        assertEquals("result", "===^===", result);
+        assertEquals("===^===", result, "result");
     }
 
     @Test
     public void testProtect20() throws Throwable {
         String result = ISOUtil.protect("\u6D1D^KI");
-        assertEquals("result", "_^KI", result);
+        assertEquals("_^KI", result, "result");
     }
 
     @Test
     public void testProtect21() throws Throwable {
         String result = ISOUtil.protect("=7G^=^");
-        assertEquals("result", "=__^=^", result);
+        assertEquals("=__^=^", result, "result");
     }
 
     @Test
     public void testProtect3() throws Throwable {
         String result = ISOUtil.protect("^D==N^=r=\u0002^g)==");
-        assertEquals("result", "^D==_^=_=_^g)==", result);
+        assertEquals("^D==_^=_=_^g)==", result, "result");
     }
 
     @Test
     public void testProtect4() throws Throwable {
         String result = ISOUtil.protect("=");
-        assertEquals("result", "=", result);
+        assertEquals("=", result, "result");
     }
 
     @Test
     public void testProtect5() throws Throwable {
         String result = ISOUtil.protect("");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testProtect6() throws Throwable {
         String result = ISOUtil.protect("VqM_'");
-        assertEquals("result", "_____", result);
+        assertEquals("_____", result, "result");
     }
 
     @Test
     public void testProtect7() throws Throwable {
         String result = ISOUtil.protect("\\7.=^6C3");
-        assertEquals("result", "\\7.=^6C3", result);
+        assertEquals("\\7.=^6C3", result, "result");
     }
 
     @Test
     public void testProtect8() throws Throwable {
         String result = ISOUtil.protect("#<gF=uG!");
-        assertEquals("result", "#<gF=___", result);
+        assertEquals("#<gF=___", result, "result");
     }
 
     @Test
     public void testProtect9() throws Throwable {
         String result = ISOUtil.protect("^9a{=o;G");
-        assertEquals("result", "^9a{=___", result);
+        assertEquals("^9a{=___", result, "result");
     }
 
     @Test
     public void testProtectT2D1() throws Throwable {
         String result = ISOUtil.protect("#<gFDuG!");
-        assertEquals("result", "#<gFD___", result);
+        assertEquals("#<gFD___", result, "result");
     }
 
     @Test
     public void testProtectT2D2() throws Throwable {
         String result = ISOUtil.protect("9a{#<gFuG!53Do;G");
-        assertEquals("result", "9a{#<g__G!53D___", result);
+        assertEquals("9a{#<g__G!53D___", result, "result");
     }
 
     @Test
     public void testProtectT1D1() throws Throwable {
         String result = ISOUtil.protect("a{#<gFuG!53o;G609^FOO/BAR COM^67890o;G");
-        assertEquals("result", "a{#<gF_______G609^FOO/BAR COM^________", result);
+        assertEquals("a{#<gF_______G609^FOO/BAR COM^________", result, "result");
     }
 
     @Test
     public void testProtectT1D2() throws Throwable {
         String result = ISOUtil.protect("9a{#<gFuG!^FOO/BAR COM^67890o;G");
-        assertEquals("result", "9a{#<gFuG!^FOO/BAR COM^________", result);
+        assertEquals("9a{#<gFuG!^FOO/BAR COM^________", result, "result");
     }
 
     @Test
     public void testProtectT1D3() throws Throwable {
         String result = ISOUtil.protect("9a{D<gFuG!^FOO/BAR COM^67890o;G");
-        assertEquals("result", "9a{D<gFuG!^FOO/BAR COM^________", result);
+        assertEquals("9a{D<gFuG!^FOO/BAR COM^________", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testProtectThrowsNullPointerException() throws Throwable {
-        ISOUtil.protect(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.protect(null);
+        });
     }
 
     @Test
     public void testSleep() throws Throwable {
         ISOUtil.sleep(100L);
-        assertTrue("Test completed without Exception", true);
+        assertTrue(true, "Test completed without Exception");
     }
 
     @Test
@@ -4031,131 +4399,131 @@ public class ISOUtilTest {
             ISOUtil.sleep(-30L);
             fail("Expected IllegalArgumentException to be thrown");
         } catch (IllegalArgumentException ex) {
-            assertEquals("ex.getMessage()", "timeout value is negative", ex.getMessage());
+            assertEquals("timeout value is negative", ex.getMessage(), "ex.getMessage()");
         }
     }
 
     @Test
     public void testStr2bcd() throws Throwable {
         byte[] result = ISOUtil.str2bcd(" ", true);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) -16, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) -16, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd1() throws Throwable {
         byte[] result = ISOUtil.str2bcd("testISOUtils", true);
-        assertEquals("result.length", 6, result.length);
-        assertEquals("result[0]", (byte) 117, result[0]);
+        assertEquals(6, result.length, "result.length");
+        assertEquals((byte) 117, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd10() throws Throwable {
         byte[] result = ISOUtil.str2bcd("", true);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testStr2bcd11() throws Throwable {
         byte[] result = ISOUtil.str2bcd("", true, (byte) 0);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testStr2bcd12() throws Throwable {
         byte[] result = ISOUtil.str2bcd("testISOUtils1", true, (byte) 0);
-        assertEquals("result.length", 7, result.length);
-        assertEquals("result[0]", (byte) 68, result[0]);
+        assertEquals(7, result.length, "result.length");
+        assertEquals((byte) 68, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd13() throws Throwable {
         byte[] result = ISOUtil.str2bcd("testISOUtils", true, (byte) 0);
-        assertEquals("result.length", 6, result.length);
-        assertEquals("result[0]", (byte) 117, result[0]);
+        assertEquals(6, result.length, "result.length");
+        assertEquals((byte) 117, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd14() throws Throwable {
         byte[] result = ISOUtil.str2bcd(" ", true, (byte) 0);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) -16, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) -16, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd15() throws Throwable {
         byte[] result = ISOUtil.str2bcd(" ", false, (byte) 0);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd16() throws Throwable {
         byte[] result = ISOUtil.str2bcd("testISOUtils1", false, (byte) 0);
-        assertEquals("result.length", 7, result.length);
-        assertEquals("result[0]", (byte) 117, result[0]);
+        assertEquals(7, result.length, "result.length");
+        assertEquals((byte) 117, result[0], "result[0]");
     }
 
     @Test
     public void testStr2bcd2() throws Throwable {
         byte[] d = new byte[0];
         byte[] result = ISOUtil.str2bcd("", true, d, 100);
-        assertSame("result", d, result);
+        assertSame(d, result, "result");
     }
 
     @Test
     public void testStr2bcd3() throws Throwable {
         byte[] d = new byte[1];
         byte[] result = ISOUtil.str2bcd("", true, d, 100);
-        assertSame("result", d, result);
-        assertEquals("d[0]", (byte) 0, d[0]);
+        assertSame(d, result, "result");
+        assertEquals((byte) 0, d[0], "d[0]");
     }
 
     @Test
     public void testStr2bcd4() throws Throwable {
         byte[] d = new byte[2];
         byte[] result = ISOUtil.str2bcd("3Ch", true, d, 0);
-        assertEquals("d[0]", (byte) 3, d[0]);
-        assertSame("result", d, result);
+        assertEquals((byte) 3, d[0], "d[0]");
+        assertSame(d, result, "result");
     }
 
     @Test
     public void testStr2bcd5() throws Throwable {
         byte[] d = new byte[2];
         byte[] result = ISOUtil.str2bcd(" ", false, d, 0);
-        assertSame("result", d, result);
-        assertEquals("d[0]", (byte) 0, d[0]);
+        assertSame(d, result, "result");
+        assertEquals((byte) 0, d[0], "d[0]");
     }
 
     @Test
     public void testStr2bcd6() throws Throwable {
         byte[] d = new byte[69];
         byte[] result = ISOUtil.str2bcd("testISOUtils1", false, d, 0);
-        assertEquals("d[0]", (byte) 117, d[0]);
-        assertSame("result", d, result);
+        assertEquals((byte) 117, d[0], "d[0]");
+        assertSame(d, result, "result");
     }
 
     @Test
     public void testStr2bcd7() throws Throwable {
         byte[] d = new byte[2];
         byte[] result = ISOUtil.str2bcd(" ", true, d, 0);
-        assertEquals("d[0]", (byte) -16, d[0]);
-        assertSame("result", d, result);
+        assertEquals((byte) -16, d[0], "d[0]");
+        assertSame(d, result, "result");
     }
 
     @Test
     public void testStr2bcd8() throws Throwable {
         byte[] d = new byte[4];
         byte[] result = ISOUtil.str2bcd("2C", true, d, 0);
-        assertEquals("d[0]", (byte) 51, d[0]);
-        assertSame("result", d, result);
+        assertEquals((byte) 51, d[0], "d[0]");
+        assertSame(d, result, "result");
     }
 
     @Test
     public void testStr2bcd9() throws Throwable {
         byte[] result = ISOUtil.str2bcd(" ", false);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
@@ -4165,7 +4533,7 @@ public class ISOUtilTest {
             ISOUtil.str2bcd("testISOUtils1", true, d, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("d[0]", (byte) 68, d[0]);
+            assertEquals((byte) 68, d[0], "d[0]");
             // assertEquals("ex.getMessage()", "2", ex.getMessage());
         }
     }
@@ -4177,9 +4545,21 @@ public class ISOUtilTest {
             ISOUtil.str2bcd("testISOUtils1", false, d, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("d[0]", (byte) 117, d[0]);
+            assertEquals((byte) 117, d[0], "d[0]");
             // assertEquals("ex.getMessage()", "2", ex.getMessage());
         }
+    }
+
+    @Test
+    public void str2bcdRightPadF() {
+        byte[] d = ISOUtil.str2bcd("123", false, (byte) 0xF);
+        assertEquals("123F", ISOUtil.hexString(d));
+    }
+
+    @Test
+    public void str2bcdLeftPadF() {
+        byte[] d = ISOUtil.str2bcd("123", true, (byte) 0xF);
+        assertEquals("F123", ISOUtil.hexString(d));
     }
 
     @Test
@@ -4189,7 +4569,7 @@ public class ISOUtilTest {
             ISOUtil.str2bcd("testISOUtils", true, d, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("d[0]", (byte) 117, d[0]);
+            assertEquals((byte) 117, d[0], "d[0]");
             // assertEquals("ex.getMessage()", "2", ex.getMessage());
         }
     }
@@ -4202,96 +4582,114 @@ public class ISOUtilTest {
             ISOUtil.str2bcd("testISOUtils1", true, d, 0);
             fail("Expected ArrayIndexOutOfBoundsException to be thrown");
         } catch (ArrayIndexOutOfBoundsException ex) {
-            assertEquals("d[0]", (byte) 68, d[0]);
+            assertEquals((byte) 68, d[0], "d[0]");
         }
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testStr2bcdThrowsArrayIndexOutOfBoundsException4() throws Throwable {
-        byte[] d = new byte[2];
-        ISOUtil.str2bcd("testISOUtils1", false, d, 100);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] d = new byte[2];
+            ISOUtil.str2bcd("testISOUtils1", false, d, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStr2bcdThrowsNullPointerException() throws Throwable {
-        ISOUtil.str2bcd(null, true);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.str2bcd(null, true);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStr2bcdThrowsNullPointerException1() throws Throwable {
-        ISOUtil.str2bcd(null, true, (byte) 0);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.str2bcd(null, true, (byte) 0);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStr2bcdThrowsNullPointerException2() throws Throwable {
-        ISOUtil.str2bcd("testISOUtils1", true, (byte[]) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.str2bcd("testISOUtils1", true, null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStr2bcdThrowsNullPointerException3() throws Throwable {
-        ISOUtil.str2bcd("testISOUtils", true, (byte[]) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.str2bcd("testISOUtils", true, null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStr2bcdThrowsNullPointerException4() throws Throwable {
-        byte[] d = new byte[2];
-        ISOUtil.str2bcd(null, true, d, 100);
+        assertThrows(NullPointerException.class, () -> {
+            byte[] d = new byte[2];
+            ISOUtil.str2bcd(null, true, d, 100);
+        });
     }
 
     @Test
     public void testStrpad() throws Throwable {
         String result = ISOUtil.strpad("testISOUtils", 0);
-        assertEquals("result", "testISOUtils", result);
+        assertEquals("testISOUtils", result, "result");
     }
 
     @Test
     public void testStrpad1() throws Throwable {
         String result = ISOUtil.strpad("testISOUtils", 100);
-        assertEquals("result",
+        assertEquals(
                 "testISOUtils                                                                                        ",
-                result);
+                result, "result");
     }
 
     @Test
     public void testStrpadf() throws Throwable {
         String result = ISOUtil.strpadf("testISOUtils", 0);
-        assertEquals("result", "testISOUtils", result);
+        assertEquals("testISOUtils", result, "result");
     }
 
     @Test
     public void testStrpadf1() throws Throwable {
         String result = ISOUtil.strpadf("", 100);
-        assertEquals("result",
+        assertEquals(
                 "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-                result);
+                result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStrpadfThrowsNullPointerException() throws Throwable {
-        ISOUtil.strpadf(null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.strpadf(null, 100);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testStrpadThrowsNullPointerException() throws Throwable {
-        ISOUtil.strpad(null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.strpad(null, 100);
+        });
     }
 
     @Test
     public void testToIntArray() throws Throwable {
         int[] result = ISOUtil.toIntArray("42");
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", 42, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals(42, result[0], "result[0]");
     }
 
     @Test
     public void testToIntArray1() throws Throwable {
         int[] result = ISOUtil.toIntArray("");
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testToIntArrayThrowsNullPointerException() throws Throwable {
-        ISOUtil.toIntArray(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.toIntArray(null);
+        });
     }
 
     @Test
@@ -4300,7 +4698,7 @@ public class ISOUtilTest {
             ISOUtil.toIntArray("testISOUtils");
             fail("Expected NumberFormatException to be thrown");
         } catch (NumberFormatException ex) {
-            assertEquals("ex.getMessage()", "For input string: \"testISOUtils\"", ex.getMessage());
+            assertEquals("For input string: \"testISOUtils\"", ex.getMessage(), "ex.getMessage()");
         }
     }
 
@@ -4308,145 +4706,155 @@ public class ISOUtilTest {
     public void testTrim() throws Throwable {
         byte[] array = new byte[2];
         byte[] result = ISOUtil.trim(array, 1);
-        assertEquals("result.length", 1, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(1, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
     public void testTrim1() throws Throwable {
         byte[] array = new byte[2];
         byte[] result = ISOUtil.trim(array, 0);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
     public void testTrim2() throws Throwable {
         String result = ISOUtil.trim("testISOUtils");
-        assertEquals("result", "testISOUtils", result);
+        assertEquals("testISOUtils", result, "result");
     }
 
     @Test
     public void testTrimNullReturnsNull() throws Throwable {
         String result = ISOUtil.trim(null);
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
     @Test
     public void testTrimf() throws Throwable {
         String result = ISOUtil.trimf("");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testTrimf1() throws Throwable {
         String result = ISOUtil.trimf("2C");
-        assertEquals("result", "2C", result);
+        assertEquals("2C", result, "result");
     }
 
     @Test
     public void testTrimf2() throws Throwable {
         String result = ISOUtil.trimf("FF");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testTrimf3() throws Throwable {
         String result = ISOUtil.trimf("F");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testTrimf4() throws Throwable {
         String result = ISOUtil.trimf(" ");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testTrimf5() throws Throwable {
         String result = ISOUtil.trimf(null);
-        assertNull("result", result);
+        assertNull(result, "result");
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test
     public void testTrimThrowsArrayIndexOutOfBoundsException() throws Throwable {
-        byte[] array = new byte[2];
-        ISOUtil.trim(array, 100);
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            byte[] array = new byte[2];
+            ISOUtil.trim(array, 100);
+        });
     }
 
-    @Test(expected = NegativeArraySizeException.class)
+    @Test
     public void testTrimThrowsNegativeArraySizeException() throws Throwable {
-        byte[] array = new byte[3];
-        ISOUtil.trim(array, -1);
+        assertThrows(NegativeArraySizeException.class, () -> {
+            byte[] array = new byte[3];
+            ISOUtil.trim(array, -1);
+        });
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testTrimThrowsNullPointerException() throws Throwable {
-        ISOUtil.trim((byte[]) null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.trim(null, 100);
+        });
     }
 
     @Test
     public void testUnPadLeft() throws Throwable {
         String result = ISOUtil.unPadLeft("", ' ');
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testUnPadLeft1() throws Throwable {
         String result = ISOUtil.unPadLeft("", '\u001F');
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testUnPadLeft3() throws Throwable {
         String result = ISOUtil.unPadLeft("testISOUtils", 't');
-        assertEquals("result", "estISOUtils", result);
+        assertEquals("estISOUtils", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testUnPadLeftThrowsNullPointerException() throws Throwable {
-        ISOUtil.unPadLeft(null, ' ');
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.unPadLeft(null, ' ');
+        });
     }
 
     @Test
     public void testUnPadRight() throws Throwable {
         String result = ISOUtil.unPadRight("f", 'f');
-        assertEquals("result", "f", result);
+        assertEquals("f", result, "result");
     }
 
     @Test
     public void testUnPadRight1() throws Throwable {
         String result = ISOUtil.unPadRight("", ' ');
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testUnPadRight2() throws Throwable {
         String result = ISOUtil.unPadRight("", 'A');
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
     @Test
     public void testUnPadRight3() throws Throwable {
         String result = ISOUtil.unPadRight("f", ' ');
-        assertEquals("result", "f", result);
+        assertEquals("f", result, "result");
     }
 
     @Test
     public void testUnPadRight4() throws Throwable {
         String result = ISOUtil.unPadRight("  &ON\\.!Wio=p^'@*xS'*ItLh|_g[,K2H|FkD]RPGQ", 'Q');
-        assertEquals("result", "  &ON\\.!Wio=p^'@*xS'*ItLh|_g[,K2H|FkD]RPG", result);
+        assertEquals("  &ON\\.!Wio=p^'@*xS'*ItLh|_g[,K2H|FkD]RPG", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testUnPadRightThrowsNullPointerException() throws Throwable {
-        ISOUtil.unPadRight(null, ' ');
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.unPadRight(null, ' ');
+        });
     }
 
     @Test
     public void testXor() throws Throwable {
         byte[] op2 = new byte[0];
         byte[] result = ISOUtil.xor(ISOUtil.str2bcd("testISOUtils", true), op2);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
@@ -4454,7 +4862,7 @@ public class ISOUtilTest {
         byte[] op2 = new byte[4];
         byte[] op1 = new byte[0];
         byte[] result = ISOUtil.xor(op1, op2);
-        assertEquals("result.length", 0, result.length);
+        assertEquals(0, result.length, "result.length");
     }
 
     @Test
@@ -4462,8 +4870,8 @@ public class ISOUtilTest {
         byte[] op1 = new byte[3];
         byte[] op2 = new byte[2];
         byte[] result = ISOUtil.xor(op1, op2);
-        assertEquals("result.length", 2, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(2, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
     @Test
@@ -4471,41 +4879,45 @@ public class ISOUtilTest {
         byte[] op1 = new byte[3];
         byte[] op2 = new byte[5];
         byte[] result = ISOUtil.xor(op1, op2);
-        assertEquals("result.length", 3, result.length);
-        assertEquals("result[0]", (byte) 0, result[0]);
+        assertEquals(3, result.length, "result.length");
+        assertEquals((byte) 0, result[0], "result[0]");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testXorThrowsNullPointerException() throws Throwable {
-        byte[] op2 = new byte[0];
-        ISOUtil.xor((byte[]) null, op2);
+        assertThrows(NullPointerException.class, () -> {
+            byte[] op2 = new byte[0];
+            ISOUtil.xor(null, op2);
+        });
     }
 
     @Test
     public void testZeropad() throws Throwable {
         String result = ISOUtil.zeropad("testISOUtils", 100);
-        assertEquals("result",
+        assertEquals(
                 "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000testISOUtils",
-                result);
+                result, "result");
     }
 
     @Test
     public void testZeropadRight() throws Throwable {
         String result = ISOUtil.zeropadRight("testISOUtils", 0);
-        assertEquals("result", "testISOUtils", result);
+        assertEquals("testISOUtils", result, "result");
     }
 
     @Test
     public void testZeropadRight1() throws Throwable {
         String result = ISOUtil.zeropadRight("", 100);
-        assertEquals("result",
+        assertEquals(
                 "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                result);
+                result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testZeropadRightThrowsNullPointerException() throws Throwable {
-        ISOUtil.zeropadRight(null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.zeropadRight(null, 100);
+        });
     }
 
     @Test
@@ -4514,25 +4926,29 @@ public class ISOUtilTest {
             ISOUtil.zeropad("testISOUtils", 0);
             fail("Expected ISOException to be thrown");
         } catch (ISOException ex) {
-            assertEquals("ex.getMessage()", "invalid len 12/0", ex.getMessage());
-            assertNull("ex.nested", ex.nested);
+            assertEquals("invalid len 12/0", ex.getMessage(), "ex.getMessage()");
+            assertNull(ex.nested, "ex.nested");
         }
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testZeropadThrowsNullPointerException() throws Throwable {
-        ISOUtil.zeropad(null, 100);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.zeropad(null, 100);
+        });
     }
 
     @Test
     public void testZeroUnPad1() throws Throwable {
         String result = ISOUtil.zeroUnPad("");
-        assertEquals("result", "", result);
+        assertEquals("", result, "result");
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testZeroUnPadThrowsNullPointerException() throws Throwable {
-        ISOUtil.zeroUnPad(null);
+        assertThrows(NullPointerException.class, () -> {
+            ISOUtil.zeroUnPad(null);
+        });
     }
 
     /**
@@ -4660,15 +5076,15 @@ public class ISOUtilTest {
      */
     @Test
     public void testCommaEncodeAndDecode() {
-        assertEquals("error encoding \"\"", "", ISOUtil.commaEncode(new String[] {}));
-        assertEquals("error encoding \"a,b,c\"", "a,b,c", ISOUtil.commaEncode(new String[] { "a", "b", "c" }));
-        assertEquals("error encoding \"\\,,\\\\,c\"", "\\,,\\\\,c",
-                ISOUtil.commaEncode(new String[] { ",", "\\", "c" }));
+        assertEquals("", ISOUtil.commaEncode(new String[] {}), "error encoding \"\"");
+        assertEquals("a,b,c", ISOUtil.commaEncode(new String[] { "a", "b", "c" }), "error encoding \"a,b,c\"");
+        assertEquals("\\,,\\\\,c", ISOUtil.commaEncode(new String[] { ",", "\\", "c" }),
+                "error encoding \"\\,,\\\\,c\"");
 
-        assertArrayEquals("error decoding \"\"", new String[] {}, ISOUtil.commaDecode(""));
-        assertArrayEquals("error decoding \"a,b,c\"", new String[] { "a", "b", "c" }, ISOUtil.commaDecode("a,b,c"));
-        assertArrayEquals("error decoding \"\\,,\\\\,c\"", new String[] { ",", "\\", "c" },
-                ISOUtil.commaDecode("\\,,\\\\,c"));
+        assertArrayEquals(new String[] {}, ISOUtil.commaDecode(""), "error decoding \"\"");
+        assertArrayEquals(new String[] { "a", "b", "c" }, ISOUtil.commaDecode("a,b,c"), "error decoding \"a,b,c\"");
+        assertArrayEquals(new String[] { ",", "\\", "c" }, ISOUtil.commaDecode("\\,,\\\\,c"),
+                "error decoding \"\\,,\\\\,c\"");
     }
 
     @Test
@@ -4729,5 +5145,37 @@ public class ISOUtilTest {
     public void testcalcLUHN() throws Exception {
         char check = ISOUtil.calcLUHN("411111111111111");
         assertThat(check, is('1'));
+    }
+
+    @Test
+    public void testEbcdicCharSet() throws Throwable {
+        byte[] b = new byte[256];
+        for (int i=0; i<b.length; i++) {
+            b[i] = ((byte) (i & 0xFF));
+        }
+        String s = new String (b, ISOUtil.CHARSET);
+        byte[] ebcdic = ISOUtil.asciiToEbcdic(s);
+        byte[] ascii = ISOUtil.ebcdicToAsciiBytes(ebcdic);
+        assertArrayEquals(b, ascii, "arrays should be equal");
+
+        Charset c = Charset.forName("IBM1047");
+        byte[] ebcdic1 = c.encode(s).array();
+        String s1 = c.decode(ByteBuffer.wrap(ebcdic1)).toString();
+        assertArrayEquals(ebcdic, ebcdic1, "arrays should match");
+
+        Assertions.assertEquals (s, s1, "ASCII strings should be the same");
+        Assertions.assertArrayEquals (b, s1.getBytes(ISOUtil.CHARSET), "byte[] should be the same as s1");
+        Assertions.assertArrayEquals (b, new String(ascii, ISOUtil.CHARSET).getBytes(ISOUtil.CHARSET), "byte[] should be the same as ascii");
+    }
+
+    @Test
+    public void testStringDLE() {
+        byte[] b = new byte[32];
+        for (int i=0; i<32; i++)
+            b[i] = (byte) i;
+        String s = "The quick brown fox " + new String(b, ISOUtil.CHARSET) + " jumps over the lazy dog";
+        String normalized = ISOUtil.normalize (s);
+        String stripped = ISOUtil.stripUnicode(normalized);
+        assertEquals(s, stripped);
     }
 }

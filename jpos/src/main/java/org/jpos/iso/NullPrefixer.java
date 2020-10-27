@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,30 +30,22 @@ public class NullPrefixer implements Prefixer
     public static final NullPrefixer INSTANCE = new NullPrefixer();
 
     /** Hidden constructor */
-    private NullPrefixer()
-    {}
+    private NullPrefixer() {}
 
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jpos.iso.Prefixer#encodeLength(int, byte[])
-	 */
-    public void encodeLength(int length, byte[] b)
-    {}
+    @Override
+    public void encodeLength(int length, byte[] b) {}
 
     /**
 	 * Returns -1 meaning there is no length field.
-	 * 
-	 * @see org.jpos.iso.Prefixer#decodeLength(byte[], int)
-	 */
+	 *
+     */
+    @Override
     public int decodeLength(byte[] b, int offset)
     {
         return -1;
     }
 
-    /**
-	 * @see org.jpos.iso.Prefixer#getLengthInBytes()
-	 */
+    @Override
     public int getPackedLength()
     {
         return 0;

@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,8 @@
 
 package org.jpos.space;
 
+import org.jpos.core.Configurable;
 import org.jpos.core.Configuration;
-import org.jpos.core.ReConfigurable;
 import org.jpos.iso.Channel;
 import org.jpos.iso.ISOMsg;
 
@@ -29,7 +29,9 @@ import org.jpos.iso.ISOMsg;
  * @version $Revision$ $Date$
  * @see org.jpos.iso.Channel
  */
-public class SpaceChannel implements Channel, ReConfigurable {
+@SuppressWarnings({"unchecked", "deprecation"})
+public class SpaceChannel implements Channel, Configurable
+{
     Space sp;
     Configuration cfg;
     String from, to;

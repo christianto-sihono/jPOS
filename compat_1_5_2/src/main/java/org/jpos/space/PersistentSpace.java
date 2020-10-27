@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,6 +27,7 @@ import java.util.*;
  * @version $Revision$ $Date$
  * @since 2.0
  */
+@SuppressWarnings("unchecked")
 public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
 {
     protected Map map;
@@ -45,7 +46,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
         synchronized (this) {
             Data data = (Data) map.get (key);
             if (data == null) 
-                map.put (key, (data = new Data (key)));
+                map.put (key, data = new Data (key));
             data.add (value);
             listeners = data.getListeners();
             this.notifyAll ();
@@ -64,19 +65,19 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
     public synchronized int size (Object key) {
         Data data  = (Data) map.get (key);
         if (data == null)
-            map.put (key, (data = new Data (key)));
+            map.put (key, data = new Data (key));
         return data.size ();
     }
     public synchronized Object rdp (Object key) {
         Data data  = (Data) map.get (key);
         if (data == null)
-            map.put (key, (data = new Data (key)));
+            map.put (key, data = new Data (key));
         return data.get (key);
     }
     public synchronized Object inp (Object key) {
         Data data  = (Data) map.get (key);
         if (data == null)
-            map.put (key, (data = new Data (key)));
+            map.put (key, data = new Data (key));
         return data.remove ();
     }
     public synchronized Object in (Object key) {
@@ -92,8 +93,8 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = inp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = inp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -114,8 +115,8 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
         Object obj;
         long now = System.currentTimeMillis();
         long end = now + timeout;
-        while ((obj = rdp (key)) == null && 
-                ((now = System.currentTimeMillis()) < end))
+        while ((obj = rdp (key)) == null &&
+                (now = System.currentTimeMillis()) < end)
         {
             try {
                 this.wait (end - now);
@@ -133,7 +134,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
     public synchronized void addListener    (Object key, SpaceListener listener) {
         Data data = (Data) map.get (key);
         if (data == null)
-             map.put (key, (data = new Data (key)));
+             map.put (key, data = new Data (key));
         data.addListener (listener);
     }
     public synchronized void addListener 
@@ -147,6 +148,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
             data.removeListener (listener);
     }
 
+    @SuppressWarnings("unchecked")
     protected static final class Data {
         LinkedList data;
         LinkedList stored;
@@ -176,7 +178,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
                 if (cacheSize > data.size()) {
                     Object value = readValue (file[i].getAbsolutePath ());
                     if (value == null) {
-                        (new File (file[i].getAbsolutePath ())).delete ();
+                        new File (file[i].getAbsolutePath ()).delete();
                     } else {
                         stored.add(file[i].getAbsolutePath ());
                         data.add (value);
@@ -242,7 +244,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
             stored.add(f.getAbsolutePath());
             /* fill cache */
             if (cacheSize > data.size ())
-                if ((data.size() + 1) == stored.size ())
+                if (data.size() + 1 == stored.size ())
                     data.add (value);
         }
         protected Object get (Object value) {
@@ -313,10 +315,10 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
             return listeners;
         }
     }
-    public static final LocalSpace getSpace () {
+    public static LocalSpace getSpace () {
         return defaultSpace;
     }
-    public static final LocalSpace getSpace (String spaceName) {
+    public static LocalSpace getSpace (String spaceName) {
         String key = "jpos:pSpace/"+spaceName;
         Space sp   = TransientSpace.getSpace();
         Object obj = sp.rdp (key);
@@ -358,7 +360,7 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
 
     public String read (String key) {
         Object o = inp (key);
-        return (o != null) ? o.toString() : "null";
+        return o != null ? o.toString() : "null";
     }
     public void push (Object id, Object value) {
         throw new SpaceError ("Unsupported operation");
@@ -371,5 +373,11 @@ public class PersistentSpace implements LocalSpace // PersistentSpaceMBean {
     }
     public boolean existAny (Object[] keys, long timeout) {
         throw new SpaceError ("Unsupported operation");
+    }
+    public void nrd(Object key) {
+        throw new SpaceError("Not implemented");
+    }
+    public Object nrd(Object key, long timeout) {
+        throw new SpaceError("Not implemented");
     }
 }

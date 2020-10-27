@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ import java.util.List;
  * @since 1.4.7
  */
 
+@SuppressWarnings("unchecked")
 public class SpaceUtil {
     /**
      * return all entries under a given key
@@ -57,20 +58,21 @@ public class SpaceUtil {
      */
     public static void wipe (Space sp, Object key) {
         while (sp.inp (key) != null)
-            ;
+            ; // NOPMD
     }
+
+    /**
+     * @deprecated Use space.put instead
+     */
     public static void wipeAndOut  (Space sp, Object key, Object value) {
-        synchronized (sp) {
-            wipe (sp, key);
-            sp.out (key, value);
-        }
+        sp.put(key, value);
     }
-    public static void wipeAndOut  (Space sp, Object key, Object value, long timeout) 
-    {
-        synchronized (sp) {
-            wipe (sp, key);
-            sp.out (key, value, timeout);
-        }
+
+    /**
+     * @deprecated use space.put instead
+     */
+    public static void wipeAndOut  (Space sp, Object key, Object value, long timeout) {
+        sp.out(key, value, timeout);
     }
     public static long nextLong (Space sp, Object key) {
         long l = 0L;
@@ -83,5 +85,25 @@ public class SpaceUtil {
         }
         return l;
     }
+    public static boolean outIfEmpty (Space sp, Object key, Object value, long nrdTimeout, long outTimeout) {
+        synchronized (sp) {
+            if (sp.nrd(key, nrdTimeout) == null) {
+                sp.out(key, value, outTimeout);
+                return true;
+            }
+        }
+        return false;
+    }
+    public static void outWhenEmpty (Space sp, Object key, Object value, long timeout) {
+        synchronized (sp) {
+            sp.nrd(key);
+            sp.out(key, value, timeout);
+        }
+    }
+    public static void outWhenEmpty (Space sp, Object key, Object value) {
+        synchronized (sp) {
+            sp.nrd(key);
+            sp.out(key, value);
+        }
+    }
 }
-

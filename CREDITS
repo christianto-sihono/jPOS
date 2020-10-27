@@ -11,7 +11,7 @@ Hani S. Kirollos <h.samuel@egyptianbanks.net>
 Jonathan O'Connor <Jonathan.O'Connor@xcom.de>
 Cameron Young <cn_young@attcanada.ca>
 Alireza Taherkordi <taherkordy@dpi2.dpi.net.ir>
-Alcarraz, Andrés <AAlcarraz@cabal.com.uy>
+Alcarraz, Andrés <alcarraz@jpos.org>
 Alwyn Schoeman <alwyn.schoeman@gmail.com>
 Carlos Quiroz <carlos.quiroz@welho.com>
 Kris Leite <yahoo@imcsoftware.com>
@@ -27,11 +27,8 @@ Ansar Ansari <ansaransari@users.sourceforge.net>
 Tushar Vaish <tusharvaish@users.sourceforge.net>
 Manoj Krishna <manojkrishnak@users.sourceforge.net>
 Vishnu Pillai <vishnu_pillai@users.sourceforge.net>
-Robert Demski <Robert.Demski@wp.pl>
+Robert Demski <drdemsey@gmail.com>
 John Overland <john@johnoverland.com>
-
-Code contributors, Bugfixes
----------------------------
 Mike Trank <mike@netcomsa.com>
 Jonathan Easterling <Jonathan_Easterling@s2systems.com>
 Matías Salvador <mhs@sisa.com.ar>
@@ -43,10 +40,10 @@ Christopher Harris <Christopher.Harris@retail-logic.com>
 Bernardinus <bbernard@cbn.net.id>
 Niclas Hedhman <niclas@hedhman.org>
 Stefano Arosio <stefano.arosio@mobilmat.it>
-Robert Demski <Robert.Demski@wp.pl>
+Robert Demski <drdemsey@gmail.com>
 Jeronimo Paoletti <jeronimo.paoletti@gmail.com>
 Onwuka "bugzee" Emeka <eonwuka@parkwayprojects.com>
-Federico Gonzalez <gonzalez@olsdallas.com>
+Federico Gonzalez <fgonbri@gmail.com>
 George McKinney <george@tantalus.com>
 Vincent Green <Vincent.Greene@amo.com>
 Leonard Thomas <leonard@rhinosystemsinc.com>
@@ -59,7 +56,7 @@ Chris Lemper <clemper@ponicard.com>
 Andrew R. Rothwell <arothwel@moneyswitch.net>
 Matthew Milliss <mmilliss@moneyswitch.net>
 Morgan Hankins <morganhankins@yahoo.com>
-Ozzy Espaillat <ozzy@zowi.com>
+Ozzy Espaillat <ozzypaji@gmail.com>
 Alexei Gladkov <alex@abgcard.ru>
 Alexander Fedorenko <afedoren@yahoo.com>
 Nathan Brice Mcafee <mcafeen@wam.umd.edu>
@@ -85,6 +82,32 @@ Jason Smith <jsmith@marqeta.com>
 Will Currie <wscurrie@gmail.com>
 Graham Lea <graham@grahamlea.com>
 Muhammad Edwin <edwinkun at gmail dot com>
+Chris Robson <crobson@tyro.com>
+Pugazhendhi T <pugazhendhiobs@gmail.com>
+Juan Pablo Torres <torresj@cabal.coop>
+Bjarne Henriksen <bjarne.henriksen@gmail.com>
+MichaÅ‚ Wiercioch <michal.wiercioch@gmail.com>
+Grzegorz Wieczorek <grw1@wp.pl>
+Martin Muguiro <muguiro@olsdallas.com>
+Bhavik Kumar <bhavikk@datacom.co.nz>
+Luca Menegus <luca.menegus@dbmsrl.com>
+Fernando Amaral <fernandoluizjr@gmail.com>
+Barzilai Spinak <barspi@transactility.com>
+Luiz Felipph <luizfelipph@gmail.com>
+Haris Kurniawan <haris.kurniawan@gmail.com>
+Sridhar Jena <sjena@aurusinc.com>
+Mouslih Abdelhakim <mouslih.abdelhakim@gmail.com>
+Gregorio Osorio <gregorioosorio16687@gmail.com>
+Igor Skljar <dn240884sii@gmail.com>
+Mauro Ferrari <ferrari@olsdallas.com>
+Ing. Josefina Revilla <jr@jpos.org>
+Ing. Santiago Revilla <spr@jpos.org>
+Mikolaj Sosna @gitmik
+Alex Charles <alexcharles@gmail.com>
+James Hilliard <james.hilliard1@gmail.com>
+Karl Muscat <karl.muscat@digitalpayments.group>
+Galih Lasahido <galih.lasahido@gmail.com>
+Arturo Volpe <avolpe@fintech.works>
 
 Contributors from other OpenSource projects
 -------------------------------------------

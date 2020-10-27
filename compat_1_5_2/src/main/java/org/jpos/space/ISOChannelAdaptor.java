@@ -1,6 +1,6 @@
 /*
  * jPOS Project [http://jpos.org]
- * Copyright (C) 2000-2013 Alejandro P. Revilla
+ * Copyright (C) 2000-2020 jPOS Software SRL
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,7 +37,8 @@ import java.io.IOException;
  * @author Alejandro Revilla
  * @version $Revision$ $Date$
  */
-public class ISOChannelAdaptor 
+@SuppressWarnings("unchecked")
+public class ISOChannelAdaptor
         extends SimpleLogSource 
         implements Configurable
 {
@@ -66,6 +67,7 @@ public class ISOChannelAdaptor
             throw new ConfigurationException (e);
         }
     }
+    @SuppressWarnings("unchecked")
     public class Sender implements Runnable {
         public Sender () {
             super ();
@@ -89,6 +91,7 @@ public class ISOChannelAdaptor
             }
         }
     }
+    @SuppressWarnings("unchecked")
     public class Receiver implements Runnable {
         public Receiver () {
             super ();
